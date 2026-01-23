@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "snowda"
+version = "0.1.0"
+description = "Snow data assimilation for hydrological modeling"
+readme = "README.md"
+requires-python = ">=3.9"
+
+authors = [
+  { name = "Your Name", email = "your.email@institution.edu" }
+]
+
+dependencies = [
+  "numpy",
+  "scipy",
+  "xarray",
+  "netCDF4",
+  "pyyaml",
+  "matplotlib",
+  "pandas",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "ruff",
+  "black",
+  "pre-commit",
+  "jupyterlab",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+line-length = 88
+select = ["E", "F", "I"]
+ignore = ["E501"]

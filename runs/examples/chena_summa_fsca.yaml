@@ -1,0 +1,47 @@
+
+
+summa_forcing_dir: /Users/dcasson/Data/snowda/summa/chena/forcing/
+summa_settings_dir: /Users/dcasson/Data/snowda/summa/chena/settings/
+output_dir: /Users/dcasson/Data/snowda/summa/chena/output/
+
+log_file: logs/fsca.log
+
+summa_exe: /Users/dcasson/GitHub/summa/bin/summa.exe
+file_manager: /Users/dcasson/Data/snowda/summa/chena/settings/fileManager.txt
+output_file_name: summa_output_files.txt
+fsca_output_name: summa_fsca_output.nc
+# Either provide a list of output files, or a text file with one path per line.
+summa_output_files:
+  - /Users/dcasson/GitHub/snowda/outputs/chena_summa_minimal/chena_pysumma_run_timestep.nc
+summa_run_if_missing: true
+#summa_output_file_list_txt: /ABSOLUTE/PATH/TO/summa_output_files.txt
+
+# Optional: re-run SUMMA if outputs are missing
+#summa_run_if_missing: true
+sim_start_time: "2010-10-01 00:00"
+sim_end_time: "2011-08-01 00:00"
+#summa_sim_config:
+#  manager:
+#    forcingPath: /ABSOLUTE/PATH/TO/forcing/
+#    outputPath: /ABSOLUTE/PATH/TO/output/
+#    forcingListFile: forcingFileList.txt
+#    tmZoneInfo: localTime
+#summa_write_configuration_name: chena_fsca
+
+fsca_input_nc: summa_fsca_input.nc
+fsca_output_nc: summa_fsca_output.nc
+fsca_model: ssnowd
+fsca_cv: 0.9
+
+# Optional: integrate fSCA observations
+#fsca_obs_nc: /ABSOLUTE/PATH/TO/fsca_observations.nc
+#fsca_obs_var: fsca
+
+# Optional: Helbig model settings (required if fsca_model: helbig)
+#snow_depth_var: scalarSnowDepth
+#helbig_settings:
+#  snow_depth_threshold: 0.005714286
+#  buffer_length: 15
+#  Ld: 1000
+#  slope_mu: 0.445
+#  xi: 529.9999999999999

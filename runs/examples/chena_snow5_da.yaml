@@ -1,0 +1,48 @@
+case_name: chena_snow5_da
+description: Snow5 DA test run with 7-day assimilation intervals.
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/chena_snow5_da
+log_file: logs/snow5_da.log
+
+ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/chena/forcing/
+ensemble_forcing_pattern: "*.nc"
+
+start_time: "2010-10-01"
+end_time: "2019-08-01"
+assimilation_interval_days: 30
+
+model_parameters:
+  guc: 0.85
+  src: 2.0
+  f_max: 1.2
+  f_min: 0.1
+  t_mlt: 0.0
+
+fsca_model: helbig
+fsca_cv: 0.7
+snow_density: 300.0
+helbig_params_nc: /Users/dcasson/Data/snowda/helbig/chena_tdx_helbig_params.nc
+helbig_settings:
+  Ld: 50.0
+  snow_depth_threshold: 0.001
+  buffer_length: 15
+
+assimilation_nc: /Users/dcasson/Data/snowda/summa/chena/observations/test_observations.nc
+assimilation_var: swe
+obs_var_name: swe
+modeled_var: swe
+modeled_var_name: swe
+state_mean_name: mean_swe
+state_var_name: var_swe
+z_var: 0.5
+n_eff_threshold: 0.8
+pf_resample: true
+
+schaake_shuffle:
+  use_schaake_shuffle: true
+  schaake_window_days: 15
+  schaake_seed: 42
+  schaake_archive_source: /Users/dcasson/Data/snowda/summa/chena/observations/test_observations.nc
+  schaake_archive_variable: swe
+  schaake_target_variables: ["swe"]
+  schaake_apply_same_permutation_to: ["snow_depth"]

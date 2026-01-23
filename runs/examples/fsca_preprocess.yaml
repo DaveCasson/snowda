@@ -1,0 +1,14 @@
+data_dirs:
+  - /Users/dcasson/Data/fsca/
+gpkg_path: /Users/dcasson/Data/summa_snakemake/chena_tdx/watershed_tools/final/chena_tdx_WGS84.gpkg
+output_dir: /Users/dcasson/Data/fsca_processed/
+output_file: fsca_preprocessed.nc
+keep_vars:
+  - snow_fraction
+  - viewable_snow_fraction
+use_bbox: true
+bbox_padding: 0.0
+dataset_crs: EPSG:4326
+chunk_specs:
+  time: 1
+  polygon: 5

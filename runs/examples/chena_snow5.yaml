@@ -1,0 +1,41 @@
+case_name: chena_snow5
+description: Minimal snow_5 parameter test run using CHENA SUMMA forcing.
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/chena_snow5
+log_file: logs/snow5.log
+
+paths:
+  forcing_dir: /Users/dcasson/Data/snowda/summa/chena/mean_forcing/
+
+forcing_pattern: "*.nc"
+
+start_time: "2008-10-01"
+end_time: "2019-08-01"
+
+#model_parameters:
+#  guc: 0.75
+#  src: 2.5
+#  f_max: 1.5
+#  f_min: 0.5
+#  t_mlt: 0.5
+model_parameters:
+  guc: 0.85
+  src: 2.0
+  f_max: 1.2
+  f_min: 0.1
+  t_mlt: 0.0
+
+fsca_model: debeer
+fsca_cv: 0.7
+snow_density: 300.0
+helbig_params_nc: /Users/dcasson/Data/snowda/helbig/chena_tdx_helbig_params.nc
+helbig_settings:
+  Ld: 50.0
+  snow_depth_threshold: 0.001
+  buffer_length: 15
+
+
+assimilation_nc: /Users/dcasson/Data/snowda/observations/chena_swe.nc
+assimilation_var: swe
+
+output_file: snow5_output.nc

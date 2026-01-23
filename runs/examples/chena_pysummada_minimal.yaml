@@ -1,0 +1,51 @@
+case_name: chena_pysummada_minimal
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/chena_pysummada_minimal
+model_run_id: chena_pf
+
+base_file_manager: /ABSOLUTE/PATH/TO/fileManager.txt
+input_swe_hru_nc: /ABSOLUTE/PATH/TO/chena_swe_observations.nc
+initial_state: coldState.nc
+
+forcing_file_base: /ABSOLUTE/PATH/TO/forcing/forcing_
+job_list_filename: job_list.txt
+num_ens: 10
+
+start_time: "2010-10-01 00:00"
+end_time: "2011-10-01 00:00"
+time_delta_days: 1
+
+summa_exe: /ABSOLUTE/PATH/TO/summa.exe
+summa_log: false
+
+pf_resample: true
+n_eff_threshold: 0.5
+
+summa_args:
+  "-m": /ABSOLUTE/PATH/TO/fileManager.txt
+
+file_manager_dir: /ABSOLUTE/PATH/TO/summa/settings
+file_list_dir: /ABSOLUTE/PATH/TO/summa/settings
+
+# Optional: fSCA assimilation integration
+#fsca_obs_nc: /ABSOLUTE/PATH/TO/fsca_observations.nc
+#fsca_obs_var: fsca
+#summa_output_dir: /ABSOLUTE/PATH/TO/summa/output
+#summa_output_suffix: day.nc
+#fsca_output_dir: /ABSOLUTE/PATH/TO/fsca/output
+#fsca_model: ssnowd
+#fsca_cv: 0.5
+#snow_depth_var: scalarSnowDepth
+#assimilation_mode: combined
+#swe_weight: 1.0
+#fsca_weight: 1.0
+#helbig_settings:
+#  snow_depth_threshold: 0.005714286
+#  buffer_length: 15
+#  Ld: 1000
+#  slope_mu: 0.445
+#  xi: 529.9999999999999
+
+# Optional: override SUMMA run period for single-run workflow
+#sim_start_time: "2010-10-01 00:00"
+#sim_end_time: "2011-10-01 00:00"

@@ -1,0 +1,38 @@
+case_name: chena_summa_minimal
+watershed: chena
+description: Minimal SUMMA initialization only (no model run).
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/chena_summa_minimal
+log_file: logs/init_summa.log
+summa_forcing_dir: /Users/dcasson/Data/snowda/summa/chena/forcing/
+summa_settings_dir: /Users/dcasson/Data/snowda/summa/chena/settings/
+
+summa_exe: /Users/dcasson/GitHub/summa/bin/summa.exe
+file_manager: /Users/dcasson/Data/snowda/summa/chena/settings/fileManager.txt
+output_file_name: summa_output_files.txt
+fsca_output_name: summa_fsca_output.nc
+
+initialize_only: true
+
+# Optional: override SUMMA run period
+sim_start_time: "2010-10-01 00:00"
+sim_end_time: "2011-08-01 00:00"
+
+# Optional: show SUMMA stdout in notebook/console
+show_summa_stdout: true
+
+# Optional: auto-clean nested .pysumma directories (default true)
+auto_cleanup_pysumma: true
+
+# Optional: apply pysumma configuration before run
+#sim_config:
+#manager:
+#  simStartTime: "2010-10-01 00:00"
+#  simEndTime: "2010-08-01 00:00"
+
+# Optional: write configuration snapshot using pysumma
+#write_configuration_name: chena_minimal
+
+# Debug helpers
+#debug_pause: true
+#debug_skip_run: true
