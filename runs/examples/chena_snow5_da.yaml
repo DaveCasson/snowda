@@ -46,3 +46,20 @@ schaake_shuffle:
   schaake_archive_variable: swe
   schaake_target_variables: ["swe"]
   schaake_apply_same_permutation_to: ["snow_depth"]
+
+# Optional: Ensemble Streamflow Prediction (ESP) after DA
+# Uses DA states on selected trigger dates, then runs historical-year traces.
+# 1 historical year = 1 trace output.
+#esp:
+#  enabled: true
+#  start_year: 2008
+#  end_year: 2018
+#  forecast_length_days: 30
+#  # Use one or both:
+#  frequency_days: 30
+#  dates:
+#    - "2011-04-28 00:00"
+#  # Optional month filter
+#  months: [4, 5, 6]
+#  # Optional: DA state members; defaults to first member
+#  state_members: ["001"]

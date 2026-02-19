@@ -5,7 +5,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 
 import logging
 import numpy as np
@@ -110,6 +110,13 @@ class Snow5Particle:
         return self.forcing_ds["hru"].values
 
 
+@dataclass
+class Snow5ParticleState:
+    label: str
+    model_arrays: dict[str, np.ndarray]
+    fsca_states: list[FscaState]
+
+
 class Snow5DAEngine:
     def __init__(
         self,
@@ -155,6 +162,7 @@ class Snow5DAEngine:
         self._schaake_rng = np.random.default_rng(
             schaake_shuffle_config.seed if schaake_shuffle_config else None
         )
+        self.state_snapshots: dict[datetime, dict[str, Snow5ParticleState]] = {}
         first_hrus = particles[0].hru_index
         self.hru_index_df = pd.DataFrame({"hruId": first_hrus})
 
@@ -232,6 +240,7 @@ class Snow5DAEngine:
             self._apply_resample(resample)
             log.info("Resampled particles at %s -> %s", interval_end, resample.tolist())
         schaake_applied = self._apply_schaake_shuffle(interval_end)
+        self._capture_state_snapshot(interval_end)
         return {
             "time": interval_end,
             "weights": weights,
@@ -239,6 +248,19 @@ class Snow5DAEngine:
             self.state_mean_name: mean_df[self.state_mean_name].to_dict(),
             self.state_var_name: var_df[self.state_var_name].to_dict(),
             "schaake_shuffle_applied": schaake_applied,
+        }
+
+    def _capture_state_snapshot(self, time: datetime) -> None:
+        self.state_snapshots[time] = {
+            particle.label: Snow5ParticleState(
+                label=particle.label,
+                model_arrays={
+                    key: np.asarray(value, dtype="float64").copy()
+                    for key, value in particle.model_arrays.items()
+                },
+                fsca_states=[copy.deepcopy(state) for state in particle.fsca_states],
+            )
+            for particle in self.particles
         }
 
     def _build_particles_df(self, time: datetime) -> pd.DataFrame:
@@ -396,6 +418,153 @@ class Snow5DAEngine:
         return output_paths
 
 
+def _replace_year(dt: datetime, year: int) -> datetime:
+    try:
+        return dt.replace(year=year)
+    except ValueError:
+        max_day = pd.Timestamp(f"{year}-{dt.month:02d}-01").days_in_month
+        return dt.replace(year=year, day=min(dt.day, max_day))
+
+
+def _parse_esp_dates(values: Sequence[str]) -> list[datetime]:
+    return [pd.Timestamp(v).to_pydatetime() for v in values]
+
+
+def _resolve_esp_trigger_dates(
+    start: datetime,
+    end: datetime,
+    explicit_dates: Sequence[datetime],
+    frequency_days: int | None,
+    months: Sequence[int],
+) -> list[datetime]:
+    dates = set(explicit_dates)
+    if frequency_days:
+        current = start
+        while current <= end:
+            dates.add(current)
+            current += timedelta(days=frequency_days)
+    if months:
+        month_set = set(months)
+        dates = {dt for dt in dates if dt.month in month_set}
+    return sorted(dates)
+
+
+def _shift_dataset_time_to_year(ds: xr.Dataset, target_year: int) -> xr.Dataset:
+    shifted_times = [
+        _replace_year(pd.Timestamp(ts).to_pydatetime(), target_year)
+        for ts in pd.to_datetime(ds["time"].values)
+    ]
+    out = ds.copy(deep=True)
+    out["time"] = pd.DatetimeIndex(shifted_times)
+    return out
+
+
+def _run_snow5_esp_from_da(
+    cfg: Dict[str, Any],
+    output_dir: Path,
+    da_engine: Snow5DAEngine,
+    params: Snow5Parameters,
+    cv_array: np.ndarray,
+    ens_labels: list[str],
+    assimilation_times: list[datetime],
+    forcing_lookup: dict[str, xr.Dataset],
+    fsca_model: str,
+    helbig_params: dict[str, np.ndarray] | None,
+    helbig_settings: dict[str, Any] | None,
+    snow_density: float,
+) -> list[dict[str, Any]]:
+    esp_cfg = cfg.get("esp")
+    if not isinstance(esp_cfg, dict) or not bool(esp_cfg.get("enabled", False)):
+        return []
+
+    start_year = int(esp_cfg["start_year"])
+    end_year = int(esp_cfg["end_year"])
+    forecast_length_days = int(esp_cfg["forecast_length_days"])
+    if end_year < start_year:
+        raise ValueError("`esp.end_year` must be >= `esp.start_year`.")
+    if forecast_length_days <= 0:
+        raise ValueError("`esp.forecast_length_days` must be > 0.")
+
+    frequency_days_raw = esp_cfg.get("frequency_days")
+    frequency_days = int(frequency_days_raw) if frequency_days_raw is not None else None
+    explicit_dates = _parse_esp_dates([str(v) for v in (esp_cfg.get("dates", []) or [])])
+    months = [int(m) for m in (esp_cfg.get("months", []) or [])]
+    if frequency_days is None and not explicit_dates:
+        raise ValueError("ESP requires either `esp.frequency_days` or `esp.dates`.")
+
+    trigger_dates = _resolve_esp_trigger_dates(
+        assimilation_times[0],
+        assimilation_times[-1],
+        explicit_dates,
+        frequency_days,
+        months,
+    )
+    if not trigger_dates:
+        log.warning("ESP enabled but no trigger dates resolved for Snow5 DA.")
+        return []
+
+    state_members_cfg = esp_cfg.get("state_members", []) or []
+    state_members = [str(m) for m in state_members_cfg] if state_members_cfg else [ens_labels[0]]
+    available_times = set(da_engine.state_snapshots.keys())
+
+    records: list[dict[str, Any]] = []
+    for trigger in trigger_dates:
+        if trigger not in available_times:
+            log.info("Skipping ESP trigger %s (not an assimilation/state date).", trigger)
+            continue
+        state_snapshot = da_engine.state_snapshots[trigger]
+        for state_member in state_members:
+            particle_state = state_snapshot.get(state_member)
+            if particle_state is None:
+                log.info(
+                    "Skipping ESP state member %s at %s (snapshot missing).",
+                    state_member,
+                    trigger,
+                )
+                continue
+            forcing_ds = forcing_lookup[state_member]
+            for trace_year in range(start_year, end_year + 1):
+                trace_start = _replace_year(trigger, trace_year)
+                trace_end = trace_start + timedelta(days=forecast_length_days)
+                forcing_subset = forcing_ds.sel(time=slice(trace_start, trace_end))
+                if forcing_subset.sizes.get("time", 0) == 0:
+                    log.info(
+                        "Skipping Snow5 ESP trace year %s for %s at %s (no forcing window).",
+                        trace_year,
+                        state_member,
+                        trigger,
+                    )
+                    continue
+                output_arrays, _, _ = run_snow5_simulation(
+                    forcing_subset,
+                    params,
+                    cv_array,
+                    fsca_model=fsca_model,
+                    helbig_settings=helbig_settings,
+                    helbig_params=helbig_params,
+                    snow_density=snow_density,
+                    initial_model_arrays={
+                        k: v.copy() for k, v in particle_state.model_arrays.items()
+                    },
+                    initial_states=[copy.deepcopy(state) for state in particle_state.fsca_states],
+                )
+                trace_ds = convert_arrays_to_dataset(output_arrays, forcing_subset)
+                trace_ds = _shift_dataset_time_to_year(trace_ds, trigger.year)
+                trace_dir = output_dir / "esp" / state_member / trigger.strftime("%Y%m%d")
+                trace_dir.mkdir(parents=True, exist_ok=True)
+                trace_path = trace_dir / f"snow5_{trace_year}.nc"
+                write_results(trace_ds, trace_path)
+                records.append(
+                    {
+                        "state_member": state_member,
+                        "state_date": trigger.isoformat(),
+                        "trace_year": trace_year,
+                        "output": str(trace_path),
+                    }
+                )
+    return records
+
+
 def run_snow5_da(config_path: str | Path) -> Path:
     cfg = load_config(config_path)
     base_dir = Path(cfg.get("_meta", {}).get("config_dir", Path(config_path).resolve().parent))
@@ -464,9 +633,11 @@ def run_snow5_da(config_path: str | Path) -> Path:
     pf_resample = bool(cfg.get("pf_resample", True))
 
     particles = []
+    forcing_lookup: dict[str, xr.Dataset] = {}
     ens_labels = [f"{idx+1:03d}" for idx in range(len(forcing_paths))]
     for label, fp in zip(ens_labels, forcing_paths):
         ds = read_snow5_forcing(fp)
+        forcing_lookup[label] = ds
         particles.append(
             Snow5Particle(
                 label=label,
@@ -514,6 +685,20 @@ def run_snow5_da(config_path: str | Path) -> Path:
 
     records = da_engine.run(params, cv_array, start_time)
     outputs = da_engine.finalize_outputs(output_dir)
+    esp_records = _run_snow5_esp_from_da(
+        cfg,
+        output_dir,
+        da_engine,
+        params,
+        cv_array,
+        ens_labels,
+        assimilation_times,
+        forcing_lookup,
+        fsca_model,
+        helbig_params,
+        helbig_settings,
+        snow_density,
+    )
 
     prov = {
         "timestamp_utc": datetime.utcnow().isoformat() + "Z",
@@ -527,6 +712,9 @@ def run_snow5_da(config_path: str | Path) -> Path:
         "modeled_var_name": modeled_var_name,
         "state_mean_name": state_mean_name,
         "state_var_name": state_var_name,
+        "esp_enabled": bool(isinstance(cfg.get("esp"), dict) and cfg["esp"].get("enabled")),
+        "esp_trace_count": len(esp_records),
+        "esp_traces": esp_records,
         "records": [
             {
                 "time": record["time"].isoformat(),

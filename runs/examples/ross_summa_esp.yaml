@@ -1,0 +1,52 @@
+case_name: ross_summa_esp
+description: ESP trace config for Ross River SUMMA + mizuRoute workflow.
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_esp
+log_file: logs/ross_summa_esp.log
+
+model_run_id: ross_summa_esp_pf
+run_mode: deterministic_esp
+base_file_manager: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
+forcing_file_base: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/Ross_
+num_ens: 1
+
+start_time: "2011-10-01 00:00"
+end_time: "2018-10-01 00:00"
+time_delta_days: 1
+
+summa_exe: /Users/dcasson/GitHub/summa/bin/summa.exe
+summa_log: false
+
+pf_resample: false
+n_eff_threshold: 0.5
+
+summa_args:
+  "-m": /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
+  "-r": m
+
+file_manager_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
+file_list_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
+
+
+esp:
+  enabled: true
+  start_year: 2011
+  end_year: 2018
+  forecast_length_days: 15
+  #frequency_days: 30
+  dates:
+    - "2011-04-01 00:00"
+    - "2012-04-01 00:00"
+  restart_file_filter: restart
+  state_members: ["001"]
+  run_mizuroute: true
+  mizuroute:
+    executable: /Users/dcasson/GitHub/mizuRoute/route/bin/route_runoff.exe
+    control_file: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/mizuroute.control
+    ancil_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/
+    output_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/output/mizuroute_output/
+    restart_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/output/mizuroute_output/restart_files/
+    case_name: Ross
+    restart_write: monthly
+    log_output: false
+  deterministic: true

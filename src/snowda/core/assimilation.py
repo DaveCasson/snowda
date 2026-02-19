@@ -36,19 +36,11 @@ class DataAssimilationCore:
         return config_dict
 
     def update_run_time(self, start_time: datetime, end_time: datetime) -> Dict[str, Dict[str, str]]:
-        config_list = [
-            {
-                ens: {
-                    "manager": {
-                        "simStartTime": start_time.strftime("%Y-%m-%d %H:%M"),
-                        "simEndTime": end_time.strftime("%Y-%m-%d %H:%M"),
-                    }
-                }
-            }
-            for ens in self.config.ens_label_array
-        ]
-        config_dict = self._merge_dicts(config_list)
-        self.ens_config = self.merge_dict(self.ens_config, config_dict)
+        for ens in self.config.ens_label_array:
+            entry = self.ens_config.setdefault(ens, {})
+            manager = entry.setdefault("manager", {})
+            manager["simStartTime"] = start_time.strftime("%Y-%m-%d %H:%M")
+            manager["simEndTime"] = end_time.strftime("%Y-%m-%d %H:%M")
         return self.ens_config
 
     def update_warm_state(self, end_time: datetime) -> Dict[str, Dict[str, str]]:

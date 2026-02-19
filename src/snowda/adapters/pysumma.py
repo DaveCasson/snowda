@@ -34,7 +34,6 @@ def run_ensemble(
     run_suffix: Optional[str] = None,
     freq_restart: str = "d",
     write_config: bool = False,
-    update_manager: bool = True,
     log_stdout: bool = False,
 ) -> Dict[str, Any]:
     """Run a SUMMA ensemble via pysumma and return summary metadata."""
@@ -45,7 +44,6 @@ def run_ensemble(
         run_suffix=run_suffix,
         freq_restart=freq_restart,
         write_config=write_config,
-        update_manager=update_manager,
     )
     summary = ensemble.summary()
     if log_stdout:

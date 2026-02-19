@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Sequence
 
 from snowda.config.loader import load_config
 
@@ -22,6 +22,44 @@ def _require(cfg: Dict[str, Any], key: str) -> Any:
     if val in (None, ""):
         raise ValueError(f"Config must define `{key}`.")
     return val
+
+
+@dataclass(frozen=True)
+class MizuRouteEspConfig:
+    executable: Path
+    control_file: Path
+    ancil_dir: Path
+    output_dir: Path
+    restart_dir: Path
+    case_name: str
+    restart_write: str
+    param_nml: Path | None = None
+    topology_nc: Path | None = None
+    log_output: bool = False
+
+
+@dataclass(frozen=True)
+class DeterministicEspState:
+    path: Path
+    date: datetime
+    member: Optional[str]
+
+
+@dataclass(frozen=True)
+class EspConfig:
+    enabled: bool
+    deterministic_state: Optional[DeterministicEspState]
+    deterministic: bool
+    start_year: int
+    end_year: int
+    forecast_length_days: int
+    frequency_days: Optional[int]
+    dates: tuple[datetime, ...]
+    months: tuple[int, ...]
+    restart_file_filter: str
+    state_members: tuple[str, ...]
+    run_mizuroute: bool
+    mizuroute: Optional[MizuRouteEspConfig]
 
 
 @dataclass(frozen=True)
@@ -57,6 +95,9 @@ class PysummadaConfig:
     assimilation_mode: Optional[str]
     swe_weight: Optional[float]
     fsca_weight: Optional[float]
+    esp: Optional[EspConfig]
+    run_mode: str
+    run_da: bool
 
     @property
     def model_result_output_dir(self) -> Path:
@@ -70,6 +111,16 @@ class PysummadaConfig:
 def load_pysummada_config(config_path: str | Path) -> PysummadaConfig:
     cfg: Dict[str, Any] = load_config(config_path)
     base_dir = Path(cfg.get("_meta", {}).get("config_dir", Path(config_path).resolve().parent))
+
+    run_mode, explicit_run_mode = _resolve_run_mode(cfg)
+    esp_cfg_raw = cfg.get("esp")
+    run_da = bool(cfg.get("run_da", True))
+    esp_cfg_raw = _apply_run_mode_constraints(
+        run_mode, esp_cfg_raw, explicit_run_mode=explicit_run_mode
+    )
+    run_da = _run_da_for_mode(run_mode) if explicit_run_mode else run_da
+    cfg["run_da"] = run_da
+    cfg["esp"] = esp_cfg_raw
 
     case_name = str(_require(cfg, "case_name"))
     output_dir = _normalize_path(str(_require(cfg, "output_dir")), base_dir, allow_relative=True)
@@ -140,6 +191,7 @@ def load_pysummada_config(config_path: str | Path) -> PysummadaConfig:
     assimilation_mode = cfg.get("assimilation_mode")
     swe_weight = cfg.get("swe_weight")
     fsca_weight = cfg.get("fsca_weight")
+    esp = _load_esp_config(cfg, base_dir)
 
     return PysummadaConfig(
         case_name=case_name,
@@ -173,4 +225,224 @@ def load_pysummada_config(config_path: str | Path) -> PysummadaConfig:
         assimilation_mode=str(assimilation_mode) if assimilation_mode else None,
         swe_weight=float(swe_weight) if swe_weight is not None else None,
         fsca_weight=float(fsca_weight) if fsca_weight is not None else None,
+        run_mode=run_mode,
+        run_da=bool(run_da),
+        esp=esp,
+    )
+
+
+def _run_da_for_mode(run_mode: str) -> bool:
+    return run_mode in {"da", "da_esp"}
+
+
+def _resolve_run_mode(cfg: Dict[str, Any]) -> tuple[str, bool]:
+    allowed = {"deterministic", "deterministic_esp", "da", "da_esp"}
+    raw = cfg.get("run_mode")
+    if raw is None:
+        return _infer_run_mode(cfg), False
+    run_mode = str(raw).strip()
+    if run_mode not in allowed:
+        raise ValueError(
+            f"`run_mode` must be one of {sorted(allowed)} (got: {run_mode})."
+        )
+    return run_mode, True
+
+
+def _infer_run_mode(cfg: Dict[str, Any]) -> str:
+    esp_cfg = cfg.get("esp")
+    esp_enabled = isinstance(esp_cfg, dict) and bool(esp_cfg.get("enabled", False))
+    deterministic_esp = (
+        isinstance(esp_cfg, dict)
+        and bool(esp_cfg.get("deterministic") or esp_cfg.get("deterministic_state"))
+    )
+    run_da = bool(cfg.get("run_da", True))
+    if deterministic_esp:
+        return "deterministic_esp"
+    if run_da and esp_enabled:
+        return "da_esp"
+    if run_da:
+        return "da"
+    if esp_enabled:
+        return "deterministic_esp"
+    return "deterministic"
+
+
+def _apply_run_mode_constraints(
+    run_mode: str, esp_cfg_raw: Any, *, explicit_run_mode: bool
+) -> Any:
+    if not explicit_run_mode:
+        return esp_cfg_raw
+
+    if run_mode in {"deterministic", "da"}:
+        if isinstance(esp_cfg_raw, dict):
+            if esp_cfg_raw.get("enabled", False):
+                raise ValueError(f"`run_mode: {run_mode}` does not allow ESP.")
+            if esp_cfg_raw.get("deterministic") or esp_cfg_raw.get("deterministic_state"):
+                raise ValueError(
+                    f"`run_mode: {run_mode}` does not allow deterministic ESP settings."
+                )
+        return esp_cfg_raw
+
+    if not isinstance(esp_cfg_raw, dict):
+        raise ValueError(f"`run_mode: {run_mode}` requires an `esp` section.")
+
+    esp_cfg = dict(esp_cfg_raw)
+    esp_cfg["enabled"] = True
+    if run_mode == "deterministic_esp":
+        if not (esp_cfg.get("deterministic") or esp_cfg.get("deterministic_state")):
+            raise ValueError(
+                "`run_mode: deterministic_esp` requires `esp.deterministic` or "
+                "`esp.deterministic_state`."
+            )
+    if run_mode == "da_esp":
+        if esp_cfg.get("deterministic") or esp_cfg.get("deterministic_state"):
+            raise ValueError(
+                "`run_mode: da_esp` does not allow deterministic ESP state settings."
+            )
+    return esp_cfg
+
+
+def _parse_esp_dates(dates: Sequence[str]) -> tuple[datetime, ...]:
+    out: list[datetime] = []
+    for raw in dates:
+        out.append(datetime.strptime(str(raw), "%Y-%m-%d %H:%M"))
+    return tuple(out)
+
+
+def _load_esp_config(cfg: Dict[str, Any], base_dir: Path) -> Optional[EspConfig]:
+    esp_cfg_raw = cfg.get("esp")
+    if not esp_cfg_raw:
+        return None
+    if not isinstance(esp_cfg_raw, dict):
+        raise TypeError("`esp` must be a mapping.")
+
+    enabled = bool(esp_cfg_raw.get("enabled", False))
+    if not enabled:
+        run_mizuroute = bool(esp_cfg_raw.get("run_mizuroute", False))
+        mizuroute_cfg = (
+            _load_mizuroute_config(esp_cfg_raw, base_dir) if run_mizuroute else None
+        )
+        return EspConfig(
+            enabled=False,
+            deterministic_state=None,
+            deterministic=False,
+            start_year=0,
+            end_year=0,
+            forecast_length_days=0,
+            frequency_days=None,
+            dates=tuple(),
+            months=tuple(),
+            restart_file_filter="restart",
+            state_members=tuple(),
+            run_mizuroute=run_mizuroute,
+            mizuroute=mizuroute_cfg,
+        )
+
+    start_year = int(_require(esp_cfg_raw, "start_year"))
+    end_year = int(_require(esp_cfg_raw, "end_year"))
+    if end_year < start_year:
+        raise ValueError("`esp.end_year` must be >= `esp.start_year`.")
+
+    forecast_length_days = int(_require(esp_cfg_raw, "forecast_length_days"))
+    if forecast_length_days <= 0:
+        raise ValueError("`esp.forecast_length_days` must be > 0.")
+
+    frequency_days_raw = esp_cfg_raw.get("frequency_days")
+    frequency_days = int(frequency_days_raw) if frequency_days_raw is not None else None
+    if frequency_days is not None and frequency_days <= 0:
+        raise ValueError("`esp.frequency_days` must be > 0 when provided.")
+
+    explicit_dates_raw = esp_cfg_raw.get("dates", []) or []
+    explicit_dates = _parse_esp_dates([str(v) for v in explicit_dates_raw])
+
+    months_raw = esp_cfg_raw.get("months", []) or []
+    months = tuple(int(m) for m in months_raw)
+    for month in months:
+        if month < 1 or month > 12:
+            raise ValueError("`esp.months` entries must be between 1 and 12.")
+
+    if frequency_days is None and not explicit_dates:
+        raise ValueError("ESP requires either `esp.frequency_days` or `esp.dates`.")
+
+    restart_file_filter = str(esp_cfg_raw.get("restart_file_filter", "restart"))
+    state_members_raw = esp_cfg_raw.get("state_members", []) or []
+    state_members = tuple(str(m) for m in state_members_raw)
+    deterministic = bool(esp_cfg_raw.get("deterministic", False))
+
+    deterministic_state = None
+    deterministic_state_raw = esp_cfg_raw.get("deterministic_state")
+    if deterministic_state_raw:
+        if not isinstance(deterministic_state_raw, dict):
+            raise TypeError("`esp.deterministic_state` must be a mapping.")
+        state_path = _normalize_path(
+            str(_require(deterministic_state_raw, "path")), base_dir, allow_relative=False
+        )
+        state_date = datetime.strptime(
+            str(_require(deterministic_state_raw, "date")), "%Y-%m-%d %H:%M"
+        )
+        state_member = deterministic_state_raw.get("member")
+        deterministic_state = DeterministicEspState(
+            path=Path(state_path),
+            date=state_date,
+            member=str(state_member) if state_member else None,
+        )
+
+    run_mizuroute = bool(esp_cfg_raw.get("run_mizuroute", False))
+    mizuroute_cfg = (
+        _load_mizuroute_config(esp_cfg_raw, base_dir) if run_mizuroute else None
+    )
+
+    return EspConfig(
+        enabled=True,
+        deterministic_state=deterministic_state,
+        deterministic=deterministic,
+        start_year=start_year,
+        end_year=end_year,
+        forecast_length_days=forecast_length_days,
+        frequency_days=frequency_days,
+        dates=explicit_dates,
+        months=months,
+        restart_file_filter=restart_file_filter,
+        state_members=state_members,
+        run_mizuroute=run_mizuroute,
+        mizuroute=mizuroute_cfg,
+    )
+
+
+def _load_mizuroute_config(esp_cfg_raw: Dict[str, Any], base_dir: Path) -> MizuRouteEspConfig:
+    mizu_raw = esp_cfg_raw.get("mizuroute")
+    if not isinstance(mizu_raw, dict):
+        raise ValueError("`esp.mizuroute` must be provided when `esp.run_mizuroute` is true.")
+    executable = _normalize_path(str(_require(mizu_raw, "executable")), base_dir, allow_relative=False)
+    control_file = _normalize_path(str(_require(mizu_raw, "control_file")), base_dir, allow_relative=False)
+    ancil_dir_raw = mizu_raw.get("ancil_dir") or str(Path(control_file).parent)
+    ancil_dir = _normalize_path(str(ancil_dir_raw), base_dir, allow_relative=False)
+    output_dir = _normalize_path(str(_require(mizu_raw, "output_dir")), base_dir, allow_relative=True)
+    restart_dir = _normalize_path(str(_require(mizu_raw, "restart_dir")), base_dir, allow_relative=True)
+    case_name = str(_require(mizu_raw, "case_name"))
+    restart_write = str(mizu_raw.get("restart_write", "monthly"))
+    param_nml_raw = mizu_raw.get("param_nml")
+    topology_nc_raw = mizu_raw.get("topology_nc")
+    param_nml = (
+        _normalize_path(str(param_nml_raw), base_dir, allow_relative=False)
+        if param_nml_raw
+        else None
+    )
+    topology_nc = (
+        _normalize_path(str(topology_nc_raw), base_dir, allow_relative=False)
+        if topology_nc_raw
+        else None
+    )
+    log_output = bool(mizu_raw.get("log_output", False))
+    return MizuRouteEspConfig(
+        executable=Path(executable),
+        control_file=Path(control_file),
+        ancil_dir=Path(ancil_dir),
+        output_dir=Path(output_dir),
+        restart_dir=Path(restart_dir),
+        case_name=case_name,
+        restart_write=restart_write,
+        param_nml=Path(param_nml) if param_nml else None,
+        topology_nc=Path(topology_nc) if topology_nc else None,
+        log_output=log_output,
     )

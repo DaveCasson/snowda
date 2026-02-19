@@ -2,6 +2,7 @@ case_name: chena_pysummada_minimal
 
 output_dir: /Users/dcasson/GitHub/snowda/outputs/chena_pysummada_minimal
 model_run_id: chena_pf
+run_mode: da
 
 base_file_manager: /ABSOLUTE/PATH/TO/fileManager.txt
 input_swe_hru_nc: /ABSOLUTE/PATH/TO/chena_swe_observations.nc
@@ -49,3 +50,36 @@ file_list_dir: /ABSOLUTE/PATH/TO/summa/settings
 # Optional: override SUMMA run period for single-run workflow
 #sim_start_time: "2010-10-01 00:00"
 #sim_end_time: "2011-10-01 00:00"
+
+# Optional: Ensemble Streamflow Prediction (ESP)
+# Historic-year traces are generated for each trigger date:
+# 1 historical year = 1 ESP member.
+#esp:
+#  enabled: true
+#  start_year: 2008
+#  end_year: 2018
+#  forecast_length_days: 30
+#  # Use one or both:
+#  frequency_days: 30
+#  dates:
+#    - "2011-04-01 00:00"
+#  # Optional month filter for frequency and explicit dates
+#  months: [4, 5, 6]
+#  restart_file_filter: restart
+#  # Optional: defaults to first DA member label (e.g., "001")
+#  state_members: ["001"]
+#  # For deterministic_esp, set either:
+#  # deterministic: true
+#  # deterministic_state:
+#  #   path: /ABSOLUTE/PATH/TO/state.nc
+#  #   date: "2011-04-01 00:00"
+#  #   member: "001"
+#  run_mizuroute: true
+#  mizuroute:
+#    executable: /ABSOLUTE/PATH/TO/mizuroute.exe
+#    control_file: /ABSOLUTE/PATH/TO/mizuroute.control
+#    ancil_dir: /ABSOLUTE/PATH/TO/mizuroute/settings
+#    output_dir: /ABSOLUTE/PATH/TO/mizuroute/output
+#    restart_dir: /ABSOLUTE/PATH/TO/mizuroute/restart
+#    case_name: Chena
+#    restart_write: monthly

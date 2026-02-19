@@ -1,0 +1,40 @@
+run_settings:
+  case_name: Ross
+  gru_chunk_size: 3
+  run_suffix: base
+  model_start_time: "2010-10-01 00:00"
+  model_end_time: "2014-09-01 23:00"
+  esp_start_year: 2010
+  esp_stop_year: 2018
+  forecast_length_days: 180
+  esp_months:
+    #- 1
+    #- 2
+    #- 3
+    - 4
+    #- 5
+    #- 6
+    #- 7
+    #- 8
+    #- 9
+    #- 10
+    #- 11
+    #- 12
+paths:
+  model_run_path: /Users/dcasson/Data/yukon_esp/ross_from_camille/model/output/
+summa:
+  summa_exe: /Users/dcasson/GitHub/summa/bin/summa.exe
+  summa_settings_path: /Users/dcasson/Data/yukon_esp/ross_from_camille/model/settings/SUMMA/
+  file_manager: /Users/dcasson/Data/yukon_esp/ross_from_camille/model/settings/SUMMA/fileManager.txt
+  summa_output_path: /Users/dcasson/Data/yukon_esp/ross_from_camille/model/output/summa_output/
+  summa_restart_path: /Users/dcasson/Data/yukon_esp/ross_from_camille/model/output/summa_output/
+  summa_cold_state: coldState.nc
+  attributes_nc: attributes.nc
+  restart_file_filter: restart
+mizuroute:
+  mizuroute_exe: /Users/dcasson/GitHub/mizuRoute/route/bin/mizuroute.exe
+  mizuroute_settings_path: /Users/dcasson/Data/yukon_esp/ross_from_camille/model/settings/mizuRoute/
+  mizuroute_control_file: mizuroute.control
+  mizuroute_output_path: /Users/dcasson/Data/yukon_esp/ross_from_camille/model/output/mizuroute_output/
+  mizuroute_restart_path: /Users/dcasson/Data/yukon_esp/ross_from_camille/model/output/mizuroute_output/
+  mizuroute_cold_state: mizuroute_cold_state.nc

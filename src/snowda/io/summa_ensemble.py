@@ -21,6 +21,23 @@ from snowda.utils.timing import timer
 log = get_logger(__name__)
 
 
+def _read_file_manager(path: Path) -> pd.DataFrame:
+    records = []
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            stripped = line.strip()
+            if not stripped or stripped.startswith("!"):
+                continue
+            parts = stripped.split(None, 1)
+            if len(parts) < 2:
+                continue
+            key, value = parts
+            records.append((key, value.strip()))
+    if not records:
+        raise ValueError(f"No valid entries found in file manager: {path}")
+    return pd.DataFrame(records, columns=["key", "value"]).set_index("key")
+
+
 def update_file_manager_option(file_manager_path: str | Path, key: str, value: str) -> None:
     """Update a key/value entry in a SUMMA file manager file."""
     path = Path(file_manager_path)
@@ -63,23 +80,20 @@ class EnsembleFileWriter:
 
     def write_ens_file_managers(self) -> list[str]:
         log.info("Writing ensemble file managers")
-        input_fm_df = pd.read_csv(
-            self.config.base_file_manager,
-            delim_whitespace=True,
-            index_col=0,
-            header=None,
-        )
+        input_fm_df = _read_file_manager(self.config.base_file_manager)
         fm_list: list[str] = []
+        deterministic_mode = self.config.run_mode in {"deterministic", "deterministic_esp"}
 
         for num_ens in range(1, self.config.num_ens + 1):
             output_fm_name = f"fileManagerEns{num_ens:03d}.txt"
             output_fm_path = self.config.file_manager_dir / output_fm_name
 
             output_fm_df = input_fm_df.copy()
-            output_fm_df.loc["forcingListFile", 1] = (
-                f"'forcingFileListEns{num_ens:03d}.txt'"
-            )
-            output_fm_df.loc["outFilePrefix", 1] = f"'{num_ens:03d}'"
+            if not (deterministic_mode and self.config.num_ens == 1):
+                output_fm_df.loc["forcingListFile", "value"] = (
+                    f"'forcingFileListEns{num_ens:03d}.txt'"
+                )
+            output_fm_df.loc["outFilePrefix", "value"] = f"'{num_ens:03d}'"
 
             output_fm_df.to_csv(output_fm_path, sep="\t", header=False)
             fm_list.append(str(output_fm_path))
@@ -87,6 +101,9 @@ class EnsembleFileWriter:
         return fm_list
 
     def write_forcing_file_list(self) -> None:
+        if self.config.run_mode in {"deterministic", "deterministic_esp"} and self.config.num_ens == 1:
+            log.info("Deterministic run: using forcingListFile from base file manager.")
+            return
         log.info("Writing forcing file lists")
         day_count = (self.config.end_time - self.config.start_time).days
         year_months = OrderedDict(

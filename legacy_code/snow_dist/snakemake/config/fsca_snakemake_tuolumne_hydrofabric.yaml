@@ -1,0 +1,29 @@
+run_options:
+  create_new_settings_files: True
+  calculate_sca: True
+  run_no_snow_hru: True
+paths:
+  model_run_path: /Users/drc858/Data/summa_snakemake/hydrofabric_tuolumne/summa/output
+  model_settings_path: /Users/drc858/Data/summa_snakemake/hydrofabric_tuolumne/summa/settings
+  forcing_data_path: /Users/drc858/Data/summa_snakemake/hydrofabric_tuolumne/summa/forcing
+  attribute_data_path: /Users/drc858/Data/snow_dist/summa/tuolomne_gru/model_settings
+cv_parameters:
+  read_from_file: False
+  file_name: cv.nc
+  # Select either lumped or distributed
+  parameters: lumped
+  lumped_settings:
+    cv: 0.9
+summa:
+  summa_exe: /Users/drc858/GitHub/summa/bin/summa.exe
+  file_manager: /Users/drc858/Data/summa_snakemake/hydrofabric_tuolumne/summa/settings/fileManager.txt
+  summa_output_path: /Users/drc858/Data/summa_snakemake/hydrofabric_tuolumne/summa/output
+  summa_fsca_filename: summa_fsca_result.nc
+  output_file_name: output_files.txt
+summa_no_snow_hru:
+  output_file_name: output_files_no_snow.txt
+logging:
+  logging_bool: True
+  logging_dir: /Users/drc858/Data/summa_snakemake/hydrofabric_tuolumne/summa/output
+  logging_file_name: log_file
+  logging_config: /Users/drc858/GitHub/snow_dist/settings/logger_config.ini
