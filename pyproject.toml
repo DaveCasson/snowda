@@ -21,6 +21,7 @@ dependencies = [
   "pyyaml",
   "matplotlib",
   "pandas",
+  "scores",
 ]
 
 [project.optional-dependencies]

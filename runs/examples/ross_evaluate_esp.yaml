@@ -1,0 +1,21 @@
+case_name: ross_esp_streamflow_eval
+description: ESP streamflow evaluation for Ross River (ensemble traces vs gauge CSV).
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_esp_streamflow_eval
+
+run_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_esp/20260917T022218Z
+obs_csv: /Users/dcasson/Data/snowda/summa/ross_lumped/observations/streamflow.csv
+thresholds_csv: /Users/dcasson/Data/snowda/summa/ross_lumped/thresholds/ross_thresholds.csv
+
+variable: IRFroutedRunoff
+resample: 1D
+seg: 0
+
+return_periods: [5, 10, 20]
+event_probability_threshold: 0.5
+exclude_verification_year: true
+crps_method: fair
+fair_brier: true
+# One CRPS and one CRPSS per forecast for the maximum discharge over the horizon,
+# referenced to observed peaks in the same calendar window of other years.
+score_peak: true

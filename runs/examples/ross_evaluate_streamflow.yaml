@@ -1,0 +1,13 @@
+case_name: ross_streamflow_eval
+description: Deterministic streamflow evaluation for Ross River (mizuRoute vs gauge CSV).
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_streamflow_eval
+
+sim_nc: /Users/dcasson/GitHub/snowda/outputs/ross_summa_deterministic/20260916T181206Z/mizuroute/mizuroute_deterministic.nc
+obs_csv: /Users/dcasson/Data/snowda/summa/ross_lumped/observations/streamflow.csv
+
+variable: IRFroutedRunoff
+resample: 1D
+seg: 0
+start_time: null
+end_time: null

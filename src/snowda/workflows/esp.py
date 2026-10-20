@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
+import calendar
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -15,6 +16,11 @@ from snowda.adapters.mizuroute import run_mizuroute, update_control_file
 from snowda.adapters.pysumma import get_file_manager_value, run_simulation
 from snowda.config.pysummada import EspConfig, PysummadaConfig
 from snowda.utils.logging import get_logger
+from snowda.workflows.summa_common import (
+    copy_optional_resource,
+    find_mizuroute_output,
+    find_summa_timestep_output,
+)
 
 log = get_logger(__name__)
 
@@ -38,6 +44,38 @@ def _replace_year(dt: datetime, year: int) -> datetime:
         # Leap-day rollover for non-leap years.
         max_day = pd.Timestamp(f"{year}-{dt.month:02d}-01").days_in_month
         return dt.replace(year=year, day=min(dt.day, max_day))
+
+
+def forecast_end_datetime(start: datetime, month: int, day: int) -> datetime:
+    """Next occurrence of ``MM-DD`` strictly after ``start``, keeping clock time."""
+    leap_anchor = datetime(
+        2000,
+        month,
+        day,
+        start.hour,
+        start.minute,
+        start.second,
+        start.microsecond,
+    )
+    candidate = _replace_year(leap_anchor, start.year)
+    if candidate <= start:
+        candidate = _replace_year(leap_anchor, start.year + 1)
+    return candidate
+
+
+def resolve_forecast_window_end(
+    start: datetime,
+    forecast_length_days: int | None,
+    forecast_end: tuple[int, int] | None,
+) -> datetime:
+    """Resolve the ESP trace end from a duration or a calendar ``MM-DD``."""
+    if forecast_end is not None:
+        return forecast_end_datetime(start, forecast_end[0], forecast_end[1])
+    if forecast_length_days is None:
+        raise ValueError(
+            "ESP config is missing both `forecast_end` and `forecast_length_days`."
+        )
+    return start + timedelta(days=forecast_length_days)
 
 
 def _replace_year_timestamp(ts: pd.Timestamp, year: int) -> pd.Timestamp:
@@ -108,13 +146,6 @@ def discover_restart_dates(
     return by_date
 
 
-def _find_summa_timestep_output(output_dir: Path) -> Path:
-    candidates = sorted(output_dir.glob("*_timestep.nc"), key=lambda p: p.stat().st_mtime)
-    if not candidates:
-        raise FileNotFoundError(f"No SUMMA timestep output found in {output_dir}")
-    return candidates[-1]
-
-
 def _shift_time_to_state_year(input_file: Path, state_year: int, output_file: Path) -> Path:
     with xr.open_dataset(input_file) as ds:
         ds = ds.load()
@@ -140,101 +171,139 @@ def _shift_time_to_state_year(input_file: Path, state_year: int, output_file: Pa
     return output_file
 
 
-def _find_mizuroute_output(output_dir: Path, case_name: str, sim_start: datetime) -> Path:
-    # mizuRoute output naming varies across setups; prefer canonical path, then fallback.
-    canonical = output_dir / f"{case_name}.h.{sim_start.strftime('%Y-%m-%d')}-00000.nc"
-    if canonical.exists():
-        return canonical
-    globbed = sorted(output_dir.glob(f"{case_name}.h.*.nc"), key=lambda p: p.stat().st_mtime)
-    if globbed:
-        return globbed[-1]
-    raise FileNotFoundError(f"Could not find mizuRoute output in {output_dir}")
-
-
 def _trace_output_dir(run_dir: Path, member: str, state_date_key: str, trace_year: int) -> Path:
     return run_dir / "esp" / member / state_date_key / str(trace_year)
 
 
-def _locate_resource(
-    explicit: Path | None,
-    fallback_dirs: Sequence[Path],
-    filename: str,
-) -> Path | None:
-    if explicit:
-        return explicit
-    for folder in fallback_dirs:
-        candidate = folder / filename
-        if candidate.exists():
-            return candidate
-    return None
+def _member_label(member: str | None) -> str:
+    return member if member else "default"
 
 
-def _copy_optional_resource(
-    source: Path | None,
-    fallback_dirs: Sequence[Path],
-    destination: Path,
-    label: str,
-    required: bool = False,
-) -> None:
-    resource = _locate_resource(source, fallback_dirs, destination.name)
-    if not resource:
-        if required:
-            raise FileNotFoundError(
-                f"Could not locate required {label} (looked in {fallback_dirs})."
-            )
-        return
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(resource, destination)
+def _esp_state_root(run_dir: Path) -> Path:
+    return run_dir / "esp_states"
+
+
+def _esp_summa_state_dir(run_dir: Path, member: str | None) -> Path:
+    return _esp_state_root(run_dir) / "summa" / _member_label(member)
+
+
+def _esp_mizuroute_state_dir(run_dir: Path, member: str | None) -> Path:
+    return _esp_state_root(run_dir) / "mizuroute" / _member_label(member)
+
+
+def _esp_interval_dir(run_dir: Path, member: str | None, trigger: datetime) -> Path:
+    return run_dir / "esp_intervals" / _member_label(member) / trigger.strftime("%Y%m%d%H")
 
 
 def _strip_quotes(value: str) -> str:
     return str(value).strip().strip("'\"")
 
 
+def _read_control_value(control_file: Path, key: str) -> str | None:
+    token = f"<{key}>"
+    try:
+        lines = control_file.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return None
+    for line in lines:
+        stripped = line.strip()
+        if not stripped.startswith(token):
+            continue
+        tail = stripped[len(token) :].strip()
+        if not tail:
+            return None
+        return tail.split()[0].strip()
+    return None
+
+
+def _seed_state_file(destination_dir: Path, source: Path) -> Path:
+    destination_dir.mkdir(parents=True, exist_ok=True)
+    dest = destination_dir / source.name
+    if not dest.exists():
+        if not source.exists():
+            raise FileNotFoundError(f"Missing SUMMA init state file: {source}")
+        shutil.copy2(source, dest)
+    return dest
+
+
+def _find_restart_for_trigger(
+    state_dir: Path,
+    restart_file_filter: str,
+    trigger_key: str,
+    member: str | None,
+) -> Path:
+    matches: list[tuple[int, Path]] = []
+    for candidate in sorted(state_dir.glob("*.nc")):
+        name = candidate.name
+        if restart_file_filter not in name:
+            continue
+        match = _RESTART_DATE_RE.search(name)
+        if not match or match.group(1) != trigger_key:
+            continue
+        if member and name.startswith(f"{member}_"):
+            matches.append((1, candidate))
+        else:
+            matches.append((0, candidate))
+    if not matches:
+        raise FileNotFoundError(
+            f"Expected SUMMA restart for {trigger_key} in {state_dir} (filter={restart_file_filter})."
+        )
+    matches.sort(key=lambda item: (item[0], item[1].stat().st_mtime), reverse=True)
+    return matches[0][1]
+
+
 def _ensure_summa_restart(
     cfg: PysummadaConfig,
-    run_dir: Path,
     member: str,
     trigger: datetime,
     *,
+    sim_start: datetime,
     state_path: Path,
+    init_condition_file: str,
+    base_state_path: Path,
+    output_dir: Path,
     restart_file_filter: str,
 ) -> Path:
     trigger_key = trigger.strftime("%Y%m%d%H")
-    restarts = discover_restart_dates(state_path, restart_file_filter, member)
-    existing = restarts.get(trigger_key)
+    try:
+        existing = _find_restart_for_trigger(state_path, restart_file_filter, trigger_key, member)
+    except FileNotFoundError:
+        existing = None
     if existing:
+        log.info("Found SUMMA restart for %s at %s", trigger_key, existing)
         return existing
-    log.info("SUMMA restart missing for %s; running pre-ESP SUMMA to %s.", member, trigger)
-    init_cond = Path(
-        _strip_quotes(get_file_manager_value(str(cfg.base_file_manager), "initConditionFile"))
-    )
-    pre_output = run_dir / "esp_pre" / "summa" / member / trigger.strftime("%Y%m%d%H")
-    pre_output.mkdir(parents=True, exist_ok=True)
+    init_source = base_state_path / init_condition_file
+    _seed_state_file(state_path, init_source)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    freq_restart = None
+    if cfg.summa_args:
+        freq_restart = cfg.summa_args.get("-r") or cfg.summa_args.get("freq_restart")
+    if not freq_restart:
+        log.warning("SUMMA freq_restart not set; defaulting to daily restarts.")
+        freq_restart = "d"
     sim_config = {
         "manager": {
-            "simStartTime": cfg.start_time.strftime(SUMMA_TIME_FORMAT),
+            "simStartTime": sim_start.strftime(SUMMA_TIME_FORMAT),
             "simEndTime": trigger.strftime(SUMMA_TIME_FORMAT),
             "statePath": str(state_path) + "/",
-            "initConditionFile": init_cond.name,
-            "outputPath": str(pre_output) + "/",
+            "initConditionFile": init_condition_file,
+            "outputPath": str(output_dir) + "/",
         }
     }
     run_simulation(
         str(cfg.summa_exe),
         str(cfg.base_file_manager),
-        run_suffix=f"preesp_{member}_{trigger.strftime('%Y%m%d%H')}",
+        run_suffix=f"esp_interval_{member}_{trigger.strftime('%Y%m%d%H')}",
+        freq_restart=freq_restart,
         write_config=True,
         update_manager=False,
         log_stdout=cfg.summa_log,
         sim_config=sim_config,
     )
-    restarts = discover_restart_dates(state_path, restart_file_filter, member)
-    restart_path = restarts.get(trigger_key)
-    if not restart_path:
-        raise FileNotFoundError(
-            f"Expected SUMMA restart for {trigger_key} after pre-ESP run."
-        )
+    restart_path = _find_restart_for_trigger(
+        state_path, restart_file_filter, trigger_key, member
+    )
+    log.info("Wrote SUMMA restart for %s at %s", trigger_key, restart_path)
     return restart_path
 
 
@@ -242,58 +311,105 @@ def _mizuroute_restart_name(case_name: str, trigger: datetime) -> str:
     return f"{case_name}.r.{trigger.strftime('%Y-%m-%d')}-00000.nc"
 
 
+def _mizuroute_sim_end(
+    base_end: datetime,
+    trace_year: int | None = None,
+    *,
+    hour_offset: int = 1,
+    leap_day_adjust: bool = True,
+) -> datetime:
+    sim_end = base_end - timedelta(hours=hour_offset)
+    if leap_day_adjust and trace_year is not None and calendar.isleap(trace_year):
+        sim_end -= timedelta(days=1)
+    return sim_end
+
+
 def _ensure_mizuroute_restart(
     cfg: PysummadaConfig,
     mizu,
-    run_dir: Path,
     trigger: datetime,
     *,
     summa_output: Path,
+    sim_start: datetime,
+    output_dir: Path,
+    restart_dir: Path,
+    restart_in: Path | None = None,
 ) -> Path:
-    restart_path = Path(mizu.restart_dir) / _mizuroute_restart_name(mizu.case_name, trigger)
+    restart_path = Path(restart_dir) / _mizuroute_restart_name(mizu.case_name, trigger)
+    restart_dir = Path(restart_dir)
+    restart_dir.mkdir(parents=True, exist_ok=True)
     if restart_path.exists():
+        log.info("Found mizuRoute restart for %s at %s", trigger, restart_path)
         return restart_path
-    log.info("mizuRoute restart missing for %s; running pre-ESP mizuRoute.", trigger)
+    log.info("mizuRoute restart missing for %s; running interval mizuRoute.", trigger)
     control_parent = Path(mizu.control_file).parent
-    pre_output = run_dir / "esp_pre" / "mizuroute" / trigger.strftime("%Y%m%d%H")
-    pre_output.mkdir(parents=True, exist_ok=True)
-    _copy_optional_resource(
+    output_dir.mkdir(parents=True, exist_ok=True)
+    copy_optional_resource(
         mizu.param_nml,
         [mizu.ancil_dir, control_parent],
-        pre_output / "param.nml.default",
+        output_dir / "param.nml.default",
         "mizuRoute param.nml.default",
         required=True,
     )
-    _copy_optional_resource(
+    copy_optional_resource(
+        mizu.param_nml,
+        [mizu.ancil_dir, control_parent],
+        summa_output.parent / "param.nml.default",
+        "mizuRoute param.nml.default",
+        required=True,
+    )
+    copy_optional_resource(
         mizu.topology_nc,
         [mizu.ancil_dir, control_parent],
-        pre_output / "topology.nc",
+        output_dir / "topology.nc",
         "mizuRoute topology.nc",
     )
-    control_file = pre_output / "mizuroute_pre_esp.control"
+    if restart_in is None:
+        init_state_name = _read_control_value(Path(mizu.control_file), "fname_state_in")
+        if init_state_name:
+            copy_optional_resource(
+                None,
+                [mizu.ancil_dir, control_parent],
+                restart_dir / init_state_name,
+                "mizuRoute initial state file",
+                required=True,
+            )
+        else:
+            log.warning(
+                "mizuRoute initial state name not found in %s; restart_dir=%s",
+                mizu.control_file,
+                restart_dir,
+            )
+    control_file = output_dir / "mizuroute_interval.control"
     control_settings = {
         "fname_qsim": summa_output.name,
         "case_name": mizu.case_name,
-        "sim_start": cfg.start_time.strftime("%Y-%m-%d %H:%M:%S"),
-        "sim_end": (trigger - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S"),
+        "sim_start": sim_start.strftime("%Y-%m-%d %H:%M:%S"),
+        "sim_end": _mizuroute_sim_end(trigger).strftime("%Y-%m-%d %H:%M:%S"),
         "ancil_dir": str(mizu.ancil_dir) + "/",
         "input_dir": str(summa_output.parent) + "/",
-        "output_dir": str(pre_output) + "/",
-        "restart_dir": str(mizu.restart_dir) + "/",
+        "output_dir": str(output_dir) + "/",
+        "restart_dir": str(restart_dir) + "/",
         "restart_write": mizu.restart_write,
     }
+    if restart_in:
+        control_settings["fname_state_in"] = restart_in.name
     update_control_file(mizu.control_file, control_file, control_settings)
     run_mizuroute(mizu.executable, control_file, log_stdout=mizu.log_output)
     if not restart_path.exists():
         raise FileNotFoundError(
-            f"Expected mizuRoute restart at {restart_path} after pre-ESP run."
+            f"Expected mizuRoute restart at {restart_path} after interval run."
         )
+    log.info("Wrote mizuRoute restart for %s at %s", trigger, restart_path)
     return restart_path
 
 
-def run_summa_esp(cfg: PysummadaConfig, esp: EspConfig, run_dir: Path) -> list[EspRunRecord]:
+def run_esp_traces(cfg: PysummadaConfig, esp: EspConfig, run_dir: Path) -> list[EspRunRecord]:
     state_path = Path(
         get_file_manager_value(str(cfg.base_file_manager), "statePath").replace("'", "")
+    )
+    init_condition_file = _strip_quotes(
+        get_file_manager_value(str(cfg.base_file_manager), "initConditionFile")
     )
     trigger_dates = resolve_esp_trigger_dates(
         cfg.start_time,
@@ -306,98 +422,82 @@ def run_summa_esp(cfg: PysummadaConfig, esp: EspConfig, run_dir: Path) -> list[E
     def _resolve_member() -> str:
         if esp.state_members:
             return esp.state_members[0]
-        return cfg.ens_label_array[0]
-
-    state_entries: list[tuple[str, str, Path, datetime]] = []
-
-    if esp.deterministic_state:
-        member = esp.deterministic_state.member or _resolve_member()
-        state_dt = esp.deterministic_state.date
-        state_entries.append(
-            (
-                member,
-                state_dt.strftime("%Y%m%d%H"),
-                esp.deterministic_state.path,
-                state_dt,
+        try:
+            return _strip_quotes(
+                get_file_manager_value(str(cfg.base_file_manager), "outFilePrefix")
             )
-        )
-    elif esp.deterministic:
-        member = _resolve_member()
-        if not trigger_dates:
-            log.warning("ESP deterministic run requires trigger dates.")
-        summa_output_dir = Path(
-            get_file_manager_value(str(cfg.base_file_manager), "outputPath").replace("'", "")
-        )
-        summa_timestep = _find_summa_timestep_output(summa_output_dir)
-        for trigger in trigger_dates:
-            state_file = _ensure_summa_restart(
-                cfg,
-                run_dir,
-                member,
-                trigger,
-                state_path=state_path,
-                restart_file_filter=esp.restart_file_filter,
-            )
-            if esp.run_mizuroute and esp.mizuroute:
-                _ensure_mizuroute_restart(
-                    cfg, esp.mizuroute, run_dir, trigger, summa_output=summa_timestep
-                )
-            state_entries.append(
-                (
-                    member,
-                    trigger.strftime("%Y%m%d%H"),
-                    state_file,
-                    trigger,
-                )
-            )
-    else:
-        state_members = list(esp.state_members) if esp.state_members else [cfg.ens_label_array[0]]
-        for member in state_members:
-            restarts = discover_restart_dates(
-                state_path, esp.restart_file_filter, member
-            )
-            if not restarts:
-                log.warning(
-                    "No restart files found for ESP member %s in %s", member, state_path
-                )
-                continue
-            for state_date_key, state_file in restarts.items():
-                state_dt = pd.to_datetime(state_date_key, format="%Y%m%d%H")
-                state_entries.append((member, state_date_key, state_file, state_dt))
+        except Exception:
+            return cfg.ens_label_array[0]
 
-    if not state_entries:
-        log.warning("No ESP state entries available.")
-        return []
-
-    if not trigger_dates and esp.deterministic:
-        trigger_dates = list({entry[3] for entry in state_entries})
+    trigger_dates = sorted(trigger_dates)
     if not trigger_dates:
         log.warning("ESP enabled but no trigger dates resolved.")
         return []
 
     records: list[EspRunRecord] = []
-    for member, state_date_key, state_file, _ in state_entries:
-        for trigger in trigger_dates:
-            if esp.deterministic and trigger.strftime("%Y%m%d%H") != state_date_key:
-                continue
-            if not esp.deterministic and trigger.strftime("%Y%m%d%H") != state_date_key:
-                continue
+    state_members = list(esp.state_members) if esp.state_members else [_resolve_member()]
+    for member in state_members:
+        if esp.deterministic_state:
+            log.warning(
+                "ESP deterministic_state provided; incremental ESP sequencing ignores external states."
+            )
+        summa_state_dir = _esp_summa_state_dir(run_dir, member)
+        mizu_state_dir = _esp_mizuroute_state_dir(run_dir, member)
+        current_start = cfg.start_time
+        init_state_path = _seed_state_file(summa_state_dir, state_path / init_condition_file)
+        init_condition_name = init_state_path.name
+        last_mizu_restart: Path | None = None
 
+        for trigger in trigger_dates:
+            if trigger < current_start:
+                log.warning("Skipping ESP trigger %s before %s.", trigger, current_start)
+                continue
+            interval_dir = _esp_interval_dir(run_dir, member, trigger)
+            summa_interval_output = interval_dir / "summa"
+            state_file = _ensure_summa_restart(
+                cfg,
+                member,
+                trigger,
+                sim_start=current_start,
+                state_path=summa_state_dir,
+                init_condition_file=init_condition_name,
+                base_state_path=state_path,
+                output_dir=summa_interval_output,
+                restart_file_filter=esp.restart_file_filter,
+            )
+            if esp.run_mizuroute and esp.mizuroute:
+                summa_timestep = find_summa_timestep_output(summa_interval_output)
+                mizu_interval_output = interval_dir / "mizuroute"
+                last_mizu_restart = _ensure_mizuroute_restart(
+                    cfg,
+                    esp.mizuroute,
+                    trigger,
+                    summa_output=summa_timestep,
+                    sim_start=current_start,
+                    output_dir=mizu_interval_output,
+                    restart_dir=mizu_state_dir,
+                    restart_in=last_mizu_restart,
+                )
+
+            state_date_key = trigger.strftime("%Y%m%d%H")
             for trace_year in range(esp.start_year, esp.end_year + 1):
                 trace_start = _replace_year(trigger, trace_year)
-                trace_end = trace_start + timedelta(days=esp.forecast_length_days)
+                trace_end = resolve_forecast_window_end(
+                    trace_start, esp.forecast_length_days, esp.forecast_end
+                )
                 base_start = trigger
-                base_end = base_start + timedelta(days=esp.forecast_length_days)
+                base_end = resolve_forecast_window_end(
+                    base_start, esp.forecast_length_days, esp.forecast_end
+                )
                 trace_output_dir = _trace_output_dir(run_dir, member, state_date_key, trace_year)
                 trace_output_dir.mkdir(parents=True, exist_ok=True)
 
                 run_suffix = f"esp_state{state_date_key}_year{trace_year}"
-                state_path_for_sim = state_file.parent if esp.deterministic_state else state_path
                 sim_config = {
                     "manager": {
                         "simStartTime": trace_start.strftime(SUMMA_TIME_FORMAT),
                         "simEndTime": trace_end.strftime(SUMMA_TIME_FORMAT),
-                        "statePath": str(state_path_for_sim) + "/",
+                        "statePath": str(summa_state_dir) + "/",
                         "initConditionFile": state_file.name,
                         "outputPath": str(trace_output_dir) + "/",
                     }
@@ -412,7 +512,7 @@ def run_summa_esp(cfg: PysummadaConfig, esp: EspConfig, run_dir: Path) -> list[E
                     sim_config=sim_config,
                 )
 
-                raw_summa_output = _find_summa_timestep_output(trace_output_dir)
+                raw_summa_output = find_summa_timestep_output(trace_output_dir)
                 mizu_output_dir = trace_output_dir / "mizuroute"
                 mizu_output_dir.mkdir(parents=True, exist_ok=True)
                 shifted_summa_output = mizu_output_dir / f"summa_{trace_year}.nc"
@@ -422,14 +522,14 @@ def run_summa_esp(cfg: PysummadaConfig, esp: EspConfig, run_dir: Path) -> list[E
                 if esp.run_mizuroute and esp.mizuroute:
                     mizu = esp.mizuroute
                     control_parent = Path(mizu.control_file).parent
-                    _copy_optional_resource(
+                    copy_optional_resource(
                         mizu.param_nml,
                         [mizu.ancil_dir, control_parent],
                         mizu_output_dir / "param.nml.default",
                         "mizuRoute param.nml.default",
                         required=True,
                     )
-                    _copy_optional_resource(
+                    copy_optional_resource(
                         mizu.topology_nc,
                         [mizu.ancil_dir, control_parent],
                         mizu_output_dir / "topology.nc",
@@ -438,19 +538,25 @@ def run_summa_esp(cfg: PysummadaConfig, esp: EspConfig, run_dir: Path) -> list[E
                     control_file = mizu_output_dir / f"mizuroute_{trace_year}.control"
                     control_settings = {
                         "fname_qsim": shifted_summa_output.name,
-                        "fname_state_in": f"{mizu.case_name}.r.{base_start.strftime('%Y-%m-%d')}-00000.nc",
+                        "fname_state_in": _mizuroute_restart_name(mizu.case_name, base_start),
                         "case_name": mizu.case_name,
                         "sim_start": base_start.strftime("%Y-%m-%d %H:%M:%S"),
-                        "sim_end": (base_end - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S"),
+                        "sim_end": _mizuroute_sim_end(
+                            base_end,
+                            trace_year,
+                            leap_day_adjust=esp.forecast_end is None,
+                        ).strftime("%Y-%m-%d %H:%M:%S"),
                         "ancil_dir": str(mizu.ancil_dir) + "/",
                         "input_dir": str(shifted_summa_output.parent) + "/",
                         "output_dir": str(mizu_output_dir) + "/",
-                        "restart_dir": str(mizu.restart_dir) + "/",
+                        "restart_dir": str(mizu_state_dir) + "/",
                         "restart_write": mizu.restart_write,
                     }
                     update_control_file(mizu.control_file, control_file, control_settings)
                     run_mizuroute(mizu.executable, control_file, log_stdout=mizu.log_output)
-                    routed_generated = _find_mizuroute_output(mizu_output_dir, mizu.case_name, trace_start)
+                    routed_generated = find_mizuroute_output(
+                        mizu_output_dir, mizu.case_name, trace_start
+                    )
                     mizuroute_output = mizu_output_dir / f"mizuroute_{trace_year}.nc"
                     routed_generated.rename(mizuroute_output)
 
@@ -463,4 +569,6 @@ def run_summa_esp(cfg: PysummadaConfig, esp: EspConfig, run_dir: Path) -> list[E
                         mizuroute_output=str(mizuroute_output) if mizuroute_output else None,
                     )
                 )
+            current_start = trigger
+            init_condition_name = state_file.name
     return records

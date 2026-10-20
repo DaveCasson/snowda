@@ -1,14 +1,14 @@
 # Implementation To-Do
 
 ## Implementation
-- Fill in absolute paths in `runs/examples/chena_pysummada_minimal.yaml` and `runs/examples/chena_summa_fsca.yaml`.
+- Fill in absolute paths in `runs/examples/ross_summa_da.yaml` and `runs/examples/chena_summa_fsca.yaml`.
 - Verify SUMMA outputs include `scalarSnowDepth` (or set `snow_depth_var` accordingly for Helbig).
 - Ensure dependencies are installed: `pint`, `pint-xarray`, `pysumma`, `netCDF4`, `scipy`.
 - Confirm fSCA observation netCDF schema: `time`, `hru`, `fsca` variable.
 
 ## Integration Checks
 - Run `python -m snowda.workflows.run_summa_fsca runs/examples/chena_summa_fsca.yaml`.
-- Run `python -m snowda.workflows.run_pysummada_pf runs/examples/chena_pysummada_minimal.yaml`.
+- Run `python -m snowda.workflows.run_summa_da runs/examples/ross_summa_da.yaml`.
 - Verify per-timestep outputs:
   - fSCA inputs/outputs per ensemble are generated.
   - `fsca_weights.csv` is created.

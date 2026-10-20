@@ -13,6 +13,24 @@ def _pad_field(value: str, width: int = 20) -> str:
     return f"{value:{width}}"
 
 
+def read_control_value(control_file: str | Path, key: str) -> str | None:
+    """Return the first whitespace-delimited value for `<key>` in a control file."""
+    token = f"<{key}>"
+    try:
+        lines = Path(control_file).read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return None
+    for line in lines:
+        stripped = line.strip()
+        if not stripped.startswith(token):
+            continue
+        tail = stripped[len(token) :].strip()
+        if not tail:
+            return None
+        return tail.split()[0].strip().strip("'\"")
+    return None
+
+
 def update_control_file(
     template_path: str | Path,
     output_path: str | Path,
@@ -44,13 +62,17 @@ def update_control_file(
                 continue
             prefix_len = len(line) - len(line.lstrip(" "))
             comment = ""
-            if "!" in line:
+            has_bang = "!" in line
+            if has_bang:
                 comment = line.split("!", 1)[1].strip()
             key_field = token.ljust(30)
             value_field = _pad_field(str(value))
             rewritten = f"{' ' * prefix_len}{key_field}{value_field}"
-            if comment:
-                rewritten += f"! {comment}"
+            if has_bang:
+                if comment:
+                    rewritten += f"! {comment}"
+                else:
+                    rewritten += "!"
             break
         updated_lines.append(rewritten)
 

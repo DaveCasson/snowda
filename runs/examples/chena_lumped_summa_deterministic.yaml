@@ -1,0 +1,31 @@
+case_name: chena_summa_deterministic
+description: Deterministic SUMMA run for chena River (no DA, no ESP).
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/chena_summa_deterministic
+log_file: logs/chena_summa_deterministic.log
+
+model_run_id: chena_summa_deterministic
+base_file_manager: /Users/dcasson/Data/snowda/summa/chena_lumped/settings/SUMMA/fileManager.txt
+forcing_file_base: /Users/dcasson/Data/snowda/summa/chena_lumped/forcing/Chena_
+num_ens: 1
+
+start_time: "2011-10-01 00:00"
+end_time: "2018-10-01 00:00"
+time_delta_days: 1
+
+summa_exe: /Users/dcasson/GitHub/summa/bin/summa.exe
+summa_log: false
+
+summa_args:
+  "-m": /Users/dcasson/Data/snowda/summa/chena_lumped/settings/SUMMA/fileManager.txt
+
+file_manager_dir: /Users/dcasson/Data/snowda/summa/chena_lumped/settings/SUMMA
+file_list_dir: /Users/dcasson/Data/snowda/summa/chena_lumped/settings/SUMMA
+
+mizuroute:
+  executable: /Users/dcasson/GitHub/mizuRoute/route/bin/route_runoff.exe
+  control_file: /Users/dcasson/Data/snowda/summa/chena_lumped/settings/mizuRoute/mizuroute.control
+  ancil_dir: /Users/dcasson/Data/snowda/summa/chena_lumped/settings/mizuRoute/
+  case_name: chena
+  restart_write: monthly
+  log_output: false

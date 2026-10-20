@@ -1,0 +1,67 @@
+case_name: ross_summa_da_test
+description: >
+  Short Ross SWE assimilation test. Two historic ensemble members run to one
+  assimilation date, then ESP traces that date for two historical years.
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_da_test
+log_file: logs/ross_summa_da_test.log
+
+model_run_id: ross_summa_da_test
+base_file_manager: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
+forcing_file_base: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/Ross_
+ensemble_forcing_mode: historic
+ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensemble
+num_ens: 10
+
+start_time: "2013-10-01 00:00"
+end_time: "2014-05-01 00:00"
+time_delta_days: 1
+
+summa_exe: /Users/dcasson/GitHub/summa/bin/summa.exe
+summa_log: true
+
+pf_scheme: sir
+n_eff_threshold: 0.5
+assimilation_mode: swe
+
+# Daily restarts so the 1 March state exists for the assimilation update.
+summa_args:
+  "-m": /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
+  "-r": d
+
+assimilation:
+  dates:
+    - "2014-03-01 00:00"
+    - "2014-04-01 00:00"
+    - "2014-05-01 00:00"
+  obs_window_days: 15
+  swe_nc: /Users/dcasson/GitHub/snowda/outputs/obs_qm/ross_norswe_model_equivalent.nc
+  swe_var: swe_model_equivalent
+  summa_swe_var: scalarSWE
+  z_var: 0.02
+
+file_manager_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
+file_list_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
+
+# SUMMA writes 001_YYYY_MM_DD_timestep.nc under <run_dir>/summa.
+# mizuRoute ESP traces write under <run_dir>/esp/.
+summa_output_suffix: timestep.nc
+
+esp:
+  start_year: 2010
+  end_year: 2018
+  forecast_length_days: 14
+  dates:
+    - "2014-03-01 00:00"
+    - "2014-04-01 00:00"
+    - "2014-05-01 00:00"
+  restart_file_filter: restart
+  state_members: ["001"]
+  run_mizuroute: true
+  mizuroute:
+    executable: /Users/dcasson/GitHub/mizuRoute/route/bin/route_runoff.exe
+    control_file: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/mizuroute.control
+    ancil_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/
+    case_name: Ross
+    restart_write: monthly
+    log_output: false

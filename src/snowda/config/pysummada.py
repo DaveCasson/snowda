@@ -6,6 +6,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
 from snowda.config.loader import load_config
+from snowda.utils.logging import get_logger
+
+log = get_logger(__name__)
 
 
 def _normalize_path(raw: str, base_dir: Path, *, allow_relative: bool) -> Path:
@@ -24,13 +27,30 @@ def _require(cfg: Dict[str, Any], key: str) -> Any:
     return val
 
 
+def default_output_dir(case_name: str) -> Path:
+    """``<repo>/outputs/<case_name>``; timestamped run folders are created under this."""
+    repo_root = Path(__file__).resolve().parents[3]
+    return repo_root / "outputs" / case_name
+
+
+@dataclass(frozen=True)
+class StreamflowEvaluationConfig:
+    obs_csv: Path
+    variable: str = "IRFroutedRunoff"
+    resample: Optional[str] = "1D"
+    seg: int = 0
+    reach_id: Any | None = None
+    date_col: Optional[str] = None
+    flow_col: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+
+
 @dataclass(frozen=True)
 class MizuRouteEspConfig:
     executable: Path
     control_file: Path
     ancil_dir: Path
-    output_dir: Path
-    restart_dir: Path
     case_name: str
     restart_write: str
     param_nml: Path | None = None
@@ -46,13 +66,28 @@ class DeterministicEspState:
 
 
 @dataclass(frozen=True)
+class AssimilationConfig:
+    """Dated SWE assimilation schedule. Dates are explicit; frequency is optional."""
+
+    dates: tuple[datetime, ...]
+    frequency_days: Optional[int]
+    months: tuple[int, ...]
+    obs_window_days: int
+    swe_nc: Path
+    swe_var: str
+    summa_swe_var: str
+    z_var: float
+
+
+@dataclass(frozen=True)
 class EspConfig:
     enabled: bool
     deterministic_state: Optional[DeterministicEspState]
     deterministic: bool
     start_year: int
     end_year: int
-    forecast_length_days: int
+    forecast_length_days: Optional[int]
+    forecast_end: Optional[tuple[int, int]]
     frequency_days: Optional[int]
     dates: tuple[datetime, ...]
     months: tuple[int, ...]
@@ -71,6 +106,9 @@ class PysummadaConfig:
     input_swe_hru_nc: Optional[Path]
     initial_state: Optional[str]
     forcing_file_base: str
+    ensemble_forcing_mode: str
+    ensemble_forcing_dir: Optional[Path]
+    ensemble_members: Optional[tuple[str, ...]]
     job_list_filename: Optional[str]
     num_ens: int
     start_time: datetime
@@ -78,7 +116,7 @@ class PysummadaConfig:
     time_delta: timedelta
     summa_exe: Path
     summa_log: bool
-    pf_resample: bool
+    pf_scheme: str
     n_eff_threshold: float
     summa_args: Dict[str, str]
     file_manager_dir: Path
@@ -93,11 +131,12 @@ class PysummadaConfig:
     helbig_settings: Optional[Dict[str, Any]]
     snow_depth_var: Optional[str]
     assimilation_mode: Optional[str]
+    assimilation: Optional[AssimilationConfig]
     swe_weight: Optional[float]
     fsca_weight: Optional[float]
     esp: Optional[EspConfig]
-    run_mode: str
-    run_da: bool
+    mizuroute: Optional[MizuRouteEspConfig]
+    evaluation: Optional[StreamflowEvaluationConfig]
 
     @property
     def model_result_output_dir(self) -> Path:
@@ -105,25 +144,23 @@ class PysummadaConfig:
 
     @property
     def ens_label_array(self) -> list[str]:
+        if self.ensemble_members:
+            return list(self.ensemble_members)
         return [f"{idx + 1:03d}" for idx in range(self.num_ens)]
 
 
 def load_pysummada_config(config_path: str | Path) -> PysummadaConfig:
     cfg: Dict[str, Any] = load_config(config_path)
     base_dir = Path(cfg.get("_meta", {}).get("config_dir", Path(config_path).resolve().parent))
-
-    run_mode, explicit_run_mode = _resolve_run_mode(cfg)
-    esp_cfg_raw = cfg.get("esp")
-    run_da = bool(cfg.get("run_da", True))
-    esp_cfg_raw = _apply_run_mode_constraints(
-        run_mode, esp_cfg_raw, explicit_run_mode=explicit_run_mode
-    )
-    run_da = _run_da_for_mode(run_mode) if explicit_run_mode else run_da
-    cfg["run_da"] = run_da
-    cfg["esp"] = esp_cfg_raw
+    _warn_ignored_legacy_keys(cfg)
 
     case_name = str(_require(cfg, "case_name"))
-    output_dir = _normalize_path(str(_require(cfg, "output_dir")), base_dir, allow_relative=True)
+    output_dir_raw = cfg.get("output_dir")
+    if output_dir_raw:
+        output_dir = _normalize_path(str(output_dir_raw), base_dir, allow_relative=True)
+    else:
+        output_dir = default_output_dir(case_name)
+        log.info("output_dir not set; defaulting to %s", output_dir)
     model_run_id = str(_require(cfg, "model_run_id"))
     base_file_manager = _normalize_path(
         str(_require(cfg, "base_file_manager")), base_dir, allow_relative=False
@@ -135,9 +172,41 @@ def load_pysummada_config(config_path: str | Path) -> PysummadaConfig:
         else None
     )
     initial_state = cfg.get("initial_state")
-    forcing_file_base = str(_require(cfg, "forcing_file_base"))
+    ensemble_forcing_mode = str(cfg.get("ensemble_forcing_mode", "monthly"))
+    if ensemble_forcing_mode not in {"monthly", "historic"}:
+        raise ValueError(
+            f"Unsupported ensemble_forcing_mode '{ensemble_forcing_mode}'. "
+            "Use 'monthly' or 'historic'."
+        )
+    ensemble_forcing_dir_raw = cfg.get("ensemble_forcing_dir")
+    if ensemble_forcing_mode == "historic":
+        if not ensemble_forcing_dir_raw:
+            raise ValueError(
+                "`ensemble_forcing_dir` is required when `ensemble_forcing_mode` is historic."
+            )
+        ensemble_forcing_dir = _normalize_path(
+            str(ensemble_forcing_dir_raw), base_dir, allow_relative=False
+        )
+        forcing_file_base = str(cfg.get("forcing_file_base") or "")
+    else:
+        ensemble_forcing_dir = (
+            _normalize_path(str(ensemble_forcing_dir_raw), base_dir, allow_relative=False)
+            if ensemble_forcing_dir_raw
+            else None
+        )
+        forcing_file_base = str(_require(cfg, "forcing_file_base"))
+    ensemble_members_raw = cfg.get("ensemble_members")
+    ensemble_members = (
+        tuple(str(member) for member in ensemble_members_raw)
+        if ensemble_members_raw
+        else None
+    )
     job_list_filename = cfg.get("job_list_filename")
     num_ens = int(_require(cfg, "num_ens"))
+    if ensemble_members is not None and len(ensemble_members) != num_ens:
+        raise ValueError(
+            f"`ensemble_members` has {len(ensemble_members)} ids but `num_ens` is {num_ens}."
+        )
 
     time_format = "%Y-%m-%d %H:%M"
     start_time = datetime.strptime(str(_require(cfg, "start_time")), time_format)
@@ -147,7 +216,7 @@ def load_pysummada_config(config_path: str | Path) -> PysummadaConfig:
 
     summa_exe = _normalize_path(str(_require(cfg, "summa_exe")), base_dir, allow_relative=False)
     summa_log = bool(cfg.get("summa_log", False))
-    pf_resample = bool(cfg.get("pf_resample", False))
+    pf_scheme = _parse_pf_scheme(cfg)
     n_eff_threshold = float(cfg.get("n_eff_threshold", 0.0))
 
     summa_args = cfg.get("summa_args", {}) or {}
@@ -189,9 +258,12 @@ def load_pysummada_config(config_path: str | Path) -> PysummadaConfig:
     helbig_settings = cfg.get("helbig_settings")
     snow_depth_var = cfg.get("snow_depth_var")
     assimilation_mode = cfg.get("assimilation_mode")
+    assimilation = _load_assimilation_config(cfg, base_dir)
     swe_weight = cfg.get("swe_weight")
     fsca_weight = cfg.get("fsca_weight")
     esp = _load_esp_config(cfg, base_dir)
+    mizuroute = _resolve_mizuroute(cfg, esp, base_dir)
+    evaluation = _load_evaluation_config(cfg, base_dir)
 
     return PysummadaConfig(
         case_name=case_name,
@@ -201,6 +273,9 @@ def load_pysummada_config(config_path: str | Path) -> PysummadaConfig:
         input_swe_hru_nc=input_swe_hru_nc_path,
         initial_state=str(initial_state) if initial_state else None,
         forcing_file_base=forcing_file_base,
+        ensemble_forcing_mode=ensemble_forcing_mode,
+        ensemble_forcing_dir=ensemble_forcing_dir,
+        ensemble_members=ensemble_members,
         job_list_filename=str(job_list_filename) if job_list_filename else None,
         num_ens=num_ens,
         start_time=start_time,
@@ -208,7 +283,7 @@ def load_pysummada_config(config_path: str | Path) -> PysummadaConfig:
         time_delta=time_delta,
         summa_exe=summa_exe,
         summa_log=summa_log,
-        pf_resample=pf_resample,
+        pf_scheme=pf_scheme,
         n_eff_threshold=n_eff_threshold,
         summa_args=summa_args,
         file_manager_dir=Path(file_manager_dir),
@@ -223,83 +298,142 @@ def load_pysummada_config(config_path: str | Path) -> PysummadaConfig:
         helbig_settings=dict(helbig_settings) if helbig_settings else None,
         snow_depth_var=str(snow_depth_var) if snow_depth_var else None,
         assimilation_mode=str(assimilation_mode) if assimilation_mode else None,
+        assimilation=assimilation,
         swe_weight=float(swe_weight) if swe_weight is not None else None,
         fsca_weight=float(fsca_weight) if fsca_weight is not None else None,
-        run_mode=run_mode,
-        run_da=bool(run_da),
         esp=esp,
+        mizuroute=mizuroute,
+        evaluation=evaluation,
     )
 
 
-def _run_da_for_mode(run_mode: str) -> bool:
-    return run_mode in {"da", "da_esp"}
-
-
-def _resolve_run_mode(cfg: Dict[str, Any]) -> tuple[str, bool]:
-    allowed = {"deterministic", "deterministic_esp", "da", "da_esp"}
-    raw = cfg.get("run_mode")
-    if raw is None:
-        return _infer_run_mode(cfg), False
-    run_mode = str(raw).strip()
-    if run_mode not in allowed:
+def validate_deterministic_config(cfg: PysummadaConfig) -> None:
+    if cfg.esp and cfg.esp.enabled:
         raise ValueError(
-            f"`run_mode` must be one of {sorted(allowed)} (got: {run_mode})."
+            "Deterministic SUMMA does not run ESP traces. "
+            "Use `snowda.workflows.run_summa_esp` or `snowda.workflows.run_summa_da`."
         )
-    return run_mode, True
+    if cfg.evaluation is not None and cfg.mizuroute is None:
+        raise ValueError(
+            "`evaluation` requires top-level `mizuroute` so routed streamflow exists."
+        )
 
 
-def _infer_run_mode(cfg: Dict[str, Any]) -> str:
-    esp_cfg = cfg.get("esp")
-    esp_enabled = isinstance(esp_cfg, dict) and bool(esp_cfg.get("enabled", False))
-    deterministic_esp = (
-        isinstance(esp_cfg, dict)
-        and bool(esp_cfg.get("deterministic") or esp_cfg.get("deterministic_state"))
+def validate_esp_config(cfg: PysummadaConfig) -> None:
+    if cfg.esp is None or not cfg.esp.enabled:
+        raise ValueError(
+            "ESP workflow requires an `esp` section with forecast years/dates."
+        )
+    if cfg.fsca_obs_nc:
+        raise ValueError(
+            "ESP workflow does not run data assimilation. "
+            "Use `snowda.workflows.run_summa_da`."
+        )
+
+
+def validate_da_config(cfg: PysummadaConfig) -> None:
+    if cfg.esp is None or not cfg.esp.enabled:
+        raise ValueError(
+            "SUMMA DA requires an `esp` section; DA always runs ESP after assimilation."
+        )
+    if cfg.esp.deterministic or cfg.esp.deterministic_state:
+        raise ValueError(
+            "SUMMA DA does not allow `esp.deterministic` or `esp.deterministic_state`."
+        )
+    _validate_assimilation_config(cfg)
+
+
+def validate_historic_da_config(cfg: PysummadaConfig) -> None:
+    if cfg.esp is not None:
+        raise ValueError(
+            "Historic SUMMA DA does not run ESP. Remove the `esp` section, "
+            "or use `snowda.workflows.run_summa_da`."
+        )
+    if cfg.mizuroute is None:
+        raise ValueError(
+            "Historic SUMMA DA requires top-level `mizuroute` so each SUMMA "
+            "segment is routed."
+        )
+    _validate_assimilation_config(cfg)
+
+
+def _validate_assimilation_config(cfg: PysummadaConfig) -> None:
+    assimilation_mode = cfg.assimilation_mode or "fsca_only"
+    if assimilation_mode not in {"fsca_only", "swe"}:
+        raise ValueError(
+            f"Unsupported assimilation_mode '{assimilation_mode}'. "
+            "Use 'swe' or 'fsca_only'."
+        )
+    if cfg.ensemble_forcing_mode == "historic":
+        _validate_historic_members(cfg)
+    if assimilation_mode == "fsca_only":
+        missing = [
+            name
+            for name, value in (
+                ("fsca_obs_nc", cfg.fsca_obs_nc),
+                ("summa_output_dir", cfg.summa_output_dir),
+                ("fsca_output_dir", cfg.fsca_output_dir),
+            )
+            if not value
+        ]
+        if missing:
+            raise ValueError(
+                "SUMMA assimilation in fsca_only mode requires "
+                + ", ".join(f"`{name}`" for name in missing)
+                + "."
+            )
+        return
+    if cfg.assimilation is None:
+        raise ValueError("SUMMA assimilation in swe mode requires an `assimilation` section.")
+    from snowda.core.assimilation import resolve_assimilation_dates
+
+    resolve_assimilation_dates(
+        cfg.start_time,
+        cfg.end_time,
+        cfg.assimilation.dates,
+        cfg.assimilation.frequency_days,
+        cfg.assimilation.months,
     )
-    run_da = bool(cfg.get("run_da", True))
-    if deterministic_esp:
-        return "deterministic_esp"
-    if run_da and esp_enabled:
-        return "da_esp"
-    if run_da:
-        return "da"
-    if esp_enabled:
-        return "deterministic_esp"
-    return "deterministic"
 
 
-def _apply_run_mode_constraints(
-    run_mode: str, esp_cfg_raw: Any, *, explicit_run_mode: bool
-) -> Any:
-    if not explicit_run_mode:
-        return esp_cfg_raw
+def _parse_pf_scheme(cfg: Dict[str, Any]) -> str:
+    if "pf_resample" in cfg:
+        raise ValueError(
+            "`pf_resample` has been replaced by `pf_scheme`. Use 'sis' or 'sir'."
+        )
+    raw = cfg.get("pf_scheme", "sis")
+    scheme = str(raw).strip().lower()
+    if scheme not in {"sis", "sir"}:
+        raise ValueError(f"Unsupported pf_scheme {raw!r}. Use 'sis' or 'sir'.")
+    return scheme
 
-    if run_mode in {"deterministic", "da"}:
-        if isinstance(esp_cfg_raw, dict):
-            if esp_cfg_raw.get("enabled", False):
-                raise ValueError(f"`run_mode: {run_mode}` does not allow ESP.")
-            if esp_cfg_raw.get("deterministic") or esp_cfg_raw.get("deterministic_state"):
-                raise ValueError(
-                    f"`run_mode: {run_mode}` does not allow deterministic ESP settings."
-                )
-        return esp_cfg_raw
 
-    if not isinstance(esp_cfg_raw, dict):
-        raise ValueError(f"`run_mode: {run_mode}` requires an `esp` section.")
+def _warn_ignored_legacy_keys(cfg: Dict[str, Any]) -> None:
+    if "run_mode" in cfg:
+        log.warning(
+            "`run_mode` is ignored; the workflow entrypoint selects the SUMMA variant."
+        )
+    if "run_da" in cfg:
+        log.warning(
+            "`run_da` is ignored; use run_summa_historic_da for historic assimilation, "
+            "run_summa_da for assimilation then ESP, or run_summa_esp for ESP without DA."
+        )
 
-    esp_cfg = dict(esp_cfg_raw)
-    esp_cfg["enabled"] = True
-    if run_mode == "deterministic_esp":
-        if not (esp_cfg.get("deterministic") or esp_cfg.get("deterministic_state")):
-            raise ValueError(
-                "`run_mode: deterministic_esp` requires `esp.deterministic` or "
-                "`esp.deterministic_state`."
-            )
-    if run_mode == "da_esp":
-        if esp_cfg.get("deterministic") or esp_cfg.get("deterministic_state"):
-            raise ValueError(
-                "`run_mode: da_esp` does not allow deterministic ESP state settings."
-            )
-    return esp_cfg
+
+def _esp_section_is_enabled(esp_cfg_raw: Dict[str, Any]) -> bool:
+    if "enabled" in esp_cfg_raw:
+        return bool(esp_cfg_raw["enabled"])
+    return any(
+        esp_cfg_raw.get(key) not in (None, "", [], {})
+        for key in (
+            "start_year",
+            "end_year",
+            "forecast_length_days",
+            "forecast_end",
+            "dates",
+            "frequency_days",
+        )
+    )
 
 
 def _parse_esp_dates(dates: Sequence[str]) -> tuple[datetime, ...]:
@@ -309,6 +443,153 @@ def _parse_esp_dates(dates: Sequence[str]) -> tuple[datetime, ...]:
     return tuple(out)
 
 
+def _has_esp_horizon_value(value: Any) -> bool:
+    return value not in (None, "")
+
+
+def _parse_forecast_end(raw: Any) -> tuple[int, int]:
+    text = str(raw).strip()
+    try:
+        parsed = datetime.strptime(f"2000-{text}", "%Y-%m-%d")
+    except ValueError as exc:
+        raise ValueError(f'`esp.forecast_end` must be "MM-DD" (got: {raw!r}).') from exc
+    if text != parsed.strftime("%m-%d"):
+        raise ValueError(f'`esp.forecast_end` must be "MM-DD" (got: {raw!r}).')
+    return parsed.month, parsed.day
+
+
+def _parse_esp_horizon(
+    esp_cfg_raw: Dict[str, Any],
+) -> tuple[Optional[int], Optional[tuple[int, int]]]:
+    has_length = _has_esp_horizon_value(esp_cfg_raw.get("forecast_length_days"))
+    has_end = _has_esp_horizon_value(esp_cfg_raw.get("forecast_end"))
+    if has_length and has_end:
+        raise ValueError(
+            "ESP requires exactly one of `esp.forecast_length_days` or `esp.forecast_end`."
+        )
+    if not has_length and not has_end:
+        raise ValueError(
+            "ESP requires either `esp.forecast_length_days` or `esp.forecast_end`."
+        )
+    if has_length:
+        forecast_length_days = int(esp_cfg_raw["forecast_length_days"])
+        if forecast_length_days <= 0:
+            raise ValueError("`esp.forecast_length_days` must be > 0.")
+        return forecast_length_days, None
+    return None, _parse_forecast_end(esp_cfg_raw["forecast_end"])
+
+
+def _load_mizuroute_from_raw(mizu_raw: Dict[str, Any], base_dir: Path) -> MizuRouteEspConfig:
+    if not isinstance(mizu_raw, dict):
+        raise TypeError("`mizuroute` must be a mapping.")
+    executable = _normalize_path(str(_require(mizu_raw, "executable")), base_dir, allow_relative=False)
+    control_file = _normalize_path(str(_require(mizu_raw, "control_file")), base_dir, allow_relative=False)
+    ancil_dir_raw = mizu_raw.get("ancil_dir") or str(Path(control_file).parent)
+    ancil_dir = _normalize_path(str(ancil_dir_raw), base_dir, allow_relative=False)
+    if mizu_raw.get("output_dir") or mizu_raw.get("restart_dir"):
+        log.warning(
+            "`mizuroute.output_dir` and `mizuroute.restart_dir` are ignored; "
+            "mizuRoute writes under the timestamped run directory."
+        )
+    case_name = str(_require(mizu_raw, "case_name"))
+    restart_write = str(mizu_raw.get("restart_write", "monthly"))
+    param_nml_raw = mizu_raw.get("param_nml")
+    topology_nc_raw = mizu_raw.get("topology_nc")
+    param_nml = (
+        _normalize_path(str(param_nml_raw), base_dir, allow_relative=False)
+        if param_nml_raw
+        else None
+    )
+    topology_nc = (
+        _normalize_path(str(topology_nc_raw), base_dir, allow_relative=False)
+        if topology_nc_raw
+        else None
+    )
+    log_output = bool(mizu_raw.get("log_output", False))
+    return MizuRouteEspConfig(
+        executable=Path(executable),
+        control_file=Path(control_file),
+        ancil_dir=Path(ancil_dir),
+        case_name=case_name,
+        restart_write=restart_write,
+        param_nml=Path(param_nml) if param_nml else None,
+        topology_nc=Path(topology_nc) if topology_nc else None,
+        log_output=log_output,
+    )
+
+
+def _load_esp_mizuroute(esp_cfg_raw: Dict[str, Any], base_dir: Path) -> Optional[MizuRouteEspConfig]:
+    run_mizuroute = bool(esp_cfg_raw.get("run_mizuroute", False))
+    if not run_mizuroute:
+        return None
+    mizu_raw = esp_cfg_raw.get("mizuroute")
+    if not isinstance(mizu_raw, dict):
+        raise ValueError("`esp.mizuroute` must be provided when `esp.run_mizuroute` is true.")
+    return _load_mizuroute_from_raw(mizu_raw, base_dir)
+
+
+def _validate_historic_members(cfg: PysummadaConfig) -> None:
+    if cfg.ensemble_forcing_dir is None or not cfg.ensemble_forcing_dir.is_dir():
+        raise ValueError(
+            f"Historic ensemble forcing directory not found: {cfg.ensemble_forcing_dir}"
+        )
+    missing = [
+        label
+        for label in cfg.ens_label_array
+        if not (cfg.ensemble_forcing_dir / label).is_dir()
+    ]
+    if missing:
+        raise ValueError(
+            "Historic ensemble member directories not found: "
+            + ", ".join(missing)
+        )
+
+
+def _load_assimilation_config(
+    cfg: Dict[str, Any], base_dir: Path
+) -> Optional[AssimilationConfig]:
+    raw = cfg.get("assimilation")
+    if not raw:
+        return None
+    if not isinstance(raw, dict):
+        raise TypeError("`assimilation` must be a mapping.")
+    explicit_dates = _parse_esp_dates([str(value) for value in (raw.get("dates") or [])])
+    frequency_raw = raw.get("frequency_days")
+    frequency_days = int(frequency_raw) if frequency_raw is not None else None
+    if frequency_days is not None and frequency_days <= 0:
+        raise ValueError("`assimilation.frequency_days` must be > 0 when provided.")
+    months = tuple(int(month) for month in (raw.get("months") or []))
+    for month in months:
+        if month < 1 or month > 12:
+            raise ValueError("`assimilation.months` entries must be between 1 and 12.")
+    if "obs_window_days" not in raw:
+        raise ValueError("`assimilation.obs_window_days` is required.")
+    obs_window_days = int(raw["obs_window_days"])
+    if obs_window_days < 0:
+        raise ValueError("`assimilation.obs_window_days` must be >= 0.")
+    swe_nc = _normalize_path(str(_require(raw, "swe_nc")), base_dir, allow_relative=False)
+    if not swe_nc.is_file():
+        raise ValueError(f"Assimilation SWE file not found: {swe_nc}")
+    if "z_var" not in raw:
+        raise ValueError(
+            "`assimilation.z_var` is required for SWE updates. "
+            "The weight is exp(-0.5 * mean(abs(error)) * z_var), not a Gaussian variance."
+        )
+    z_var = float(raw["z_var"])
+    if z_var <= 0:
+        raise ValueError("`assimilation.z_var` must be > 0.")
+    return AssimilationConfig(
+        dates=explicit_dates,
+        frequency_days=frequency_days,
+        months=months,
+        obs_window_days=obs_window_days,
+        swe_nc=swe_nc,
+        swe_var=str(raw.get("swe_var", "swe_model_equivalent")),
+        summa_swe_var=str(raw.get("summa_swe_var", "scalarSWE")),
+        z_var=z_var,
+    )
+
+
 def _load_esp_config(cfg: Dict[str, Any], base_dir: Path) -> Optional[EspConfig]:
     esp_cfg_raw = cfg.get("esp")
     if not esp_cfg_raw:
@@ -316,26 +597,23 @@ def _load_esp_config(cfg: Dict[str, Any], base_dir: Path) -> Optional[EspConfig]
     if not isinstance(esp_cfg_raw, dict):
         raise TypeError("`esp` must be a mapping.")
 
-    enabled = bool(esp_cfg_raw.get("enabled", False))
+    enabled = _esp_section_is_enabled(esp_cfg_raw)
     if not enabled:
-        run_mizuroute = bool(esp_cfg_raw.get("run_mizuroute", False))
-        mizuroute_cfg = (
-            _load_mizuroute_config(esp_cfg_raw, base_dir) if run_mizuroute else None
-        )
         return EspConfig(
             enabled=False,
             deterministic_state=None,
             deterministic=False,
             start_year=0,
             end_year=0,
-            forecast_length_days=0,
+            forecast_length_days=None,
+            forecast_end=None,
             frequency_days=None,
             dates=tuple(),
             months=tuple(),
             restart_file_filter="restart",
             state_members=tuple(),
-            run_mizuroute=run_mizuroute,
-            mizuroute=mizuroute_cfg,
+            run_mizuroute=bool(esp_cfg_raw.get("run_mizuroute", False)),
+            mizuroute=_load_esp_mizuroute(esp_cfg_raw, base_dir),
         )
 
     start_year = int(_require(esp_cfg_raw, "start_year"))
@@ -343,9 +621,7 @@ def _load_esp_config(cfg: Dict[str, Any], base_dir: Path) -> Optional[EspConfig]
     if end_year < start_year:
         raise ValueError("`esp.end_year` must be >= `esp.start_year`.")
 
-    forecast_length_days = int(_require(esp_cfg_raw, "forecast_length_days"))
-    if forecast_length_days <= 0:
-        raise ValueError("`esp.forecast_length_days` must be > 0.")
+    forecast_length_days, forecast_end = _parse_esp_horizon(esp_cfg_raw)
 
     frequency_days_raw = esp_cfg_raw.get("frequency_days")
     frequency_days = int(frequency_days_raw) if frequency_days_raw is not None else None
@@ -387,11 +663,6 @@ def _load_esp_config(cfg: Dict[str, Any], base_dir: Path) -> Optional[EspConfig]
             member=str(state_member) if state_member else None,
         )
 
-    run_mizuroute = bool(esp_cfg_raw.get("run_mizuroute", False))
-    mizuroute_cfg = (
-        _load_mizuroute_config(esp_cfg_raw, base_dir) if run_mizuroute else None
-    )
-
     return EspConfig(
         enabled=True,
         deterministic_state=deterministic_state,
@@ -399,50 +670,53 @@ def _load_esp_config(cfg: Dict[str, Any], base_dir: Path) -> Optional[EspConfig]
         start_year=start_year,
         end_year=end_year,
         forecast_length_days=forecast_length_days,
+        forecast_end=forecast_end,
         frequency_days=frequency_days,
         dates=explicit_dates,
         months=months,
         restart_file_filter=restart_file_filter,
         state_members=state_members,
-        run_mizuroute=run_mizuroute,
-        mizuroute=mizuroute_cfg,
+        run_mizuroute=bool(esp_cfg_raw.get("run_mizuroute", False)),
+        mizuroute=_load_esp_mizuroute(esp_cfg_raw, base_dir),
     )
 
 
-def _load_mizuroute_config(esp_cfg_raw: Dict[str, Any], base_dir: Path) -> MizuRouteEspConfig:
-    mizu_raw = esp_cfg_raw.get("mizuroute")
-    if not isinstance(mizu_raw, dict):
-        raise ValueError("`esp.mizuroute` must be provided when `esp.run_mizuroute` is true.")
-    executable = _normalize_path(str(_require(mizu_raw, "executable")), base_dir, allow_relative=False)
-    control_file = _normalize_path(str(_require(mizu_raw, "control_file")), base_dir, allow_relative=False)
-    ancil_dir_raw = mizu_raw.get("ancil_dir") or str(Path(control_file).parent)
-    ancil_dir = _normalize_path(str(ancil_dir_raw), base_dir, allow_relative=False)
-    output_dir = _normalize_path(str(_require(mizu_raw, "output_dir")), base_dir, allow_relative=True)
-    restart_dir = _normalize_path(str(_require(mizu_raw, "restart_dir")), base_dir, allow_relative=True)
-    case_name = str(_require(mizu_raw, "case_name"))
-    restart_write = str(mizu_raw.get("restart_write", "monthly"))
-    param_nml_raw = mizu_raw.get("param_nml")
-    topology_nc_raw = mizu_raw.get("topology_nc")
-    param_nml = (
-        _normalize_path(str(param_nml_raw), base_dir, allow_relative=False)
-        if param_nml_raw
-        else None
-    )
-    topology_nc = (
-        _normalize_path(str(topology_nc_raw), base_dir, allow_relative=False)
-        if topology_nc_raw
-        else None
-    )
-    log_output = bool(mizu_raw.get("log_output", False))
-    return MizuRouteEspConfig(
-        executable=Path(executable),
-        control_file=Path(control_file),
-        ancil_dir=Path(ancil_dir),
-        output_dir=Path(output_dir),
-        restart_dir=Path(restart_dir),
-        case_name=case_name,
-        restart_write=restart_write,
-        param_nml=Path(param_nml) if param_nml else None,
-        topology_nc=Path(topology_nc) if topology_nc else None,
-        log_output=log_output,
+def _resolve_mizuroute(
+    cfg: Dict[str, Any], esp: Optional[EspConfig], base_dir: Path
+) -> Optional[MizuRouteEspConfig]:
+    mizu_raw = cfg.get("mizuroute")
+    if mizu_raw:
+        return _load_mizuroute_from_raw(mizu_raw, base_dir)
+    if esp is not None and not esp.enabled and esp.mizuroute:
+        return esp.mizuroute
+    return None
+
+
+def _load_evaluation_config(
+    cfg: Dict[str, Any], base_dir: Path
+) -> Optional[StreamflowEvaluationConfig]:
+    raw = cfg.get("evaluation")
+    if not raw:
+        return None
+    if not isinstance(raw, dict):
+        raise TypeError("`evaluation` must be a mapping.")
+    obs_csv = _normalize_path(str(_require(raw, "obs_csv")), base_dir, allow_relative=False)
+    resample = raw.get("resample", "1D")
+    if resample in (None, "null", ""):
+        resample = None
+    start_time = raw.get("start_time")
+    end_time = raw.get("end_time")
+    date_col = raw.get("date_col") or raw.get("obs_date_col")
+    flow_col = raw.get("flow_col") or raw.get("obs_flow_col")
+    reach_id = raw.get("reach_id")
+    return StreamflowEvaluationConfig(
+        obs_csv=Path(obs_csv),
+        variable=str(raw.get("variable", "IRFroutedRunoff")),
+        resample=None if resample is None else str(resample),
+        seg=int(raw.get("seg", 0)),
+        reach_id=reach_id,
+        date_col=str(date_col) if date_col else None,
+        flow_col=str(flow_col) if flow_col else None,
+        start_time=str(start_time) if start_time else None,
+        end_time=str(end_time) if end_time else None,
     )

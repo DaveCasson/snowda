@@ -32,11 +32,13 @@ When bringing in external code:
 - Relative paths resolve relative to the YAML file.
 - Input data sources must be absolute paths.
 - Outputs/logs may be relative.
-- Pysummada runs use `run_mode` to select one of four modes:
-  - `deterministic`: no DA, no ESP
-  - `deterministic_esp`: no DA, ESP using deterministic state
-  - `da`: DA only, no ESP
-  - `da_esp`: DA followed by ESP using DA states
+- SUMMA variants are selected by the workflow entrypoint, not by YAML:
+  - `python -m snowda.workflows.run_summa <yaml>`: single SUMMA run, optional mizuRoute
+  - `python -m snowda.workflows.run_summa_esp <yaml>`: ESP traces, no assimilation
+  - `python -m snowda.workflows.run_summa_historic_da <yaml>`: particle filter through the historic period, no ESP. Each member keeps its own forcing. After each SUMMA segment, mizuRoute routes that member's SUMMA output. A particle is the SUMMA restart and the mizuRoute restart from that same run.
+  - `python -m snowda.workflows.run_summa_da <yaml>`: the same assimilation, then ESP. Assimilation dates are configured like ESP dates (`assimilation.dates`, optional `frequency_days` and `months`). `assimilation_mode: swe` reads model-equivalent SWE; `fsca_only` uses fractional snow-covered area.
+- Both assimilation entry points use `pf_scheme`. `sis` updates weights and continues each particle from its own SUMMA and mizuRoute restarts. `sir` copies both donor restarts when the effective sample size is above `n_eff_threshold`; the member still keeps its own forcing.
+- Shared SUMMA config fields live in pysummada YAML (`base_file_manager`, ensemble size, times, `summa_exe`). Deterministic routing uses optional top-level `mizuroute`. ESP and DA-then-ESP require an `esp` section. Historic DA rejects an `esp` section and requires top-level `mizuroute`. mizuRoute writes output and restarts under the timestamped run directory (`<run_dir>/mizuroute/` for deterministic and historic segments; ESP traces keep per-trace `mizuroute/` folders). Historic segment discharge is `<run_dir>/mizuroute/<member>_<YYYY_MM_DD>_mizuroute.nc`.
 
 ## Outputs
 Each run writes to a unique run directory (timestamped), containing:

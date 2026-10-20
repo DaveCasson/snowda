@@ -1,0 +1,59 @@
+case_name: ross_summa_historic_da
+description: >
+  Historic SUMMA assimilation for Ross River. Ensemble members keep their own
+  forcing. At each assimilation date, SIR copies the donor SUMMA restart and
+  the matching mizuRoute restart. mizuRoute then routes the next SUMMA
+  segment from that particle. No ESP.
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_historic_da
+log_file: logs/ross_summa_historic_da.log
+
+model_run_id: ross_summa_historic_da
+base_file_manager: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
+forcing_file_base: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/Ross_
+ensemble_forcing_mode: historic
+ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensemble
+num_ens: 10
+
+start_time: "2013-08-01 00:00"
+end_time: "2014-08-01 00:00"
+time_delta_days: 1
+
+summa_exe: /Users/dcasson/GitHub/summa/bin/summa.exe
+summa_log: false
+
+pf_scheme: sir
+n_eff_threshold: 0.5
+assimilation_mode: swe
+
+# Daily restarts so a state file exists at each assimilation date.
+summa_args:
+  "-m": /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
+  "-r": d
+
+assimilation:
+  dates:
+    - "2014-02-01 00:00"
+    - "2014-03-01 00:00"
+    - "2014-04-01 00:00"
+    - "2014-05-01 00:00"
+  obs_window_days: 15
+  swe_nc: /Users/dcasson/GitHub/snowda/outputs/obs_qm/ross_norswe_model_equivalent.nc
+  swe_var: swe_model_equivalent
+  summa_swe_var: scalarSWE
+  z_var: 0.02
+
+file_manager_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
+file_list_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
+
+# SUMMA writes 001_YYYY_MM_DD_timestep.nc under <run_dir>/summa.
+# mizuRoute writes 001_YYYY_MM_DD_mizuroute.nc under <run_dir>/mizuroute.
+summa_output_suffix: timestep.nc
+
+mizuroute:
+  executable: /Users/dcasson/GitHub/mizuRoute/route/bin/route_runoff.exe
+  control_file: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/mizuroute.control
+  ancil_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/
+  case_name: Ross
+  restart_write: monthly
+  log_output: false

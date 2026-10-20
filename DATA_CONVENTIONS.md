@@ -62,21 +62,23 @@ All such cases must be converted to SI before entering `snowda.core`.
 
 ### Preferred internal (SI) units
 
-| Quantity            | Preferred unit |
-|---------------------|----------------|
-| Length / depth      | m              |
-| SWE                 | kg m-2         |
-| Temperature         | K              |
-| Time                | s              |
-| Precipitation flux  | kg m-2 s-1     |
-| Density             | kg m-3         |
-| Energy              | J              |
-| Power / flux        | W m-2          |
+| Quantity               | Preferred unit |
+|------------------------|----------------|
+| Length / depth         | m              |
+| SWE                    | kg m-2         |
+| Temperature            | K              |
+| Time                   | s              |
+| Precipitation flux     | kg m-2 s-1     |
+| Density                | kg m-3         |
+| Energy                 | J              |
+| Power / flux           | W m-2          |
+| Streamflow / discharge | m3 s-1         |
 
 Notes:
 - SWE is treated as **mass per unit area** (`kg m-2`) internally, consistent
   with SI and CF conventions.
 - If SWE is read as depth (e.g. `mm`), it must be converted in I/O or adapters.
+- Streamflow uses SI cubic metres per second (`m3 s-1`), also written cms.
 
 ### Pint usage rules
 

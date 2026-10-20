@@ -2,14 +2,106 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
 import shutil
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
-from snowda.adapters.pysumma import run_simulation
+from snowda.adapters.pysumma import run_ensemble, run_simulation
 from snowda.config.loader import load_config
+from snowda.config.pysummada import load_pysummada_config, validate_deterministic_config
 from snowda.utils.logging import configure_logging, get_logger
+from snowda.workflows.evaluate_streamflow import evaluate_deterministic_run
+from snowda.workflows.summa_common import (
+    apply_run_time,
+    prepare_ensemble,
+    redirect_summa_output,
+    run_mizuroute_after_summa,
+    setup_run_directory,
+    summa_run_output_dir,
+    write_provenance,
+)
+
+
+def run_summa(config_path: str | Path) -> Path:
+    raw: Dict[str, Any] = load_config(config_path)
+    if raw.get("file_manager") and not raw.get("base_file_manager"):
+        return _run_summa_flat(config_path)
+    return _run_summa_deterministic(config_path)
+
+
+def _run_summa_deterministic(config_path: str | Path) -> Path:
+    cfg = load_pysummada_config(config_path)
+    validate_deterministic_config(cfg)
+    run_dir, log = setup_run_directory(
+        cfg,
+        config_path,
+        log_filename="summa_deterministic.log",
+        logger_name=__name__,
+        start_message="snowda SUMMA deterministic run starting",
+    )
+
+    file_writer, assimilation = prepare_ensemble(cfg)
+    log.info("Starting SUMMA run %s to %s", cfg.start_time, cfg.end_time)
+    current_run_config = apply_run_time(
+        cfg,
+        assimilation,
+        file_writer.ens_file_managers or [],
+        cfg.start_time,
+        cfg.end_time,
+    )
+    summa_output_dir = redirect_summa_output(
+        file_writer.ens_file_managers or [],
+        current_run_config,
+        summa_run_output_dir(run_dir),
+    )
+    log.info("SUMMA outputPath: %s", summa_output_dir)
+    run_ensemble(
+        str(cfg.summa_exe),
+        current_run_config,
+        run_suffix=cfg.end_time.strftime("%Y_%m_%d"),
+        log_stdout=True,
+    )
+
+    mizuroute_output: str | None = None
+    if cfg.mizuroute:
+        log.info("Deterministic SUMMA run complete; starting mizuRoute.")
+        mizuroute_output = str(
+            run_mizuroute_after_summa(
+                cfg,
+                cfg.mizuroute,
+                run_dir,
+                cfg.start_time,
+                cfg.end_time,
+                summa_output_dir=summa_output_dir,
+            )
+        )
+
+    evaluation_metrics: dict[str, Any] | None = None
+    if cfg.evaluation is not None:
+        if not mizuroute_output:
+            raise ValueError(
+                "`evaluation` is configured but no mizuRoute output was produced."
+            )
+        log.info("Evaluating routed streamflow against observations.")
+        evaluation_metrics = evaluate_deterministic_run(
+            mizuroute_output, cfg.evaluation, run_dir
+        )
+
+    write_provenance(
+        run_dir,
+        {
+            "config_path": str(Path(config_path).resolve()),
+            "model_result_output_dir": str(cfg.model_result_output_dir),
+            "variant": "deterministic",
+            "summa_output_dir": str(summa_output_dir),
+            "mizuroute_output": mizuroute_output,
+            "evaluation": evaluation_metrics,
+        },
+        log,
+    )
+    log.info("snowda SUMMA deterministic run complete")
+    return run_dir
 
 
 def _now_utc_tag() -> str:
@@ -74,7 +166,7 @@ def _normalize_flat_config(cfg: Dict[str, Any], base_dir: Path) -> Dict[str, Any
     return cfg
 
 
-def run_summa(config_path: str | Path) -> Path:
+def _run_summa_flat(config_path: str | Path) -> Path:
     cfg: Dict[str, Any] = load_config(config_path)
     base_dir = Path(cfg.get("_meta", {}).get("config_dir", Path(config_path).resolve().parent))
     cfg = _normalize_flat_config(cfg, base_dir)
@@ -93,6 +185,11 @@ def run_summa(config_path: str | Path) -> Path:
 
     configure_logging(level=logging.INFO, log_file=log_file)
     log = get_logger(__name__)
+    log.warning(
+        "Flat `file_manager` SUMMA configs are deprecated. "
+        "Prefer pysummada YAML examples such as "
+        "runs/examples/ross_summa_deterministic_era5.yaml."
+    )
     log.info("snowda SUMMA run starting")
     log.info("Config: %s", cfg.get("_meta", {}).get("config_path", str(config_path)))
     log.info("Run dir: %s", run_dir)
@@ -237,7 +334,7 @@ def run_summa(config_path: str | Path) -> Path:
 def main() -> None:
     import argparse
 
-    parser = argparse.ArgumentParser(description="Run SUMMA from a YAML config.")
+    parser = argparse.ArgumentParser(description="Run a deterministic SUMMA simulation from a YAML config.")
     parser.add_argument("config", type=str, help="Path to YAML config file")
     args = parser.parse_args()
     run_summa(args.config)

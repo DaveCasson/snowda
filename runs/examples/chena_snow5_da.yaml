@@ -54,7 +54,9 @@ schaake_shuffle:
 #  enabled: true
 #  start_year: 2008
 #  end_year: 2018
+#  # Exactly one of:
 #  forecast_length_days: 30
+#  # forecast_end: "08-01"
 #  # Use one or both:
 #  frequency_days: 30
 #  dates:

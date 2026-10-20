@@ -38,6 +38,17 @@ def _read_file_manager(path: Path) -> pd.DataFrame:
     return pd.DataFrame(records, columns=["key", "value"]).set_index("key")
 
 
+SUMMA_TIME_FORMAT = "%Y-%m-%d %H:%M"
+
+
+def read_file_manager_option(file_manager_path: str | Path, key: str) -> str:
+    """Return a file-manager value with surrounding quotes removed."""
+    frame = _read_file_manager(Path(file_manager_path))
+    if key not in frame.index:
+        raise KeyError(f"{key} not found in {file_manager_path}")
+    return str(frame.loc[key, "value"]).strip().strip("'").strip('"')
+
+
 def update_file_manager_option(file_manager_path: str | Path, key: str, value: str) -> None:
     """Update a key/value entry in a SUMMA file manager file."""
     path = Path(file_manager_path)
@@ -59,6 +70,19 @@ def update_file_manager_option(file_manager_path: str | Path, key: str, value: s
     path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
 
 
+def write_simulation_times(
+    file_managers: Iterable[str | Path],
+    start_time: datetime,
+    end_time: datetime,
+) -> None:
+    """Persist simStartTime/simEndTime so SUMMA reads the YAML run period from disk."""
+    start = start_time.strftime(SUMMA_TIME_FORMAT)
+    end = end_time.strftime(SUMMA_TIME_FORMAT)
+    for file_manager in file_managers:
+        update_file_manager_option(file_manager, "simStartTime", f"'{start}'")
+        update_file_manager_option(file_manager, "simEndTime", f"'{end}'")
+
+
 @dataclass
 class EnsembleFileWriter:
     config: PysummadaConfig
@@ -78,31 +102,74 @@ class EnsembleFileWriter:
         self.config.file_manager_dir.mkdir(parents=True, exist_ok=True)
         self.config.file_list_dir.mkdir(parents=True, exist_ok=True)
 
+    def _historic_member_netcdf(self, label: str) -> Path:
+        if self.config.ensemble_forcing_dir is None:
+            raise ValueError(
+                "`ensemble_forcing_dir` is required when `ensemble_forcing_mode` is historic."
+            )
+        member_dir = self.config.ensemble_forcing_dir / label
+        if not member_dir.is_dir():
+            raise FileNotFoundError(f"Ensemble member directory not found: {member_dir}")
+        nc_files = sorted(member_dir.glob("*.nc"))
+        if len(nc_files) != 1:
+            raise ValueError(
+                f"Expected one forcing netCDF in {member_dir}, found {len(nc_files)}."
+            )
+        return nc_files[0]
+
     def write_ens_file_managers(self) -> list[str]:
         log.info("Writing ensemble file managers")
         input_fm_df = _read_file_manager(self.config.base_file_manager)
         fm_list: list[str] = []
-        deterministic_mode = self.config.run_mode in {"deterministic", "deterministic_esp"}
+        historic = self.config.ensemble_forcing_mode == "historic"
+        use_base_forcing = self.config.num_ens == 1 and not historic
 
-        for num_ens in range(1, self.config.num_ens + 1):
-            output_fm_name = f"fileManagerEns{num_ens:03d}.txt"
+        for label in self.config.ens_label_array:
+            output_fm_name = f"fileManagerEns{label}.txt"
             output_fm_path = self.config.file_manager_dir / output_fm_name
 
             output_fm_df = input_fm_df.copy()
-            if not (deterministic_mode and self.config.num_ens == 1):
+            if historic:
+                member_file = self._historic_member_netcdf(label)
+                member_dir = member_file.parent.as_posix().rstrip("/") + "/"
+                output_fm_df.loc["forcingPath", "value"] = f"'{member_dir}'"
                 output_fm_df.loc["forcingListFile", "value"] = (
-                    f"'forcingFileListEns{num_ens:03d}.txt'"
+                    f"'forcingFileListEns{label}.txt'"
                 )
-            output_fm_df.loc["outFilePrefix", "value"] = f"'{num_ens:03d}'"
+            elif not use_base_forcing:
+                output_fm_df.loc["forcingListFile", "value"] = (
+                    f"'forcingFileListEns{label}.txt'"
+                )
+            output_fm_df.loc["outFilePrefix", "value"] = f"'{label}'"
+            output_fm_df.loc["simStartTime", "value"] = (
+                f"'{self.config.start_time.strftime(SUMMA_TIME_FORMAT)}'"
+            )
+            output_fm_df.loc["simEndTime", "value"] = (
+                f"'{self.config.end_time.strftime(SUMMA_TIME_FORMAT)}'"
+            )
 
             output_fm_df.to_csv(output_fm_path, sep="\t", header=False)
             fm_list.append(str(output_fm_path))
 
+        write_simulation_times(
+            [self.config.base_file_manager],
+            self.config.start_time,
+            self.config.end_time,
+        )
         return fm_list
 
     def write_forcing_file_list(self) -> None:
-        if self.config.run_mode in {"deterministic", "deterministic_esp"} and self.config.num_ens == 1:
-            log.info("Deterministic run: using forcingListFile from base file manager.")
+        if self.config.ensemble_forcing_mode == "historic":
+            log.info("Writing historic ensemble forcing lists")
+            for label in self.config.ens_label_array:
+                member_file = self._historic_member_netcdf(label)
+                output_file_list_path = (
+                    self.config.file_list_dir / f"forcingFileListEns{label}.txt"
+                )
+                output_file_list_path.write_text(f"{member_file.name}\n", encoding="utf-8")
+            return
+        if self.config.num_ens == 1:
+            log.info("Single-member run: using forcingListFile from base file manager.")
             return
         log.info("Writing forcing file lists")
         day_count = (self.config.end_time - self.config.start_time).days
@@ -111,14 +178,14 @@ class EnsembleFileWriter:
             for i in range(day_count)
         ).keys()
 
-        for num_ens in range(1, self.config.num_ens + 1):
+        for label in self.config.ens_label_array:
             forcing_file_list = [
-                f"{self.config.forcing_file_base}{year_month}.{num_ens:03d}.nc"
+                f"{self.config.forcing_file_base}{year_month}.{label}.nc"
                 for year_month in year_months
             ]
             forcing_file_list.sort()
 
-            output_file_list_name = f"forcingFileListEns{num_ens:03d}.txt"
+            output_file_list_name = f"forcingFileListEns{label}.txt"
             output_file_list_path = self.config.file_list_dir / output_file_list_name
             with output_file_list_path.open("w", encoding="utf-8") as fl_file:
                 for line in forcing_file_list:

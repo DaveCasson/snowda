@@ -1,24 +1,20 @@
 case_name: ross_summa_esp
 description: ESP trace config for Ross River SUMMA + mizuRoute workflow.
 
-output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_esp
+#output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_esp
 log_file: logs/ross_summa_esp.log
 
-model_run_id: ross_summa_esp_pf
-run_mode: deterministic_esp
+model_run_id: ross_summa_esp
 base_file_manager: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
 forcing_file_base: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/Ross_
 num_ens: 1
 
-start_time: "2011-10-01 00:00"
-end_time: "2018-10-01 00:00"
+start_time: "1980-01-01 00:00"
+end_time: "2018-08-01 00:00"
 time_delta_days: 1
 
 summa_exe: /Users/dcasson/GitHub/summa/bin/summa.exe
 summa_log: false
-
-pf_resample: false
-n_eff_threshold: 0.5
 
 summa_args:
   "-m": /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
@@ -27,16 +23,126 @@ summa_args:
 file_manager_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
 file_list_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
 
-
 esp:
-  enabled: true
-  start_year: 2011
+  start_year: 1980
   end_year: 2018
-  forecast_length_days: 15
-  #frequency_days: 30
+  forecast_end: "08-01"
   dates:
+    # Dates from 1980 to 2018 with pattern: one line each for YYYY-03-01, YYYY-04-01, YYYY-05-01
+    - "1981-03-01 00:00"
+    - "1981-04-01 00:00"
+    - "1981-05-01 00:00"
+    - "1982-03-01 00:00"
+    - "1982-04-01 00:00"
+    - "1982-05-01 00:00"
+    - "1983-03-01 00:00"
+    - "1983-04-01 00:00"
+    - "1983-05-01 00:00"
+    - "1984-03-01 00:00"
+    - "1984-04-01 00:00"
+    - "1984-05-01 00:00"
+    - "1985-03-01 00:00"
+    - "1985-04-01 00:00"
+    - "1985-05-01 00:00"
+    - "1986-03-01 00:00"
+    - "1986-04-01 00:00"
+    - "1986-05-01 00:00"
+    - "1987-03-01 00:00"
+    - "1987-04-01 00:00"
+    - "1987-05-01 00:00"
+    - "1988-03-01 00:00"
+    - "1988-04-01 00:00"
+    - "1988-05-01 00:00"
+    - "1989-03-01 00:00"
+    - "1989-04-01 00:00"
+    - "1989-05-01 00:00"
+    - "1990-03-01 00:00"
+    - "1990-04-01 00:00"
+    - "1990-05-01 00:00"
+    - "1991-03-01 00:00"
+    - "1991-04-01 00:00"
+    - "1991-05-01 00:00"
+    - "1992-03-01 00:00"
+    - "1992-04-01 00:00"
+    - "1992-05-01 00:00"
+    - "1993-03-01 00:00"
+    - "1993-04-01 00:00"
+    - "1993-05-01 00:00"
+    - "1994-03-01 00:00"
+    - "1994-04-01 00:00"
+    - "1994-05-01 00:00"
+    - "1995-03-01 00:00"
+    - "1995-04-01 00:00"
+    - "1995-05-01 00:00"
+    - "1996-03-01 00:00"
+    - "1996-04-01 00:00"
+    - "1996-05-01 00:00"
+    - "1997-03-01 00:00"
+    - "1997-04-01 00:00"
+    - "1997-05-01 00:00"
+    - "1998-03-01 00:00"
+    - "1998-04-01 00:00"
+    - "1998-05-01 00:00"
+    - "1999-03-01 00:00"
+    - "1999-04-01 00:00"
+    - "1999-05-01 00:00"
+    - "2000-03-01 00:00"
+    - "2000-04-01 00:00"
+    - "2000-05-01 00:00"
+    - "2001-03-01 00:00"
+    - "2001-04-01 00:00"
+    - "2001-05-01 00:00"
+    - "2002-03-01 00:00"
+    - "2002-04-01 00:00"
+    - "2002-05-01 00:00"
+    - "2003-03-01 00:00"
+    - "2003-04-01 00:00"
+    - "2003-05-01 00:00"
+    - "2004-03-01 00:00"
+    - "2004-04-01 00:00"
+    - "2004-05-01 00:00"
+    - "2005-03-01 00:00"
+    - "2005-04-01 00:00"
+    - "2005-05-01 00:00"
+    - "2006-03-01 00:00"
+    - "2006-04-01 00:00"
+    - "2006-05-01 00:00"
+    - "2007-03-01 00:00"
+    - "2007-04-01 00:00"
+    - "2007-05-01 00:00"
+    - "2008-03-01 00:00"
+    - "2008-04-01 00:00"
+    - "2008-05-01 00:00"
+    - "2009-03-01 00:00"
+    - "2009-04-01 00:00"
+    - "2009-05-01 00:00"
+    - "2010-03-01 00:00"
+    - "2010-04-01 00:00"
+    - "2010-05-01 00:00"
+    - "2011-03-01 00:00"
     - "2011-04-01 00:00"
+    - "2011-05-01 00:00"
+    - "2012-03-01 00:00"
     - "2012-04-01 00:00"
+    - "2012-05-01 00:00"
+    - "2013-03-01 00:00"
+    - "2013-04-01 00:00"
+    - "2013-05-01 00:00"
+    - "2014-03-01 00:00"
+    - "2014-04-01 00:00"
+    - "2014-05-01 00:00"
+    - "2015-03-01 00:00"
+    - "2015-04-01 00:00"
+    - "2015-05-01 00:00"
+    - "2016-03-01 00:00"
+    - "2016-04-01 00:00"
+    - "2016-05-01 00:00"
+    - "2017-03-01 00:00"
+    - "2017-04-01 00:00"
+    - "2017-05-01 00:00"
+    - "2018-03-01 00:00"
+    - "2018-04-01 00:00"
+    - "2018-05-01 00:00"
   restart_file_filter: restart
   state_members: ["001"]
   run_mizuroute: true
@@ -44,9 +150,6 @@ esp:
     executable: /Users/dcasson/GitHub/mizuRoute/route/bin/route_runoff.exe
     control_file: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/mizuroute.control
     ancil_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/
-    output_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/output/mizuroute_output/
-    restart_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/output/mizuroute_output/restart_files/
     case_name: Ross
     restart_write: monthly
     log_output: false
-  deterministic: true

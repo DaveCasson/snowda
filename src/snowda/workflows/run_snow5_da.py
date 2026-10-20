@@ -13,6 +13,7 @@ import pandas as pd
 import xarray as xr
 
 from snowda.config.loader import load_config
+from snowda.config.pysummada import _parse_esp_horizon
 from snowda.core.assimilation import DataAssimilationCore
 from snowda.core.fsca_models import FscaState, initialize_model_arrays
 from snowda.core.particle_filter import ParticleFilterCore
@@ -22,6 +23,7 @@ from snowda.schaake_shuffle.archive import Snow5ArchiveAdapter
 from snowda.schaake_shuffle.config import SchaakeShuffleConfig
 from snowda.schaake_shuffle.core import apply_permutation, schaake_shuffle
 from snowda.utils.logging import configure_logging, get_logger
+from snowda.workflows.esp import resolve_forecast_window_end
 from snowda.workflows.run_snow5 import _load_cv_array
 
 log = get_logger(__name__)
@@ -479,11 +481,9 @@ def _run_snow5_esp_from_da(
 
     start_year = int(esp_cfg["start_year"])
     end_year = int(esp_cfg["end_year"])
-    forecast_length_days = int(esp_cfg["forecast_length_days"])
     if end_year < start_year:
         raise ValueError("`esp.end_year` must be >= `esp.start_year`.")
-    if forecast_length_days <= 0:
-        raise ValueError("`esp.forecast_length_days` must be > 0.")
+    forecast_length_days, forecast_end = _parse_esp_horizon(esp_cfg)
 
     frequency_days_raw = esp_cfg.get("frequency_days")
     frequency_days = int(frequency_days_raw) if frequency_days_raw is not None else None
@@ -525,7 +525,9 @@ def _run_snow5_esp_from_da(
             forcing_ds = forcing_lookup[state_member]
             for trace_year in range(start_year, end_year + 1):
                 trace_start = _replace_year(trigger, trace_year)
-                trace_end = trace_start + timedelta(days=forecast_length_days)
+                trace_end = resolve_forecast_window_end(
+                    trace_start, forecast_length_days, forecast_end
+                )
                 forcing_subset = forcing_ds.sel(time=slice(trace_start, trace_end))
                 if forcing_subset.sizes.get("time", 0) == 0:
                     log.info(

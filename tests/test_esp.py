@@ -4,7 +4,13 @@ from datetime import datetime
 from pathlib import Path
 
 from snowda.config.pysummada import _load_esp_config
-from snowda.workflows.esp import discover_restart_dates, resolve_esp_trigger_dates
+from snowda.workflows.esp import (
+    _mizuroute_sim_end,
+    discover_restart_dates,
+    forecast_end_datetime,
+    resolve_esp_trigger_dates,
+    resolve_forecast_window_end,
+)
 
 
 def test_resolve_esp_trigger_dates_with_frequency_and_month_filter():
@@ -88,8 +94,6 @@ def test_load_esp_config_mizuroute_resources(tmp_path: Path):
         "executable": str(tmp_path / "route.exe"),
         "control_file": str(tmp_path / "mizuroute.control"),
         "ancil_dir": str(tmp_path / "ancil"),
-        "output_dir": str(tmp_path / "output"),
-        "restart_dir": str(tmp_path / "restart"),
         "case_name": "case",
         "restart_write": "monthly",
         "param_nml": str(param),
@@ -113,3 +117,61 @@ def test_load_esp_config_mizuroute_resources(tmp_path: Path):
     assert esp.mizuroute.param_nml == param
     assert esp.mizuroute.topology_nc == topology
     assert esp.mizuroute.log_output is True
+
+
+def test_load_esp_config_forecast_end(tmp_path: Path):
+    esp_cfg = {
+        "enabled": True,
+        "start_year": 2000,
+        "end_year": 2001,
+        "forecast_end": "08-01",
+        "frequency_days": 30,
+        "months": [12],
+        "restart_file_filter": "restart",
+    }
+    esp = _load_esp_config({"esp": esp_cfg}, tmp_path)
+    assert esp.forecast_length_days is None
+    assert esp.forecast_end == (8, 1)
+
+
+def test_forecast_end_datetime_same_year():
+    start = datetime(2014, 2, 1, 0, 0)
+    assert forecast_end_datetime(start, 8, 1) == datetime(2014, 8, 1, 0, 0)
+
+
+def test_forecast_end_datetime_wraps_to_next_year():
+    start = datetime(2014, 9, 1, 0, 0)
+    assert forecast_end_datetime(start, 8, 1) == datetime(2015, 8, 1, 0, 0)
+
+
+def test_forecast_end_datetime_clamps_leap_day():
+    start = datetime(2015, 1, 15, 0, 0)
+    assert forecast_end_datetime(start, 2, 29) == datetime(2015, 2, 28, 0, 0)
+
+
+def test_resolve_forecast_window_end_duration():
+    start = datetime(2014, 2, 1, 0, 0)
+    end = resolve_forecast_window_end(start, 30, None)
+    assert end == datetime(2014, 3, 3, 0, 0)
+
+
+def test_resolve_forecast_window_end_calendar():
+    start = datetime(2014, 5, 1, 0, 0)
+    end = resolve_forecast_window_end(start, None, (8, 1))
+    assert end == datetime(2014, 8, 1, 0, 0)
+
+
+def test_mizuroute_sim_end_leap_adjust_for_duration():
+    base_end = datetime(2014, 6, 1, 0, 0)
+    leap = _mizuroute_sim_end(base_end, 2016, leap_day_adjust=True)
+    non_leap = _mizuroute_sim_end(base_end, 2015, leap_day_adjust=True)
+    assert leap == datetime(2014, 5, 30, 23, 0)
+    assert non_leap == datetime(2014, 5, 31, 23, 0)
+
+
+def test_mizuroute_sim_end_skips_leap_adjust_for_calendar():
+    base_end = datetime(2014, 8, 1, 0, 0)
+    leap = _mizuroute_sim_end(base_end, 2016, leap_day_adjust=False)
+    non_leap = _mizuroute_sim_end(base_end, 2015, leap_day_adjust=False)
+    assert leap == non_leap == datetime(2014, 7, 31, 23, 0)
+
