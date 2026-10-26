@@ -87,7 +87,23 @@ def _ensemble_quantiles(values: xr.DataArray) -> pd.DataFrame:
     )
 
 
-def _draw_forecasts(ax: Axes, traces: DaTraceSet) -> list[Patch]:
+def _as_timestamp(value: pd.Timestamp | str) -> pd.Timestamp:
+    stamp = pd.Timestamp(value)
+    if stamp.tzinfo is not None:
+        stamp = stamp.tz_convert("UTC").tz_localize(None)
+    return stamp
+
+
+def _in_window(index: pd.DatetimeIndex, start: pd.Timestamp, end: pd.Timestamp) -> np.ndarray:
+    return (index >= start) & (index <= end)
+
+
+def _draw_forecasts(
+    ax: Axes,
+    traces: DaTraceSet,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+) -> list[Patch]:
     colors = _forecast_colors(traces.forecasts)
     month_counts: dict[str, int] = {}
     for forecast in traces.forecasts:
@@ -97,6 +113,9 @@ def _draw_forecasts(ax: Axes, traces: DaTraceSet) -> list[Patch]:
     for forecast in traces.forecasts:
         color = colors[forecast.init_month]
         quantiles = _ensemble_quantiles(forecast.values)
+        quantiles = quantiles.loc[_in_window(pd.DatetimeIndex(quantiles.index), start, end)]
+        if quantiles.empty:
+            continue
         ax.fill_between(
             quantiles.index,
             quantiles["low"],
@@ -134,15 +153,23 @@ def _draw_forecasts(ax: Axes, traces: DaTraceSet) -> list[Patch]:
     return handles
 
 
-def _draw_historic(ax: Axes, traces: DaTraceSet) -> list:
+def _draw_historic(
+    ax: Axes,
+    traces: DaTraceSet,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+) -> list:
     labeled = False
     handles = []
     for member in traces.historic:
         for segment in member.segments:
             index = _time_index(segment)
+            keep = _in_window(index, start, end)
+            if not np.any(keep):
+                continue
             line = ax.plot(
-                index,
-                np.asarray(segment.values, dtype=float),
+                index[keep],
+                np.asarray(segment.values, dtype=float)[keep],
                 color=_HISTORIC_COLOR,
                 linewidth=1.0,
                 alpha=0.85,
@@ -155,14 +182,24 @@ def _draw_historic(ax: Axes, traces: DaTraceSet) -> list:
     return handles
 
 
-def _draw_states(ax: Axes, traces: DaTraceSet) -> list:
+def _draw_states(
+    ax: Axes,
+    traces: DaTraceSet,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+) -> list:
     handles = []
     marked_state = False
     marked_obs = False
     marked_time = False
     for state in traces.states:
+        when = pd.Timestamp(state.time)
+        if when.tzinfo is not None:
+            when = when.tz_convert("UTC").tz_localize(None)
+        if when < start or when > end:
+            continue
         line = ax.axvline(
-            pd.Timestamp(state.time),
+            when,
             color="0.15",
             linestyle=":",
             linewidth=1.0,
@@ -176,7 +213,7 @@ def _draw_states(ax: Axes, traces: DaTraceSet) -> list:
         finite = np.isfinite(values)
         if np.any(finite):
             scatter = ax.scatter(
-                np.full(int(np.sum(finite)), pd.Timestamp(state.time)),
+                np.full(int(np.sum(finite)), when),
                 values[finite],
                 s=36,
                 color="black",
@@ -191,7 +228,7 @@ def _draw_states(ax: Axes, traces: DaTraceSet) -> list:
         if state.observation is None or not np.isfinite(state.observation):
             continue
         star = ax.scatter(
-            [pd.Timestamp(state.time)],
+            [when],
             [state.observation],
             marker="*",
             s=160,
@@ -235,26 +272,34 @@ def plot_da_traces(
     *,
     ax: Axes | None = None,
     title: str | None = None,
+    start: pd.Timestamp | str | None = None,
+    end: pd.Timestamp | str | None = None,
 ) -> tuple[Figure, Axes]:
     """Historic ensemble lines, assimilation states, and ESP quantile envelopes.
 
     Forecasts that share an initialization month-day use one color, matching
     the ESP streamflow envelopes (p10–p90, p25–p75, and median). ``obs`` is a
     continuous verification series drawn over the historic and forecast window.
+    ``start`` and ``end`` set the time axis. Omitted bounds use the first and
+    last time in the traces. Both bounds are inclusive.
     """
     fig, ax = _ensure_axes(ax, figsize=(14, 7))
-    start, end = _data_bounds(traces)
-    forecast_handles = _draw_forecasts(ax, traces)
-    historic_handles = _draw_historic(ax, traces)
+    data_start, data_end = _data_bounds(traces)
+    window_start = _as_timestamp(start) if start is not None else data_start
+    window_end = _as_timestamp(end) if end is not None else data_end
+    if window_start > window_end:
+        raise ValueError(f"start {window_start} is after end {window_end}.")
+    forecast_handles = _draw_forecasts(ax, traces, window_start, window_end)
+    historic_handles = _draw_historic(ax, traces, window_start, window_end)
     observed_handles = []
     if obs is not None:
-        observed_handles = _draw_observed(ax, obs, start, end)
-    state_handles = _draw_states(ax, traces)
+        observed_handles = _draw_observed(ax, obs, window_start, window_end)
+    state_handles = _draw_states(ax, traces, window_start, window_end)
     ax.set_ylabel(traces.ylabel)
     ax.set_xlabel("Time")
     ax.set_title(title or "Data assimilation and ESP")
     ax.grid(True, alpha=0.25)
-    ax.set_xlim(start, end)
+    ax.set_xlim(window_start, window_end)
     handles = historic_handles + forecast_handles + state_handles + observed_handles
     labels = [handle.get_label() for handle in handles]
     if handles:

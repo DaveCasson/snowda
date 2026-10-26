@@ -59,6 +59,7 @@ def _run_summa_deterministic(config_path: str | Path) -> Path:
     run_ensemble(
         str(cfg.summa_exe),
         current_run_config,
+        num_workers=cfg.num_workers,
         run_suffix=cfg.end_time.strftime("%Y_%m_%d"),
         log_stdout=True,
     )

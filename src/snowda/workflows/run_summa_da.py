@@ -20,14 +20,21 @@ from snowda.core.assimilation import (
     DataAssimilationCore,
     assimilation_segments,
     resolve_assimilation_dates,
+    restart_filename,
+)
+from snowda.core.esp_sampling import (
+    ESP_SAMPLING_DESCRIPTION,
+    INITIALIZATION_BALANCED,
+    ParticleState,
+    write_post_da_catalog,
 )
 from snowda.core.particle_filter import ParticleFilterCore
-from snowda.core.swe_assimilation import LumpedSwe, lumped_swe_by_date
+from snowda.core.swe_assimilation import DatedHruSwe, mapped_swe_by_date
 from snowda.io.fsca_obs import read_fsca_observations
 from snowda.io.summa_ensemble import SummaEnsembleReader, update_file_manager_option
 from snowda.io.summa_fsca import calc_summa_fsca, prepare_summa_fsca_input
-from snowda.io.swe_obs import read_lumped_member_swe, read_model_equivalent_swe
-from snowda.workflows.esp import run_esp_traces
+from snowda.io.swe_obs import read_member_hru_swe, read_model_equivalent_swe
+from snowda.workflows.esp import run_balanced_esp_traces, run_esp_traces
 from snowda.workflows.summa_common import (
     apply_run_time,
     apply_segment_initial_conditions,
@@ -47,19 +54,24 @@ def _freq_restart(cfg: PysummadaConfig) -> str:
     return cfg.summa_args.get("-r") or cfg.summa_args.get("freq_restart") or "d"
 
 
-def _write_swe_record(run_dir: Path, observation: LumpedSwe) -> Path:
+def _write_swe_record(run_dir: Path, observation: DatedHruSwe) -> Path:
     out_dir = run_dir / "assimilation"
     out_dir.mkdir(parents=True, exist_ok=True)
-    frame = pd.DataFrame(
-        {
-            "assimilation_date": [observation.date.strftime("%Y-%m-%d %H:%M")]
-            * len(observation.samples),
-            "station_id": [sample.station_id for sample in observation.samples],
-            "time": [sample.time.strftime("%Y-%m-%d %H:%M") for sample in observation.samples],
-            "swe_model_equivalent": [sample.value for sample in observation.samples],
-            "lumped_mean": [observation.value] * len(observation.samples),
-        }
-    )
+    rows: list[dict[str, object]] = []
+    for hru in observation.hrus:
+        for sample in hru.samples:
+            rows.append(
+                {
+                    "assimilation_date": observation.date.strftime("%Y-%m-%d %H:%M"),
+                    "hru_id": hru.hru_id,
+                    "station_id": sample.station_id,
+                    "time": sample.time.strftime("%Y-%m-%d %H:%M"),
+                    "swe_model_equivalent": sample.value,
+                    "hru_mean": hru.value,
+                    "lumped_mean": observation.value,
+                }
+            )
+    frame = pd.DataFrame(rows)
     path = out_dir / f"{observation.date.strftime('%Y_%m_%d')}_swe_obs.csv"
     frame.to_csv(path, index=False)
     return path
@@ -88,13 +100,25 @@ def _run_swe_assimilation(
     times, station_ids, values, flags, _units = read_model_equivalent_swe(
         schedule.swe_nc, variable=schedule.swe_var
     )
-    observations = lumped_swe_by_date(
+    known_stations = {str(station) for station in station_ids}
+    missing_stations = [
+        item.station_id
+        for item in schedule.hru_stations
+        if item.station_id not in known_stations
+    ]
+    if missing_stations:
+        raise ValueError(
+            "assimilation.hru_stations station_id not in "
+            f"{schedule.swe_nc}: {', '.join(missing_stations)}"
+        )
+    observations = mapped_swe_by_date(
         times,
         station_ids,
         values,
         flags,
         dates,
         schedule.obs_window_days,
+        schedule.station_hru_map(),
     )
     labels = cfg.ens_label_array
     updates: list[dict[str, Any]] = []
@@ -120,6 +144,7 @@ def _run_swe_assimilation(
         run_ensemble(
             str(cfg.summa_exe),
             current_run_config,
+            num_workers=cfg.num_workers,
             run_suffix=segment_end.strftime("%Y_%m_%d"),
             freq_restart=_freq_restart(cfg),
             log_stdout=True,
@@ -134,6 +159,7 @@ def _run_swe_assimilation(
                 segment_end,
                 routing_restarts,
                 require_restart=index < len(segments) - 1,
+                num_workers=cfg.num_workers,
             )
         previous_resampled = False
         if not do_assimilate:
@@ -143,6 +169,29 @@ def _run_swe_assimilation(
             run_log.info("No usable model-equivalent SWE for %s", segment_end)
             continue
         record_path = _write_swe_record(run_dir, observation)
+        # #region agent log
+        try:
+            import json
+            import time
+
+            payload = {
+                "sessionId": "83d907",
+                "hypothesisId": "E",
+                "location": "run_summa_da.py:_run_swe_assimilation",
+                "message": "routing finished, reading swe",
+                "data": {
+                    "segment_end": str(segment_end),
+                    "members": list(cfg.ens_label_array),
+                },
+                "timestamp": int(time.time() * 1000),
+            }
+            with open(
+                "/Users/dcasson/GitHub/snowda/.cursor/debug-83d907.log", "a"
+            ) as handle:
+                handle.write(json.dumps(payload) + "\n")
+        except Exception:
+            pass
+        # #endregion
         resampled = _update_swe_particles(
             cfg,
             schedule,
@@ -160,6 +209,7 @@ def _run_swe_assimilation(
             {
                 "date": segment_end.isoformat(),
                 "lumped_swe": observation.value,
+                "hru_swe": {hru.hru_id: hru.value for hru in observation.hrus},
                 "n_samples": len(observation.samples),
                 "record": str(record_path),
                 "resampled": resampled,
@@ -174,7 +224,7 @@ def _update_swe_particles(
     assimilation: DataAssimilationCore,
     ens_file_managers: list[str],
     particle_filter: ParticleFilterCore,
-    observation: LumpedSwe,
+    observation: DatedHruSwe,
     summa_output_dir: Path,
     run_dir: Path,
     run_log: Any,
@@ -182,32 +232,39 @@ def _update_swe_particles(
 ) -> bool:
     output_dir = summa_output_dir
     suffix = cfg.summa_output_suffix or SUMMA_TIMESTEP_SUFFIX
-    member_values: dict[str, float] = {}
-    hru_id: int | None = None
+    hru_ids = [hru.hru_id for hru in observation.hrus]
+    observed = {hru.hru_id: hru.value for hru in observation.hrus}
+    member_values: dict[str, dict[int, float]] = {}
     for label in cfg.ens_label_array:
-        member_hru, value, _units = read_lumped_member_swe(
+        member_values[label] = read_member_hru_swe(
             output_dir,
             label,
             variable=schedule.summa_swe_var,
             when=observation.date,
             file_suffix=suffix,
+            hru_ids=hru_ids,
         )
-        if hru_id is None:
-            hru_id = member_hru
-        elif member_hru != hru_id:
-            raise ValueError(
-                f"Member {label} hruId {member_hru} does not match {hru_id}."
-            )
-        member_values[label] = value
-    if hru_id is None:
+    if not member_values:
         raise ValueError("No ensemble members were configured.")
-    index = pd.MultiIndex.from_tuples([(hru_id, observation.date)], names=["hru", "time"])
-    particles = pd.DataFrame(member_values, index=index)
-    measurements = pd.DataFrame(
-        {"hruId": [hru_id], "meas_snw": [observation.value]},
+    index = pd.MultiIndex.from_tuples(
+        [(hru_id, observation.date) for hru_id in hru_ids],
+        names=["hru", "time"],
+    )
+    particles = pd.DataFrame(
+        {
+            label: [values[hru_id] for hru_id in hru_ids]
+            for label, values in member_values.items()
+        },
         index=index,
     )
-    hru_index = pd.DataFrame({"hruId": [hru_id]})
+    measurements = pd.DataFrame(
+        {
+            "hruId": hru_ids,
+            "meas_snw": [observed[hru_id] for hru_id in hru_ids],
+        },
+        index=index,
+    )
+    hru_index = pd.DataFrame({"hruId": hru_ids})
     weights = particle_filter.update_particle_weights(
         particles,
         measurements,
@@ -231,6 +288,7 @@ def _update_swe_particles(
         observation.date,
         list(member_values),
         routing_restarts,
+        run_dir=run_dir,
     )
 
 
@@ -243,35 +301,100 @@ def _resample_member_states(
     when: datetime,
     member_labels: list[str],
     routing_restarts: dict[str, Path | None] | None = None,
+    *,
+    run_dir: Path | None = None,
 ) -> bool:
     """Copy donor SUMMA and mizuRoute restarts under SIR.
 
     SIS leaves each particle's states in place. A particle is the member's
-    SUMMA restart together with that same member's mizuRoute restart.
+    SUMMA restart together with that same member's mizuRoute restart. When
+    ``run_dir`` is set, both files are recorded on one catalog row.
     """
-    if cfg.pf_scheme != "sir":
-        return False
-    resample_indices = particle_filter.resample_indices(
-        weights,
-        num_ens=len(member_labels),
-        n_eff_threshold=cfg.n_eff_threshold,
-    )
-    if resample_indices is None:
-        return False
     managers = dict(zip(cfg.ens_label_array, ens_file_managers))
-    warm_states = dict(
-        zip(cfg.ens_label_array, assimilation.create_warm_state_list(when))
-    )
-    for member_index, donor_index in enumerate(resample_indices):
-        member = member_labels[member_index]
-        donor = member_labels[int(donor_index)]
-        update_file_manager_option(
-            managers[member],
-            "initConditionFile",
-            f"'{warm_states[donor]}'",
+    resampled = False
+    donor_labels = list(member_labels)
+    if cfg.pf_scheme == "sir":
+        resample_indices = particle_filter.resample_indices(
+            weights,
+            num_ens=len(member_labels),
+            n_eff_threshold=cfg.n_eff_threshold,
         )
-    resample_routing_restarts(routing_restarts or {}, member_labels, resample_indices)
-    return True
+        if resample_indices is not None:
+            resampled = True
+            donor_indexes = [int(index) for index in resample_indices]
+            donor_labels = [member_labels[index] for index in donor_indexes]
+            warm_states = dict(
+                zip(cfg.ens_label_array, assimilation.create_warm_state_list(when))
+            )
+            for member, donor in zip(member_labels, donor_labels):
+                update_file_manager_option(
+                    managers[member],
+                    "initConditionFile",
+                    f"'{warm_states[donor]}'",
+                )
+            resample_routing_restarts(
+                routing_restarts or {},
+                member_labels,
+                donor_indexes,
+            )
+    if run_dir is not None:
+        _write_bound_particle_catalog(
+            cfg,
+            run_dir,
+            when,
+            member_labels,
+            donor_labels,
+            managers,
+            weights,
+            routing_restarts or {},
+            resampled=resampled,
+        )
+    return resampled
+
+
+def _write_bound_particle_catalog(
+    cfg: PysummadaConfig,
+    run_dir: Path,
+    when: datetime,
+    member_labels: list[str],
+    donor_labels: list[str],
+    managers: dict[str, str],
+    weights: pd.DataFrame,
+    routing_restarts: dict[str, Path | None],
+    *,
+    resampled: bool,
+) -> None:
+    """Store each member's SUMMA restart and mizuRoute restart as one particle."""
+    weight_row = weights.iloc[0]
+    state_dir = run_dir / "states"
+    particles: list[ParticleState] = []
+    for member, donor in zip(member_labels, donor_labels):
+        if member not in weight_row:
+            raise ValueError(f"Particle weights have no column for member {member}.")
+        summa_restart = state_dir / restart_filename(donor, when)
+        if not summa_restart.is_file():
+            raise FileNotFoundError(
+                f"Post-DA SUMMA restart for member {member} (donor {donor}) "
+                f"is missing: {summa_restart}"
+            )
+        route = routing_restarts.get(member)
+        if cfg.mizuroute is not None and (route is None or not Path(route).is_file()):
+            raise FileNotFoundError(
+                f"Post-DA mizuRoute restart for member {member} (donor {donor}) "
+                "is missing. SUMMA and mizuRoute restarts are stored as one particle."
+            )
+        particles.append(
+            ParticleState(
+                label=member,
+                donor_label=donor,
+                summa_restart=str(summa_restart.resolve()),
+                mizuroute_restart=str(Path(route).resolve()) if route is not None else None,
+                weight=float(weight_row[member]),
+                file_manager=str(Path(managers[member]).resolve()),
+                resampled=resampled,
+            )
+        )
+    write_post_da_catalog(run_dir, when, particles)
 
 
 def _run_fsca_assimilation(
@@ -282,6 +405,7 @@ def _run_fsca_assimilation(
     reader: SummaEnsembleReader,
     conversions_log_run: list[Any],
     summa_output_dir: Path,
+    run_dir: Path,
     run_log: Any,
 ) -> None:
     run_period = assimilation.set_run_period()
@@ -319,6 +443,7 @@ def _run_fsca_assimilation(
         run_ensemble(
             str(cfg.summa_exe),
             current_run_config,
+            num_workers=cfg.num_workers,
             run_suffix=end_time_current_run.strftime("%Y_%m_%d"),
             log_stdout=True,
         )
@@ -332,6 +457,7 @@ def _run_fsca_assimilation(
                 end_time_current_run,
                 routing_restarts,
                 require_restart=idx < len(run_period) - 1,
+                num_workers=cfg.num_workers,
             )
         previous_resampled = False
 
@@ -409,6 +535,7 @@ def _run_fsca_assimilation(
             end_time_current_run,
             list(modeled_cols.keys()),
             routing_restarts,
+            run_dir=run_dir,
         )
         weights_out = fsca_ens_dir / "fsca_weights.csv"
         weights_fsca.to_csv(weights_out)
@@ -477,6 +604,7 @@ def run_summa_assimilation(
             reader,
             conversions_log_run,
             summa_output_dir,
+            run_dir,
             log,
         )
 
@@ -522,13 +650,21 @@ def run_summa_da(config_path: str | Path) -> Path:
         logger_name=__name__,
         start_message="snowda SUMMA DA run starting",
     )
-    result.log.info("Starting incremental ESP sequencing + traces.")
-    esp_records = run_esp_traces(cfg, cfg.esp, result.run_dir)
+    if cfg.esp.initialization == INITIALIZATION_BALANCED:
+        result.log.info("Starting balanced independent ESP traces.")
+        esp_records = run_balanced_esp_traces(cfg, cfg.esp, result.run_dir)
+    else:
+        result.log.info("Starting incremental ESP sequencing + traces.")
+        esp_records = run_esp_traces(cfg, cfg.esp, result.run_dir)
     result.log.info("ESP complete. Generated %s traces.", len(esp_records))
 
     provenance = assimilation_provenance(cfg, config_path, result, variant="da")
     provenance["esp_trace_count"] = len(esp_records)
     provenance["esp_traces"] = [record.__dict__ for record in esp_records]
+    if cfg.esp.initialization == INITIALIZATION_BALANCED:
+        provenance["esp_initialization"] = INITIALIZATION_BALANCED
+        provenance["esp_sampling"] = ESP_SAMPLING_DESCRIPTION
+        provenance["esp_member_map"] = str(result.run_dir / "esp" / "member_map.json")
     write_provenance(result.run_dir, provenance, result.log)
     result.log.info("snowda SUMMA DA run complete")
     return result.run_dir

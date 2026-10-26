@@ -66,6 +66,14 @@ class DeterministicEspState:
 
 
 @dataclass(frozen=True)
+class HruStation:
+    """One SUMMA ``hruId`` paired with one SWE observation station."""
+
+    hru_id: int
+    station_id: str
+
+
+@dataclass(frozen=True)
 class AssimilationConfig:
     """Dated SWE assimilation schedule. Dates are explicit; frequency is optional."""
 
@@ -77,6 +85,11 @@ class AssimilationConfig:
     swe_var: str
     summa_swe_var: str
     z_var: float
+    hru_stations: tuple[HruStation, ...]
+
+    def station_hru_map(self) -> dict[str, int]:
+        """Observation ``station_id`` to SUMMA ``hruId``."""
+        return {item.station_id: item.hru_id for item in self.hru_stations}
 
 
 @dataclass(frozen=True)
@@ -95,6 +108,9 @@ class EspConfig:
     state_members: tuple[str, ...]
     run_mizuroute: bool
     mizuroute: Optional[MizuRouteEspConfig]
+    initialization: str = "incremental"
+    n_members: Optional[int] = None
+    seed: Optional[int] = None
 
 
 @dataclass(frozen=True)
@@ -137,6 +153,7 @@ class PysummadaConfig:
     esp: Optional[EspConfig]
     mizuroute: Optional[MizuRouteEspConfig]
     evaluation: Optional[StreamflowEvaluationConfig]
+    num_workers: int = 5
 
     @property
     def model_result_output_dir(self) -> Path:
@@ -203,6 +220,9 @@ def load_pysummada_config(config_path: str | Path) -> PysummadaConfig:
     )
     job_list_filename = cfg.get("job_list_filename")
     num_ens = int(_require(cfg, "num_ens"))
+    num_workers = int(cfg.get("num_workers", 5))
+    if num_workers < 1:
+        raise ValueError("`num_workers` must be >= 1.")
     if ensemble_members is not None and len(ensemble_members) != num_ens:
         raise ValueError(
             f"`ensemble_members` has {len(ensemble_members)} ids but `num_ens` is {num_ens}."
@@ -304,6 +324,7 @@ def load_pysummada_config(config_path: str | Path) -> PysummadaConfig:
         esp=esp,
         mizuroute=mizuroute,
         evaluation=evaluation,
+        num_workers=num_workers,
     )
 
 
@@ -329,6 +350,13 @@ def validate_esp_config(cfg: PysummadaConfig) -> None:
             "ESP workflow does not run data assimilation. "
             "Use `snowda.workflows.run_summa_da`."
         )
+    if cfg.esp.n_members is None:
+        raise ValueError(
+            "`esp.n_members` is required for open-loop ESP. "
+            "Each forecast uses one historic member and one weather year."
+        )
+    if cfg.esp.seed is None:
+        raise ValueError("`esp.seed` is required for open-loop ESP.")
 
 
 def validate_da_config(cfg: PysummadaConfig) -> None:
@@ -340,6 +368,17 @@ def validate_da_config(cfg: PysummadaConfig) -> None:
         raise ValueError(
             "SUMMA DA does not allow `esp.deterministic` or `esp.deterministic_state`."
         )
+    if cfg.esp.initialization == "balanced_independent":
+        if cfg.esp.n_members is None:
+            raise ValueError(
+                "`esp.n_members` is required when `esp.initialization` is "
+                "balanced_independent."
+            )
+        if cfg.esp.seed is None:
+            raise ValueError(
+                "`esp.seed` is required when `esp.initialization` is "
+                "balanced_independent."
+            )
     _validate_assimilation_config(cfg)
 
 
@@ -355,6 +394,32 @@ def validate_historic_da_config(cfg: PysummadaConfig) -> None:
             "segment is routed."
         )
     _validate_assimilation_config(cfg)
+
+
+def validate_historic_config(cfg: PysummadaConfig) -> None:
+    if cfg.ensemble_forcing_mode != "historic":
+        raise ValueError(
+            "Historic SUMMA requires `ensemble_forcing_mode: historic`. "
+            "Use `snowda.workflows.run_summa` for a single forcing file."
+        )
+    _validate_historic_members(cfg)
+    if cfg.esp is not None:
+        raise ValueError(
+            "Historic SUMMA does not run ESP. Remove the `esp` section, "
+            "or use `snowda.workflows.run_summa_esp` or "
+            "`snowda.workflows.run_summa_da`."
+        )
+    if cfg.assimilation is not None or cfg.assimilation_mode:
+        raise ValueError(
+            "Historic SUMMA does not assimilate. Remove `assimilation` and "
+            "`assimilation_mode`, or use `snowda.workflows.run_summa_historic_da` "
+            "or `snowda.workflows.run_summa_da`."
+        )
+    if cfg.evaluation is not None:
+        raise ValueError(
+            "Historic SUMMA does not evaluate a single routed series. "
+            "Use `snowda.workflows.run_summa`."
+        )
 
 
 def _validate_assimilation_config(cfg: PysummadaConfig) -> None:
@@ -415,9 +480,30 @@ def _warn_ignored_legacy_keys(cfg: Dict[str, Any]) -> None:
         )
     if "run_da" in cfg:
         log.warning(
-            "`run_da` is ignored; use run_summa_historic_da for historic assimilation, "
+            "`run_da` is ignored; use run_summa_historic for a historic ensemble "
+            "without assimilation, run_summa_historic_da for historic assimilation, "
             "run_summa_da for assimilation then ESP, or run_summa_esp for ESP without DA."
         )
+
+
+def _parse_esp_initialization(
+    esp_cfg_raw: Dict[str, Any],
+) -> tuple[str, Optional[int], Optional[int]]:
+    initialization = str(esp_cfg_raw.get("initialization", "incremental")).strip().lower()
+    if initialization not in {"incremental", "balanced_independent"}:
+        raise ValueError(
+            f"Unsupported esp.initialization {esp_cfg_raw.get('initialization')!r}. "
+            "Use 'incremental' or 'balanced_independent'."
+        )
+    n_members_raw = esp_cfg_raw.get("n_members")
+    n_members = None if n_members_raw is None else int(n_members_raw)
+    if n_members is not None and n_members < 1:
+        raise ValueError("`esp.n_members` must be >= 1.")
+    seed_raw = esp_cfg_raw.get("seed")
+    seed = None if seed_raw is None else int(seed_raw)
+    if seed is not None and seed < 0:
+        raise ValueError("`esp.seed` must be >= 0.")
+    return initialization, n_members, seed
 
 
 def _esp_section_is_enabled(esp_cfg_raw: Dict[str, Any]) -> bool:
@@ -578,6 +664,7 @@ def _load_assimilation_config(
     z_var = float(raw["z_var"])
     if z_var <= 0:
         raise ValueError("`assimilation.z_var` must be > 0.")
+    hru_stations = _parse_hru_stations(raw.get("hru_stations"))
     return AssimilationConfig(
         dates=explicit_dates,
         frequency_days=frequency_days,
@@ -587,7 +674,48 @@ def _load_assimilation_config(
         swe_var=str(raw.get("swe_var", "swe_model_equivalent")),
         summa_swe_var=str(raw.get("summa_swe_var", "scalarSWE")),
         z_var=z_var,
+        hru_stations=hru_stations,
     )
+
+
+def _parse_hru_stations(raw: Any) -> tuple[HruStation, ...]:
+    """Read the manual HRU-to-station list.
+
+    Each entry names one SUMMA ``hruId`` and one observation ``station_id``.
+    The same HRU may be listed more than once. A station may not.
+    """
+    if not raw:
+        raise ValueError(
+            "`assimilation.hru_stations` is required. List each SUMMA hruId "
+            "with the SWE station_id that should update it."
+        )
+    if not isinstance(raw, list):
+        raise TypeError("`assimilation.hru_stations` must be a list.")
+    pairs: list[HruStation] = []
+    seen_stations: set[str] = set()
+    for index, item in enumerate(raw):
+        if not isinstance(item, dict):
+            raise TypeError(
+                f"`assimilation.hru_stations[{index}]` must be a mapping "
+                "with `hru_id` and `station_id`."
+            )
+        if "hru_id" not in item or "station_id" not in item:
+            raise ValueError(
+                f"`assimilation.hru_stations[{index}]` requires `hru_id` and `station_id`."
+            )
+        station_id = str(item["station_id"]).strip()
+        if not station_id:
+            raise ValueError(
+                f"`assimilation.hru_stations[{index}].station_id` is empty."
+            )
+        if station_id in seen_stations:
+            raise ValueError(
+                f"Station {station_id!r} is listed more than once in "
+                "`assimilation.hru_stations`."
+            )
+        seen_stations.add(station_id)
+        pairs.append(HruStation(hru_id=int(item["hru_id"]), station_id=station_id))
+    return tuple(pairs)
 
 
 def _load_esp_config(cfg: Dict[str, Any], base_dir: Path) -> Optional[EspConfig]:
@@ -643,6 +771,7 @@ def _load_esp_config(cfg: Dict[str, Any], base_dir: Path) -> Optional[EspConfig]
     restart_file_filter = str(esp_cfg_raw.get("restart_file_filter", "restart"))
     state_members_raw = esp_cfg_raw.get("state_members", []) or []
     state_members = tuple(str(m) for m in state_members_raw)
+    initialization, n_members, seed = _parse_esp_initialization(esp_cfg_raw)
     deterministic = bool(esp_cfg_raw.get("deterministic", False))
 
     deterministic_state = None
@@ -678,6 +807,9 @@ def _load_esp_config(cfg: Dict[str, Any], base_dir: Path) -> Optional[EspConfig]
         state_members=state_members,
         run_mizuroute=bool(esp_cfg_raw.get("run_mizuroute", False)),
         mizuroute=_load_esp_mizuroute(esp_cfg_raw, base_dir),
+        initialization=initialization,
+        n_members=n_members,
+        seed=seed,
     )
 
 

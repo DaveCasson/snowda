@@ -9,6 +9,7 @@ import xarray as xr
 from snowda.config.pysummada import (
     load_pysummada_config,
     validate_da_config,
+    validate_historic_config,
     validate_historic_da_config,
 )
 from snowda.core.assimilation import (
@@ -19,9 +20,14 @@ from snowda.core.assimilation import (
 )
 from snowda.core.particle_filter import ParticleFilterCore
 from snowda.workflows.run_summa_da import _resample_member_states
-from snowda.core.swe_assimilation import lumped_swe_by_date
+from snowda.core.swe_assimilation import lumped_swe_by_date, mapped_swe_by_date
 from snowda.io.summa_ensemble import EnsembleFileWriter
-from snowda.io.swe_obs import read_lumped_member_swe, read_model_equivalent_swe
+from snowda.io.swe_obs import (
+    read_lumped_member_swe,
+    read_member_hru_swe,
+    read_model_equivalent_swe,
+    units_are_swe,
+)
 from snowda.workflows.summa_common import apply_segment_initial_conditions
 from tests.test_pysummada_config import _build_config, _esp_block, _write_base_file_manager
 
@@ -76,6 +82,7 @@ def _assimilation_block(swe_nc: Path, **overrides: object) -> dict:
         "obs_window_days": 6,
         "swe_nc": str(swe_nc),
         "z_var": 0.02,
+        "hru_stations": [{"hru_id": 1, "station_id": "A"}],
     }
     block.update(overrides)
     return block
@@ -173,6 +180,49 @@ def test_lumped_swe_includes_zero_flag_and_skips_missing() -> None:
     assert len(lumped[datetime(2014, 3, 1)].samples) == 1
 
 
+def test_mapped_swe_keeps_only_listed_stations_and_averages_per_hru() -> None:
+    times = pd.to_datetime(["2014-03-01"])
+    swe = np.array([[4.0, 8.0, 100.0]])
+    flags = np.array([[0, 0, 0]], dtype=np.int8)
+    mapped = mapped_swe_by_date(
+        times,
+        ["A", "B", "C"],
+        swe,
+        flags,
+        [datetime(2014, 3, 1)],
+        window_days=0,
+        station_to_hru={"A": 1, "B": 1},
+    )
+    dated = mapped[datetime(2014, 3, 1)]
+    assert [hru.hru_id for hru in dated.hrus] == [1]
+    assert dated.hrus[0].value == pytest.approx(6.0)
+    assert {sample.station_id for sample in dated.samples} == {"A", "B"}
+
+
+def test_mapped_swe_omits_hru_without_a_usable_sample() -> None:
+    times = pd.to_datetime(["2014-03-01"])
+    swe = np.array([[4.0, 8.0]])
+    flags = np.array([[0, 3]], dtype=np.int8)
+    mapped = mapped_swe_by_date(
+        times,
+        ["A", "B"],
+        swe,
+        flags,
+        [datetime(2014, 3, 1)],
+        window_days=0,
+        station_to_hru={"B": 2, "A": 1},
+    )
+    dated = mapped[datetime(2014, 3, 1)]
+    assert [hru.hru_id for hru in dated.hrus] == [1]
+    assert dated.hrus[0].value == pytest.approx(4.0)
+
+
+def test_millimeter_swe_matches_summa_magnitude() -> None:
+    assert units_are_swe("mm")
+    assert units_are_swe("kg m-2")
+    assert not units_are_swe("cm")
+
+
 def test_read_lumped_member_swe_from_timestep_file(tmp_path: Path) -> None:
     when = datetime(2014, 3, 1)
     ds = xr.Dataset(
@@ -194,6 +244,28 @@ def test_read_lumped_member_swe_from_timestep_file(tmp_path: Path) -> None:
     assert hru_id == 7
     assert value == pytest.approx(12.0)
     assert units == "kg m-2"
+
+
+def test_read_member_hru_swe_selects_requested_ids(tmp_path: Path) -> None:
+    when = datetime(2014, 3, 1)
+    ds = xr.Dataset(
+        {
+            "scalarSWE": (("time", "hru"), np.array([[12.0, 30.0]])),
+            "hruId": ("hru", [7, 9]),
+        },
+        coords={"time": [when], "hru": [0, 1]},
+    )
+    ds["scalarSWE"].attrs["units"] = "mm"
+    ds.to_netcdf(tmp_path / "001_2014_03_01_timestep.nc")
+    values = read_member_hru_swe(
+        tmp_path,
+        "001",
+        variable="scalarSWE",
+        when=when,
+        file_suffix="timestep.nc",
+        hru_ids=[9],
+    )
+    assert values == {9: pytest.approx(30.0)}
 
 
 def test_particle_weights_accept_lumped_frames() -> None:
@@ -329,6 +401,27 @@ def test_swe_da_config_does_not_require_fsca(tmp_path: Path) -> None:
     validate_da_config(cfg)
     assert cfg.assimilation is not None
     assert cfg.assimilation.swe_var == "swe_model_equivalent"
+    assert cfg.assimilation.station_hru_map() == {"A": 1}
+
+
+def test_hru_stations_rejects_a_repeated_station(tmp_path: Path) -> None:
+    swe = tmp_path / "swe.nc"
+    _swe_file(swe)
+    config_file = _build_config(
+        tmp_path,
+        extra={
+            "assimilation_mode": "swe",
+            "assimilation": _assimilation_block(
+                swe,
+                hru_stations=[
+                    {"hru_id": 1, "station_id": "A"},
+                    {"hru_id": 2, "station_id": "A"},
+                ],
+            ),
+        },
+    )
+    with pytest.raises(ValueError, match="listed more than once"):
+        load_pysummada_config(config_file)
 
 
 def test_swe_da_rejects_date_at_start(tmp_path: Path) -> None:
@@ -394,6 +487,98 @@ def test_historic_da_requires_mizuroute(tmp_path: Path) -> None:
     cfg = load_pysummada_config(config_file)
     with pytest.raises(ValueError, match="requires top-level `mizuroute`"):
         validate_historic_da_config(cfg)
+
+
+def _seed_historic_member(tmp_path: Path) -> None:
+    (tmp_path / "ensemble" / "001").mkdir(parents=True)
+
+
+def _historic_extra(tmp_path: Path, **overrides: object) -> dict:
+    extra = {
+        "ensemble_forcing_mode": "historic",
+        "ensemble_forcing_dir": str(tmp_path / "ensemble"),
+    }
+    extra.update(overrides)
+    return extra
+
+
+def test_historic_accepts_open_loop_without_mizuroute(tmp_path: Path) -> None:
+    _seed_historic_member(tmp_path)
+    config_file = _build_config(tmp_path, extra=_historic_extra(tmp_path))
+    cfg = load_pysummada_config(config_file)
+    validate_historic_config(cfg)
+    assert cfg.esp is None
+    assert cfg.mizuroute is None
+    assert cfg.assimilation is None
+    assert cfg.assimilation_mode is None
+
+
+def test_historic_accepts_optional_mizuroute(tmp_path: Path) -> None:
+    _seed_historic_member(tmp_path)
+    config_file = _build_config(
+        tmp_path,
+        extra=_historic_extra(tmp_path, mizuroute=_mizu_block(tmp_path)),
+    )
+    cfg = load_pysummada_config(config_file)
+    validate_historic_config(cfg)
+    assert cfg.mizuroute is not None
+
+
+def test_historic_rejects_monthly_forcing(tmp_path: Path) -> None:
+    config_file = _build_config(tmp_path)
+    cfg = load_pysummada_config(config_file)
+    with pytest.raises(ValueError, match="ensemble_forcing_mode"):
+        validate_historic_config(cfg)
+
+
+def test_historic_rejects_esp(tmp_path: Path) -> None:
+    _seed_historic_member(tmp_path)
+    config_file = _build_config(
+        tmp_path,
+        extra=_historic_extra(tmp_path, esp=_esp_block()),
+    )
+    cfg = load_pysummada_config(config_file)
+    with pytest.raises(ValueError, match="does not run ESP"):
+        validate_historic_config(cfg)
+
+
+def test_historic_rejects_assimilation(tmp_path: Path) -> None:
+    _seed_historic_member(tmp_path)
+    swe = tmp_path / "swe.nc"
+    _swe_file(swe)
+    config_file = _build_config(
+        tmp_path,
+        extra=_historic_extra(
+            tmp_path,
+            assimilation_mode="swe",
+            assimilation=_assimilation_block(swe),
+        ),
+    )
+    cfg = load_pysummada_config(config_file)
+    with pytest.raises(ValueError, match="does not assimilate"):
+        validate_historic_config(cfg)
+
+
+def test_historic_rejects_assimilation_mode_alone(tmp_path: Path) -> None:
+    _seed_historic_member(tmp_path)
+    config_file = _build_config(
+        tmp_path,
+        extra=_historic_extra(tmp_path, assimilation_mode="swe"),
+    )
+    cfg = load_pysummada_config(config_file)
+    with pytest.raises(ValueError, match="does not assimilate"):
+        validate_historic_config(cfg)
+
+
+def test_historic_rejects_evaluation(tmp_path: Path) -> None:
+    _seed_historic_member(tmp_path)
+    config_file = _build_config(
+        tmp_path,
+        extra=_historic_extra(tmp_path, evaluation={"obs_csv": "/abs/obs.csv"}),
+    )
+    cfg = load_pysummada_config(config_file)
+    with pytest.raises(ValueError, match="does not evaluate"):
+        validate_historic_config(cfg)
 
 
 def test_historic_da_rejects_esp(tmp_path: Path) -> None:
@@ -545,6 +730,80 @@ def test_route_segment_uses_member_summa_and_keeps_routing_restart(
     assert "Ross.r.2014-03-01-00000.nc" in seen[1]
     assert "cold.nc" not in seen[1]
     assert (tmp_path / "run" / "mizuroute" / "001_2014_04_01_mizuroute.nc").is_file()
+
+
+def test_route_segment_routes_members_together(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from snowda.adapters.mizuroute import read_control_value
+    from snowda.config.pysummada import MizuRouteEspConfig
+    from snowda.workflows.summa_common import route_ensemble_segment
+
+    ancil = tmp_path / "ancil"
+    ancil.mkdir()
+    (ancil / "param.nml.default").write_text("&params\n/\n", encoding="utf-8")
+    (ancil / "cold.nc").write_bytes(b"cold")
+    control = ancil / "mizuroute.control"
+    control.write_text(
+        "<fname_state_in>          cold.nc\n"
+        "<fname_qsim>              placeholder.nc\n"
+        "<case_name>               Ross\n"
+        "<sim_start>               2000-01-01 00:00:00\n"
+        "<sim_end>                 2000-01-02 00:00:00\n"
+        "<ancil_dir>               /\n"
+        "<input_dir>               /\n"
+        "<output_dir>              /\n"
+        "<restart_dir>             /\n"
+        "<restart_write>           monthly\n",
+        encoding="utf-8",
+    )
+    mizu = MizuRouteEspConfig(
+        executable=tmp_path / "route.exe",
+        control_file=control,
+        ancil_dir=ancil,
+        case_name="Ross",
+        restart_write="monthly",
+    )
+    summa_dir = tmp_path / "summa"
+    summa_dir.mkdir()
+    for member in ("001", "002"):
+        (summa_dir / f"{member}_2014_03_01_timestep.nc").write_bytes(member.encode())
+
+    def fake_run(_executable, control_file, log_stdout=False) -> None:
+        assert (summa_dir / "param.nml.default").read_text(encoding="utf-8") == "&params\n/\n"
+        output_dir = Path(read_control_value(control_file, "output_dir").rstrip("/"))
+        restart_dir = Path(read_control_value(control_file, "restart_dir").rstrip("/"))
+        sim_start = read_control_value(control_file, "sim_start")
+        start_day = sim_start[:10]
+        output_dir.mkdir(parents=True, exist_ok=True)
+        restart_dir.mkdir(parents=True, exist_ok=True)
+        member = restart_dir.name
+        (output_dir / f"Ross.h.{start_day}-00000.nc").write_bytes(member.encode())
+        (restart_dir / "Ross.r.2014-03-01-00000.nc").write_bytes(member.encode())
+
+    monkeypatch.setattr("snowda.workflows.summa_common.run_mizuroute", fake_run)
+    restarts: dict[str, Path | None] = {}
+    route_ensemble_segment(
+        mizu,
+        tmp_path / "run",
+        ["001", "002"],
+        summa_dir,
+        datetime(2014, 2, 1),
+        datetime(2014, 3, 1),
+        restarts,
+        require_restart=True,
+        num_workers=2,
+    )
+
+    routed = tmp_path / "run" / "mizuroute"
+    for member in ("001", "002"):
+        control_file = routed / "segments" / member / "2014030100" / "mizuroute_segment.control"
+        assert read_control_value(control_file, "fname_qsim") == f"{member}_2014_03_01_timestep.nc"
+        assert read_control_value(control_file, "fname_state_in") == "cold.nc"
+        assert (routed / f"{member}_2014_03_01_mizuroute.nc").read_bytes() == member.encode()
+        assert restarts[member] is not None
+        assert restarts[member].parent.name == member
+        assert restarts[member].read_bytes() == member.encode()
 
 
 def test_sir_swaps_mizuroute_restarts_with_summa_donors(tmp_path: Path) -> None:

@@ -27,6 +27,7 @@ _HISTORIC_FILE_RE = re.compile(
 _MIZUROUTE_FILE_RE = re.compile(
     r"^(?P<member>.+?)_(?P<stamp>\d{4}_\d{2}_\d{2})_mizuroute\.nc$"
 )
+_DETERMINISTIC_MIZU_RE = re.compile(r"^mizuroute_deterministic\.nc$")
 _SPECIFIC_DISCHARGE_UNITS = {"m/s", "ms-1", "ms**-1", "m/sec", "meter/second"}
 _MIN_DAY_FRACTION = 0.5
 
@@ -94,13 +95,17 @@ def load_da_streamflow(
     """Daily discharge for the historic ensemble, update times, and ESP forecasts.
 
     When the run routed each SUMMA segment, historic traces are mizuRoute
-    ``IRFroutedRunoff``. Otherwise historic traces are SUMMA
+    ``IRFroutedRunoff`` from ``<member>_<date>_mizuroute.nc`` or from
+    ``mizuroute_deterministic.nc``. Otherwise historic traces are SUMMA
     ``averageRoutedRunoff``, and specific discharge (m s-1) is multiplied by
-    the mizuRoute HRU area. ``topology_nc`` supplies that area when the run
-    has no ESP or interval copy of ``topology.nc``.
+    the mizuRoute HRU area. Area comes from an ESP or interval
+    ``topology.nc``, then ``<run_dir>/mizuroute/topology.nc``. ``topology_nc``
+    supplies that area when none of those files exist.
     """
     root = Path(run_dir)
-    if _historic_mizuroute_files(root):
+    routed = _historic_mizuroute_files(root)
+    if routed:
+        deterministic = all(path.name == "mizuroute_deterministic.nc" for path in routed)
         return _load_da_traces(
             root,
             historic_variable="IRFroutedRunoff",
@@ -110,8 +115,12 @@ def load_da_streamflow(
             ylabel="Streamflow (m3 s-1)",
             include_swe_observation=False,
             historic_dir=root / "mizuroute",
-            historic_glob="*_mizuroute.nc",
-            historic_pattern=_MIZUROUTE_FILE_RE,
+            historic_glob=(
+                "mizuroute_deterministic.nc" if deterministic else "*_mizuroute.nc"
+            ),
+            historic_pattern=(
+                _DETERMINISTIC_MIZU_RE if deterministic else _MIZUROUTE_FILE_RE
+            ),
         )
     area = _basin_area_m2(root, topology_nc)
 
@@ -191,11 +200,17 @@ def _historic_mizuroute_files(run_dir: Path) -> list[Path]:
     folder = run_dir / "mizuroute"
     if not folder.is_dir():
         return []
-    return [
+    member_files = [
         path
         for path in sorted(folder.glob("*_mizuroute.nc"))
         if _MIZUROUTE_FILE_RE.match(path.name)
     ]
+    if member_files:
+        return member_files
+    deterministic = folder / "mizuroute_deterministic.nc"
+    if deterministic.is_file():
+        return [deterministic]
+    return []
 
 
 def _read_historic(
@@ -216,7 +231,8 @@ def _read_historic(
         match = pattern.match(path.name)
         if match is None:
             continue
-        grouped.setdefault(match.group("member"), []).append(path)
+        member = match.groupdict().get("member") or "001"
+        grouped.setdefault(member, []).append(path)
     if not grouped:
         raise FileNotFoundError(f"No historic trace files in {folder}.")
 
@@ -230,7 +246,11 @@ def _read_historic(
             if match is None:
                 continue
             raw = transform(_read_series(path, variable))
-            segment_end = pd.Timestamp(match.group("stamp").replace("_", "-"))
+            stamp = match.groupdict().get("stamp")
+            if stamp:
+                segment_end = pd.Timestamp(stamp.replace("_", "-"))
+            else:
+                segment_end = pd.Timestamp(raw["time"].values[-1])
             raw_segments.append((segment_end, raw))
             plotted = _append_end_instant(_to_daily(raw), raw)
             if int(plotted.sizes.get("time", 0)) == 0:
@@ -349,6 +369,12 @@ def _basin_area_m2(run_dir: Path, topology_nc: str | Path | None = None) -> floa
     matches = sorted(run_dir.glob("esp/*/*/*/mizuroute/topology.nc"))
     if not matches:
         matches = sorted(run_dir.glob("esp_intervals/*/*/mizuroute/topology.nc"))
+    if not matches:
+        local = run_dir / "mizuroute" / "topology.nc"
+        if local.is_file():
+            matches = [local]
+    if not matches:
+        matches = sorted(run_dir.glob("mizuroute/segments/*/*/topology.nc"))
     if not matches and topology_nc is not None:
         candidate = Path(topology_nc)
         if not candidate.is_file():

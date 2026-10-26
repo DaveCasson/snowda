@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
+from snowda.obs_qm.diagnostics import plot_station_diagnostics
 from snowda.obs_qm.mapping import (
     empirical_cdf_quantile,
     empirical_inverse_cdf,
@@ -457,6 +458,39 @@ def test_combine_stations_mean_on_overlap_keeps_union():
     )
     assert out.attrs["combine_overlap"] == "arithmetic_mean"
     assert "SC02A" in out.attrs["combined_from"]
+
+
+def test_diagnostic_timeseries_uses_full_model_series():
+    import matplotlib.pyplot as plt
+
+    obs_time = pd.to_datetime(["2000-03-01", "2000-04-01"])
+    mapped = xr.Dataset(
+        {
+            "swe_obs": ("time", [100.0, 80.0]),
+            "swe_model": ("time", [40.0, 20.0]),
+            "swe_model_equivalent": ("time", [50.0, 30.0]),
+            "mapping_flag": ("time", np.array([FLAG_MAPPED, FLAG_MAPPED], dtype=np.int8)),
+        },
+        coords={"time": obs_time},
+    )
+    model_time = pd.date_range("2000-03-01", periods=5, freq="D")
+    model = xr.DataArray(
+        [40.0, 35.0, 30.0, 25.0, 20.0],
+        dims=("time",),
+        coords={"time": model_time},
+        name="swe_model",
+    )
+    fig = plot_station_diagnostics(mapped, model=model)
+    lines = [
+        line
+        for ax in fig.axes
+        for line in ax.lines
+        if line.get_label() == "model SWE"
+    ]
+    assert len(lines) == 1
+    np.testing.assert_array_equal(lines[0].get_xdata(), model_time.to_numpy())
+    np.testing.assert_allclose(lines[0].get_ydata(), model.values)
+    plt.close(fig)
 
 
 def test_stations_to_plot_skips_screened_by_default():

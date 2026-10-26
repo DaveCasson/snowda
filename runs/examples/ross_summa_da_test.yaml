@@ -11,7 +11,7 @@ base_file_manager: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/f
 forcing_file_base: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/Ross_
 ensemble_forcing_mode: historic
 ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensemble
-num_ens: 10
+num_ens: 50
 
 start_time: "2013-10-01 00:00"
 end_time: "2014-05-01 00:00"
@@ -29,16 +29,19 @@ summa_args:
   "-m": /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
   "-r": d
 
-assimilation:
-  dates:
-    - "2014-03-01 00:00"
-    - "2014-04-01 00:00"
-    - "2014-05-01 00:00"
-  obs_window_days: 15
-  swe_nc: /Users/dcasson/GitHub/snowda/outputs/obs_qm/ross_norswe_model_equivalent.nc
-  swe_var: swe_model_equivalent
-  summa_swe_var: scalarSWE
-  z_var: 0.02
+#assimilation:
+#  dates:
+#    - "2014-03-01 00:00"
+#    - "2014-04-01 00:00"
+#    - "2014-05-01 00:00"
+#  obs_window_days: 15
+#  swe_nc: /Users/dcasson/GitHub/snowda/outputs/obs_qm/ross_yukon_swe_model_equivalent.nc
+#  swe_var: swe_model_equivalent
+#  summa_swe_var: scalarSWE
+#  hru_stations:
+#    - hru_id: 1
+#      station_id: "09BA-SC02"
+#  z_var: 0.02
 
 file_manager_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
 file_list_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
@@ -53,8 +56,8 @@ esp:
   forecast_length_days: 14
   dates:
     - "2014-03-01 00:00"
-    - "2014-04-01 00:00"
-    - "2014-05-01 00:00"
+#    - "2014-04-01 00:00"
+#    - "2014-05-01 00:00"
   restart_file_filter: restart
   state_members: ["001"]
   run_mizuroute: true

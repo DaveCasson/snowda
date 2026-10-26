@@ -3,7 +3,7 @@ description: ESP streamflow evaluation for Ross River (ensemble traces vs gauge 
 
 output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_esp_streamflow_eval
 
-run_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_esp/20260917T022218Z
+run_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_esp/20261022T225336Z
 obs_csv: /Users/dcasson/Data/snowda/summa/ross_lumped/observations/streamflow.csv
 thresholds_csv: /Users/dcasson/Data/snowda/summa/ross_lumped/thresholds/ross_thresholds.csv
 

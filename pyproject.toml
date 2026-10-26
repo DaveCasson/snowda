@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,30 +7,50 @@ name = "snowda"
 version = "0.1.0"
 description = "Snow data assimilation for hydrological modeling"
 readme = "README.md"
-requires-python = ">=3.9"
-
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
-  { name = "Your Name", email = "your.email@institution.edu" }
+  { name = "DaveCasson", email = "davecasson@gmail.com" }
 ]
 
+# Lower bounds match the scores stack. Upper bounds stay open so an HPC
+# module can provide a newer NumPy or SciPy. SUMMA and mizuRoute themselves
+# are compiled executables; this list only covers the Python side.
 dependencies = [
-  "numpy",
-  "scipy",
-  "xarray",
-  "netCDF4",
-  "pyyaml",
-  "matplotlib",
-  "pandas",
-  "scores",
+  "numpy>=1.24",
+  "scipy>=1.13",
+  "pandas>=2",
+  "xarray>=2024.1",
+  "netCDF4>=1.6",
+  "cftime>=1.6",
+  "pyyaml>=6",
+  "matplotlib>=3.7",
+  "pint>=0.21",
+  "pint-xarray>=0.4",
+  "scores>=2",
+  "pysumma>=3.1",
 ]
 
 [project.optional-dependencies]
+# Imported only by fSCA and Helbig preprocessing. Kept optional because
+# rasterio needs a GDAL wheel, which is the usual HPC install failure.
+gis = [
+  "geopandas>=0.14",
+  "rasterio>=1.3",
+  "rioxarray>=0.15",
+]
+# scripts/get_snow_data.py
+download = [
+  "requests>=2.28",
+  "beautifulsoup4>=4.12",
+]
 dev = [
-  "pytest",
-  "ruff",
-  "black",
-  "pre-commit",
-  "jupyterlab",
+  "pytest>=8",
+  "ruff>=0.6",
+  "black>=24.1",
+  "pre-commit>=3.6",
+  "jupyterlab>=4",
 ]
 
 [tool.setuptools]
@@ -38,14 +58,17 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["snowda*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 
 [tool.black]
 line-length = 88
 
 [tool.ruff]
 line-length = 88
+target-version = "py310"
 select = ["E", "F", "I"]
 ignore = ["E501"]

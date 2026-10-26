@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import shutil
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Sequence
@@ -211,22 +212,65 @@ def summa_run_output_dir(run_dir: Path) -> Path:
     return ensure_dir(run_dir / "summa")
 
 
+def summa_run_state_dir(run_dir: Path) -> Path:
+    """SUMMA restart files for a timestamped run: ``<run_dir>/states``."""
+    return ensure_dir(run_dir / "states")
+
+
+def _point_managers_at(
+    file_managers: Sequence[str],
+    ens_config: dict[str, Any],
+    key: str,
+    directory: Path,
+) -> Path:
+    directory = ensure_dir(directory)
+    disk_value = f"'{directory}/'"
+    runtime_value = str(directory) + "/"
+    for file_manager in file_managers:
+        update_file_manager_option(file_manager, key, disk_value)
+    for entry in ens_config.values():
+        if not isinstance(entry, dict):
+            continue
+        manager = entry.setdefault("manager", {})
+        manager[key] = runtime_value
+    return directory
+
+
+def _copy_initial_states(file_managers: Sequence[str], state_dir: Path) -> None:
+    """Copy each member's current initial state into the run state directory."""
+    copied: set[Path] = set()
+    for file_manager in file_managers:
+        source_dir = Path(read_file_manager_option(file_manager, "statePath"))
+        init_name = read_file_manager_option(file_manager, "initConditionFile")
+        source = source_dir / init_name
+        destination = state_dir / Path(init_name).name
+        if destination in copied:
+            continue
+        if not source.is_file():
+            raise FileNotFoundError(f"SUMMA initial state not found: {source}")
+        if source.resolve() != destination.resolve():
+            shutil.copy2(source, destination)
+        log.info("Copied SUMMA initial state %s to %s", source.name, destination)
+        copied.add(destination)
+
+
 def redirect_summa_output(
     file_managers: Sequence[str],
     ens_config: dict[str, Any],
     output_dir: Path,
 ) -> Path:
-    """Point ensemble file managers and pysumma manager config at ``output_dir``."""
-    output_dir = ensure_dir(output_dir)
-    disk_value = f"'{output_dir}/'"
-    runtime_value = str(output_dir) + "/"
-    for file_manager in file_managers:
-        update_file_manager_option(file_manager, "outputPath", disk_value)
-    for entry in ens_config.values():
-        if not isinstance(entry, dict):
-            continue
-        manager = entry.setdefault("manager", {})
-        manager["outputPath"] = runtime_value
+    """Point file managers at this run's output and state directories.
+
+    ``outputPath`` becomes ``<run_dir>/summa`` and ``statePath`` becomes
+    ``<run_dir>/states``. The initial state named in each file manager is
+    copied in before ``statePath`` changes, so the first segment can still
+    start from the cold state.
+    """
+    output_dir = _point_managers_at(file_managers, ens_config, "outputPath", output_dir)
+    state_dir = summa_run_state_dir(output_dir.parent)
+    _copy_initial_states(file_managers, state_dir)
+    _point_managers_at(file_managers, ens_config, "statePath", state_dir)
+    log.info("SUMMA statePath: %s", state_dir)
     return output_dir
 
 
@@ -338,31 +382,72 @@ def route_ensemble_segment(
     restarts: dict[str, Path | None],
     *,
     require_restart: bool,
+    num_workers: int = 5,
 ) -> None:
     """Route each member's SUMMA file for one segment.
+
+    Members in this segment run together. Each one is its own
+    ``route_runoff.exe`` process, and the threads only wait on those
+    processes. The next segment still waits, because it reads these restarts.
 
     ``restarts`` is that particle's mizuRoute restart. After SIR it is the
     donor particle's restart, already copied into this member's restart directory.
     """
-    for member in members:
-        summa_output = member_summa_timestep(summa_output_dir, member, sim_end)
-        restart = _route_summa_member(
-            mizu_cfg,
-            run_dir,
+    if not members:
+        return
+    control_parent = Path(mizu_cfg.control_file).parent
+    copy_optional_resource(
+        mizu_cfg.param_nml,
+        [mizu_cfg.ancil_dir, control_parent],
+        summa_output_dir / "param.nml.default",
+        "mizuRoute param.nml.default",
+        required=True,
+    )
+    jobs = [
+        (
             member,
-            summa_output,
-            sim_start,
-            sim_end,
+            member_summa_timestep(summa_output_dir, member, sim_end),
             restarts.get(member),
         )
-        if require_restart and restart is None:
-            raise FileNotFoundError(
-                "mizuRoute did not write a restart for member "
-                f"{member} at {sim_end}. Set `mizuroute.restart_write` so a "
-                "restart exists at each assimilation segment end."
-            )
-        if restart is not None:
-            restarts[member] = restart
+        for member in members
+    ]
+    workers = max(1, min(num_workers, len(jobs)))
+    log.info(
+        "mizuRoute segment starting: %s members, %s workers, %s to %s",
+        len(jobs),
+        workers,
+        sim_start,
+        sim_end,
+    )
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {
+            pool.submit(
+                _route_summa_member,
+                mizu_cfg,
+                run_dir,
+                member,
+                summa_output,
+                sim_start,
+                sim_end,
+                restart_in,
+            ): member
+            for member, summa_output, restart_in in jobs
+        }
+        for future in as_completed(futures):
+            member = futures[future]
+            try:
+                restart = future.result()
+            except Exception:
+                log.exception("mizuRoute member %s failed", member)
+                raise
+            if require_restart and restart is None:
+                raise FileNotFoundError(
+                    "mizuRoute did not write a restart for member "
+                    f"{member} at {sim_end}. Set `mizuroute.restart_write` so a "
+                    "restart exists at each assimilation segment end."
+                )
+            if restart is not None:
+                restarts[member] = restart
 
 
 def _route_summa_member(
@@ -382,13 +467,6 @@ def _route_summa_member(
         mizu_cfg.param_nml,
         [mizu_cfg.ancil_dir, control_parent],
         output_dir / "param.nml.default",
-        "mizuRoute param.nml.default",
-        required=True,
-    )
-    copy_optional_resource(
-        mizu_cfg.param_nml,
-        [mizu_cfg.ancil_dir, control_parent],
-        summa_output.parent / "param.nml.default",
         "mizuRoute param.nml.default",
         required=True,
     )

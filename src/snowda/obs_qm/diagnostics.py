@@ -94,10 +94,39 @@ def _scatter_by_water_year(
     return sc
 
 
+def _timeseries_model(
+    model: xr.DataArray | None,
+    fallback_times: pd.DatetimeIndex,
+    fallback_values: np.ndarray,
+) -> tuple[pd.DatetimeIndex, np.ndarray]:
+    """Midnight model line for the timeseries panel.
+
+    ``model`` is the full midnight series. Without it, the line falls back
+    to ``swe_model`` on the observation dates.
+    """
+    if model is None:
+        return fallback_times, fallback_values
+    series = model
+    extra = [d for d in series.dims if d != "time"]
+    if extra:
+        series = series.squeeze(drop=True)
+    extra = [d for d in series.dims if d != "time"]
+    if extra:
+        raise ValueError(
+            f"model series for the timeseries must be 1-D in time (extra dims={extra})."
+        )
+    times = pd.DatetimeIndex(pd.to_datetime(series["time"].values, errors="coerce"))
+    if times.tz is not None:
+        times = times.tz_convert("UTC").tz_localize(None)
+    values = np.asarray(series.values, dtype=np.float64).reshape(-1)
+    return times, values
+
+
 def plot_station_diagnostics(
     ds: xr.Dataset,
     station_id: Any | None = None,
     *,
+    model: xr.DataArray | None = None,
     station_dim: str = "station_id",
     water_year_start_month: int = DEFAULT_WATER_YEAR_START_MONTH,
     bins: int = 30,
@@ -112,8 +141,11 @@ def plot_station_diagnostics(
     4. Q-Q of mapped obs vs model climatology
 
     Bottom row: midnight model SWE (line), observations (points), and
-    observations in model space (open points).
+    observations in model space (open points). Pass ``model`` to draw every
+    midnight value. Otherwise the line uses ``swe_model``, which is only
+    defined on observation dates.
     """
+    full_model = model
     station = _station_slice(ds, station_id, station_dim)
     times, obs, model, y_star = _station_series(station)
     mapped = _mapped_mask(station)
@@ -228,12 +260,12 @@ def plot_station_diagnostics(
 
     ax = fig.add_subplot(gs[1, 0])
     ax.tick_params(labelsize=8)
-    model_valid = np.isfinite(model)
+    model_times, model_line = _timeseries_model(full_model, times, model)
     obs_valid = np.isfinite(obs)
-    if model_valid.any():
+    if np.isfinite(model_line).any():
         ax.plot(
-            times,
-            model,
+            model_times,
+            model_line,
             color="0.55",
             linewidth=0.8,
             label="model SWE",

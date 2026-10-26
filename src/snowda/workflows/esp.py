@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import calendar
+import json
 import re
 import shutil
 from dataclasses import dataclass
@@ -7,7 +9,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
-import calendar
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -15,6 +16,17 @@ import xarray as xr
 from snowda.adapters.mizuroute import run_mizuroute, update_control_file
 from snowda.adapters.pysumma import get_file_manager_value, run_simulation
 from snowda.config.pysummada import EspConfig, PysummadaConfig
+from snowda.core.esp_sampling import (
+    ESP_SAMPLING_DESCRIPTION,
+    ForecastAssignment,
+    ParticleState,
+    post_da_catalog_path,
+    read_post_da_catalog,
+    sample_forecast_members,
+    validate_particle_binding,
+    weighting_mode,
+)
+from snowda.io.summa_ensemble import read_file_manager_option
 from snowda.utils.logging import get_logger
 from snowda.workflows.summa_common import (
     copy_optional_resource,
@@ -571,4 +583,292 @@ def run_esp_traces(cfg: PysummadaConfig, esp: EspConfig, run_dir: Path) -> list[
                 )
             current_start = trigger
             init_condition_name = state_file.name
+    return records
+
+
+def _select_catalog_particles(
+    particles: Sequence[ParticleState],
+    state_members: Sequence[str],
+    when: datetime,
+) -> list[ParticleState]:
+    if not state_members:
+        return list(particles)
+    by_label = {particle.label: particle for particle in particles}
+    missing = [label for label in state_members if label not in by_label]
+    if missing:
+        raise ValueError(
+            f"esp.state_members not in the post-DA ensemble at {when}: "
+            + ", ".join(missing)
+        )
+    return [by_label[label] for label in state_members]
+
+
+def _copy_restart(source: Path, directory: Path) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    destination = directory / source.name
+    shutil.copy2(source, destination)
+    return destination
+
+
+def _member_map_path(run_dir: Path) -> Path:
+    return Path(run_dir) / "esp" / "member_map.json"
+
+
+def _base_forcing(file_manager: Path) -> tuple[str, str]:
+    try:
+        forcing_path = read_file_manager_option(file_manager, "forcingPath")
+        forcing_list = read_file_manager_option(file_manager, "forcingListFile")
+    except KeyError as exc:
+        raise ValueError(
+            "Balanced ESP reads historical weather from the base file manager. "
+            f"{file_manager} is missing {exc}."
+        ) from exc
+    if forcing_path and not forcing_path.endswith("/"):
+        forcing_path = forcing_path + "/"
+    return forcing_path, forcing_list
+
+
+def _run_balanced_assignment(
+    cfg: PysummadaConfig,
+    esp: EspConfig,
+    run_dir: Path,
+    trigger: datetime,
+    assignment: ForecastAssignment,
+    *,
+    summa_restart: Path,
+    mizuroute_restart: Path | None,
+    forcing_path: str,
+    forcing_list: str,
+) -> EspRunRecord:
+    """Run one forecast from the private copies of one bound particle."""
+    state_date_key = trigger.strftime("%Y%m%d%H")
+    trace_year = assignment.trace_year
+    trace_start = _replace_year(trigger, trace_year)
+    trace_end = resolve_forecast_window_end(
+        trace_start, esp.forecast_length_days, esp.forecast_end
+    )
+    base_end = resolve_forecast_window_end(
+        trigger, esp.forecast_length_days, esp.forecast_end
+    )
+    trace_output_dir = _trace_output_dir(
+        run_dir, assignment.forecast_id, state_date_key, trace_year
+    )
+    trace_output_dir.mkdir(parents=True, exist_ok=True)
+    sim_config = {
+        "manager": {
+            "simStartTime": trace_start.strftime(SUMMA_TIME_FORMAT),
+            "simEndTime": trace_end.strftime(SUMMA_TIME_FORMAT),
+            "statePath": str(summa_restart.parent) + "/",
+            "initConditionFile": summa_restart.name,
+            "outputPath": str(trace_output_dir) + "/",
+            "outFilePrefix": assignment.forecast_id,
+            "forcingPath": forcing_path,
+            "forcingListFile": forcing_list,
+        }
+    }
+    run_simulation(
+        str(cfg.summa_exe),
+        assignment.particle.file_manager,
+        run_suffix=f"esp_{assignment.forecast_id}_{state_date_key}_year{trace_year}",
+        write_config=True,
+        update_manager=False,
+        log_stdout=cfg.summa_log,
+        sim_config=sim_config,
+    )
+    raw_summa_output = find_summa_timestep_output(trace_output_dir)
+    mizu_output_dir = trace_output_dir / "mizuroute"
+    mizu_output_dir.mkdir(parents=True, exist_ok=True)
+    shifted_summa_output = mizu_output_dir / f"summa_{trace_year}.nc"
+    _shift_time_to_state_year(raw_summa_output, trigger.year, shifted_summa_output)
+
+    mizuroute_output: Path | None = None
+    if esp.run_mizuroute and esp.mizuroute:
+        if mizuroute_restart is None:
+            raise FileNotFoundError(
+                f"Forecast {assignment.forecast_id} is missing the mizuRoute restart "
+                f"bound to particle {assignment.particle.label}."
+            )
+        mizu = esp.mizuroute
+        control_parent = Path(mizu.control_file).parent
+        copy_optional_resource(
+            mizu.param_nml,
+            [mizu.ancil_dir, control_parent],
+            mizu_output_dir / "param.nml.default",
+            "mizuRoute param.nml.default",
+            required=True,
+        )
+        copy_optional_resource(
+            mizu.topology_nc,
+            [mizu.ancil_dir, control_parent],
+            mizu_output_dir / "topology.nc",
+            "mizuRoute topology.nc",
+        )
+        control_file = mizu_output_dir / f"mizuroute_{trace_year}.control"
+        control_settings = {
+            "fname_qsim": shifted_summa_output.name,
+            "fname_state_in": mizuroute_restart.name,
+            "case_name": mizu.case_name,
+            "sim_start": trigger.strftime("%Y-%m-%d %H:%M:%S"),
+            "sim_end": _mizuroute_sim_end(
+                base_end,
+                trace_year,
+                leap_day_adjust=esp.forecast_end is None,
+            ).strftime("%Y-%m-%d %H:%M:%S"),
+            "ancil_dir": str(mizu.ancil_dir) + "/",
+            "input_dir": str(shifted_summa_output.parent) + "/",
+            "output_dir": str(mizu_output_dir) + "/",
+            "restart_dir": str(mizuroute_restart.parent) + "/",
+            "restart_write": mizu.restart_write,
+        }
+        update_control_file(mizu.control_file, control_file, control_settings)
+        run_mizuroute(mizu.executable, control_file, log_stdout=mizu.log_output)
+        routed_generated = find_mizuroute_output(
+            mizu_output_dir, mizu.case_name, trace_start
+        )
+        mizuroute_output = mizu_output_dir / f"mizuroute_{trace_year}.nc"
+        routed_generated.rename(mizuroute_output)
+    return EspRunRecord(
+        state_member=assignment.particle.label,
+        state_date=state_date_key,
+        trace_year=trace_year,
+        summa_output=str(shifted_summa_output),
+        mizuroute_output=str(mizuroute_output) if mizuroute_output else None,
+    )
+
+
+def run_balanced_esp_traces(
+    cfg: PysummadaConfig,
+    esp: EspConfig,
+    run_dir: Path,
+) -> list[EspRunRecord]:
+    """Initialise ESP from independently paired post-DA particles and weather years.
+
+    Each selected particle contributes its SUMMA restart and its matching
+    mizuRoute restart. Those two files are copied together and are not drawn
+    from different members.
+    """
+    if esp.n_members is None or esp.seed is None:
+        raise ValueError(
+            "Balanced ESP requires `esp.n_members` and `esp.seed`."
+        )
+    forcing_path, forcing_list = _base_forcing(cfg.base_file_manager)
+    trigger_dates = sorted(
+        resolve_esp_trigger_dates(
+            cfg.start_time,
+            cfg.end_time,
+            list(esp.dates),
+            esp.frequency_days,
+            esp.months,
+        )
+    )
+    if not trigger_dates:
+        log.warning("ESP enabled but no trigger dates resolved.")
+        return []
+
+    planned: list[tuple[datetime, list[ForecastAssignment]]] = []
+    for trigger in trigger_dates:
+        if trigger < cfg.start_time:
+            log.warning("Skipping ESP trigger %s before %s.", trigger, cfg.start_time)
+            continue
+        catalog_path = post_da_catalog_path(run_dir, trigger)
+        if not catalog_path.is_file():
+            raise FileNotFoundError(
+                f"No post-DA particle catalog for {trigger}. Expected {catalog_path}."
+            )
+        particles = _select_catalog_particles(
+            read_post_da_catalog(catalog_path),
+            esp.state_members,
+            trigger,
+        )
+        require_routing = bool(esp.run_mizuroute and esp.mizuroute)
+        for particle in particles:
+            validate_particle_binding(particle, trigger, require_routing=require_routing)
+        years = list(range(esp.start_year, esp.end_year + 1))
+        assignments = sample_forecast_members(
+            particles,
+            years,
+            n_members=esp.n_members,
+            seed=esp.seed,
+            issue_key=trigger.strftime("%Y%m%d%H"),
+            weighting=weighting_mode(particles),
+        )
+        planned.append((trigger, assignments))
+
+    issues: list[dict[str, Any]] = []
+    for trigger, assignments in planned:
+        members: list[dict[str, Any]] = []
+        for assignment in assignments:
+            members.append(
+                {
+                    "forecast_id": assignment.forecast_id,
+                    "state_label": assignment.particle.label,
+                    "donor_label": assignment.particle.donor_label,
+                    "trace_year": assignment.trace_year,
+                    "weighting": assignment.weighting,
+                    "summa_restart": assignment.particle.summa_restart,
+                    "mizuroute_restart": assignment.particle.mizuroute_restart,
+                    "file_manager": assignment.particle.file_manager,
+                }
+            )
+        issues.append(
+            {
+                "issue_time": trigger.strftime(SUMMA_TIME_FORMAT),
+                "issue_key": trigger.strftime("%Y%m%d%H"),
+                "seed": esp.seed,
+                "state_stream": 0,
+                "weather_stream": 1,
+                "weighting": assignments[0].weighting if assignments else None,
+                "members": members,
+            }
+        )
+    map_path = _member_map_path(run_dir)
+    map_path.parent.mkdir(parents=True, exist_ok=True)
+    map_path.write_text(
+        json.dumps(
+            {
+                "description": ESP_SAMPLING_DESCRIPTION,
+                "initialization": "balanced_independent",
+                "seed": esp.seed,
+                "n_members": esp.n_members,
+                "issues": issues,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    records: list[EspRunRecord] = []
+    for trigger, assignments in planned:
+        for assignment in assignments:
+            private_root = (
+                run_dir
+                / "esp_states"
+                / "forecast"
+                / trigger.strftime("%Y%m%d%H")
+                / assignment.forecast_id
+            )
+            summa_copy = _copy_restart(
+                Path(assignment.particle.summa_restart),
+                private_root / "summa",
+            )
+            route_copy = None
+            if assignment.particle.mizuroute_restart:
+                route_copy = _copy_restart(
+                    Path(assignment.particle.mizuroute_restart),
+                    private_root / "mizuroute",
+                )
+            records.append(
+                _run_balanced_assignment(
+                    cfg,
+                    esp,
+                    run_dir,
+                    trigger,
+                    assignment,
+                    summa_restart=summa_copy,
+                    mizuroute_restart=route_copy,
+                    forcing_path=forcing_path,
+                    forcing_list=forcing_list,
+                )
+            )
     return records

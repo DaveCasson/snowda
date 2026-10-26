@@ -136,6 +136,38 @@ def test_historic_run_without_esp_uses_external_topology(tmp_path: Path):
     assert float(flow.states[0].values.sel({ENSEMBLE_DIM: "001"})) == pytest.approx(2.0)
 
 
+def test_run_uses_mizuroute_directory_topology(tmp_path: Path):
+    root = tmp_path / "run"
+    _write_series(
+        root / "summa" / "001_2014_03_02_timestep.nc",
+        scalarSWE=(np.arange(25, dtype=float), "kg m-2"),
+        averageRoutedRunoff=(np.full(25, 2.0e-6), "m s-1"),
+    )
+    topology = root / "mizuroute" / "topology.nc"
+    topology.parent.mkdir(parents=True)
+    xr.Dataset({"area": ("hru", [1.0e6])}).to_netcdf(topology)
+
+    flow = load_da_streamflow(root)
+    assert float(flow.historic[0].segments[0].values[0]) == pytest.approx(2.0)
+
+
+def test_deterministic_mizuroute_file_is_routed_discharge(tmp_path: Path):
+    root = tmp_path / "run"
+    times = pd.date_range("2014-03-01", periods=25, freq="h")
+    routed = root / "mizuroute" / "mizuroute_deterministic.nc"
+    routed.parent.mkdir(parents=True)
+    ds = xr.Dataset(
+        {"IRFroutedRunoff": (("time", "seg"), np.full((len(times), 1), 8.0))},
+        coords={"time": times},
+    )
+    ds["IRFroutedRunoff"].attrs["units"] = "m3/s"
+    ds.to_netcdf(routed)
+
+    flow = load_da_streamflow(root)
+    assert flow.historic[0].member == "001"
+    assert float(flow.historic[0].segments[0].values[0]) == pytest.approx(8.0)
+
+
 def test_historic_streamflow_reads_mizuroute_output(tmp_path: Path):
     root = tmp_path / "run"
     times = pd.date_range("2014-03-01", periods=25, freq="h")
@@ -227,3 +259,46 @@ def test_plot_da_traces_labels_historic_state_and_forecast():
     assert ax.get_ylabel() == "SWE (kg m-2)"
     assert ax.get_title() == "DA SWE"
     plt.close(fig)
+
+
+def test_plot_da_traces_uses_requested_time_bounds():
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.dates as mdates
+    import matplotlib.pyplot as plt
+
+    from snowda.io.da_traces import DaTraceSet, HistoricMemberTrace
+    from snowda.viz.summa_da import plot_da_traces
+
+    historic_time = pd.date_range("2014-03-01", periods=4, freq="D")
+    historic = xr.DataArray(
+        [1.0, 2.0, 3.0, 4.0],
+        dims=("time",),
+        coords={"time": historic_time},
+        name="scalarSWE",
+    )
+    traces = DaTraceSet(
+        historic=(HistoricMemberTrace("001", (historic,)),),
+        states=(),
+        forecasts=(),
+        units="kg m-2",
+        ylabel="SWE (kg m-2)",
+    )
+    fig, ax = plot_da_traces(
+        traces,
+        start="2014-03-02",
+        end="2014-03-03",
+        title="Window",
+    )
+    left, right = (
+        pd.Timestamp(mdates.num2date(value)).tz_localize(None) for value in ax.get_xlim()
+    )
+    assert left == pd.Timestamp("2014-03-02")
+    assert right == pd.Timestamp("2014-03-03")
+    drawn = pd.DatetimeIndex(pd.to_datetime(ax.lines[0].get_xdata()))
+    assert list(drawn) == list(pd.to_datetime(["2014-03-02", "2014-03-03"]))
+    plt.close(fig)
+
+    with pytest.raises(ValueError, match="after end"):
+        plot_da_traces(traces, start="2014-03-03", end="2014-03-02")

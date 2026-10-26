@@ -92,6 +92,32 @@ def run_mizuroute(
         check=True,
         capture_output=True,
     )
+    # #region agent log
+    try:
+        import json
+        import time
+
+        payload = {
+            "sessionId": "83d907",
+            "hypothesisId": "A",
+            "location": "mizuroute.py:run_mizuroute",
+            "message": "mizuroute returned",
+            "data": {
+                "control": str(control_file),
+                "returncode": completed.returncode,
+                "stderr_tail": (
+                    completed.stderr.decode("utf-8", errors="replace")[-300:]
+                    if completed.stderr
+                    else ""
+                ),
+            },
+            "timestamp": int(time.time() * 1000),
+        }
+        with open("/Users/dcasson/GitHub/snowda/.cursor/debug-83d907.log", "a") as handle:
+            handle.write(json.dumps(payload) + "\n")
+    except Exception:
+        pass
+    # #endregion
     stderr = completed.stderr.decode("utf-8", errors="replace") if completed.stderr else ""
     stdout = completed.stdout.decode("utf-8", errors="replace") if completed.stdout else ""
     if stderr and "FATAL ERROR" in stderr:

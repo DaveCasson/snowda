@@ -26,6 +26,8 @@ def _esp_block(**overrides: object) -> dict:
         "end_year": 2001,
         "forecast_length_days": 30,
         "frequency_days": 30,
+        "n_members": 2,
+        "seed": 1,
     }
     esp.update(overrides)
     return esp
@@ -63,7 +65,20 @@ def test_load_without_variant_keys(tmp_path: Path) -> None:
     assert cfg.esp is None
     assert cfg.mizuroute is None
     assert cfg.pf_scheme == "sis"
+    assert cfg.num_workers == 5
     validate_deterministic_config(cfg)
+
+
+def test_num_workers_comes_from_config(tmp_path: Path) -> None:
+    config_file = _build_config(tmp_path, extra={"num_workers": 10})
+    cfg = load_pysummada_config(config_file)
+    assert cfg.num_workers == 10
+
+
+def test_num_workers_rejects_zero(tmp_path: Path) -> None:
+    config_file = _build_config(tmp_path, extra={"num_workers": 0})
+    with pytest.raises(ValueError, match="num_workers"):
+        load_pysummada_config(config_file)
 
 
 def test_pf_scheme_accepts_sir(tmp_path: Path) -> None:
@@ -143,6 +158,82 @@ def test_da_rejects_deterministic_esp_settings(tmp_path: Path) -> None:
     cfg = load_pysummada_config(config_file)
     with pytest.raises(ValueError, match="does not allow"):
         validate_da_config(cfg)
+
+
+def test_open_loop_esp_requires_n_members_and_seed(tmp_path: Path) -> None:
+    block = _esp_block()
+    block.pop("n_members")
+    block.pop("seed")
+    config_file = _build_config(tmp_path, extra={"esp": block})
+    cfg = load_pysummada_config(config_file)
+    with pytest.raises(ValueError, match="n_members"):
+        validate_esp_config(cfg)
+
+
+def test_open_loop_esp_accepts_balanced_initialization(tmp_path: Path) -> None:
+    config_file = _build_config(
+        tmp_path,
+        extra={
+            "esp": _esp_block(
+                initialization="balanced_independent",
+                n_members=4,
+                seed=1,
+            )
+        },
+    )
+    cfg = load_pysummada_config(config_file)
+    validate_esp_config(cfg)
+    assert cfg.esp is not None
+    assert cfg.esp.n_members == 4
+    assert cfg.esp.seed == 1
+
+
+def test_da_balanced_initialization_requires_size_and_seed(tmp_path: Path) -> None:
+    config_file = _build_config(
+        tmp_path,
+        extra={
+            "esp": _esp_block(
+                initialization="balanced_independent", seed=1, n_members=None
+            ),
+            "fsca_obs_nc": "/abs/fsca.nc",
+            "summa_output_dir": "/abs/summa_out",
+            "fsca_output_dir": str(tmp_path / "fsca"),
+        },
+    )
+    cfg = load_pysummada_config(config_file)
+    with pytest.raises(ValueError, match="n_members"):
+        validate_da_config(cfg)
+
+
+def test_da_balanced_initialization_loads(tmp_path: Path) -> None:
+    config_file = _build_config(
+        tmp_path,
+        extra={
+            "esp": _esp_block(
+                initialization="balanced_independent",
+                n_members=4,
+                seed=3,
+            ),
+            "fsca_obs_nc": "/abs/fsca.nc",
+            "summa_output_dir": "/abs/summa_out",
+            "fsca_output_dir": str(tmp_path / "fsca"),
+        },
+    )
+    cfg = load_pysummada_config(config_file)
+    validate_da_config(cfg)
+    assert cfg.esp is not None
+    assert cfg.esp.initialization == "balanced_independent"
+    assert cfg.esp.n_members == 4
+    assert cfg.esp.seed == 3
+
+
+def test_esp_seed_rejects_negative(tmp_path: Path) -> None:
+    config_file = _build_config(
+        tmp_path,
+        extra={"esp": _esp_block(seed=-1)},
+    )
+    with pytest.raises(ValueError, match="seed"):
+        load_pysummada_config(config_file)
 
 
 def test_da_accepts_complete_config(tmp_path: Path) -> None:
@@ -255,19 +346,31 @@ def test_redirect_summa_output_updates_file_manager(tmp_path: Path) -> None:
         summa_run_output_dir,
     )
 
+    from snowda.io.summa_ensemble import update_file_manager_option
+
     config_file = _build_config(tmp_path)
     cfg = load_pysummada_config(config_file)
     writer = EnsembleFileWriter(cfg)
     paths = writer.write_ens_file_managers()
+    shared_states = tmp_path / "shared_states"
+    shared_states.mkdir()
+    (shared_states / "coldState.nc").write_bytes(b"cold")
+    for path in paths:
+        update_file_manager_option(path, "statePath", f"'{shared_states}/'")
     run_dir = tmp_path / "20260101T000000Z"
     ens_config = {"001": {"file_manager": paths[0], "manager": {}}}
     summa_dir = redirect_summa_output(paths, ens_config, summa_run_output_dir(run_dir))
+    state_dir = run_dir / "states"
     assert summa_dir == run_dir / "summa"
     assert summa_dir.is_dir()
+    assert (state_dir / "coldState.nc").read_bytes() == b"cold"
     fm_text = Path(paths[0]).read_text(encoding="utf-8")
     assert str(summa_dir) in fm_text
+    assert str(state_dir) in fm_text
     assert "/tmp/output/" not in fm_text
+    assert str(shared_states) not in fm_text
     assert ens_config["001"]["manager"]["outputPath"] == str(summa_dir) + "/"
+    assert ens_config["001"]["manager"]["statePath"] == str(state_dir) + "/"
 
 
 def test_mizuroute_yaml_output_dirs_are_ignored(tmp_path: Path) -> None:
