@@ -19,3 +19,12 @@ fair_brier: true
 # One CRPS and one CRPSS per forecast for the maximum discharge over the horizon,
 # referenced to observed peaks in the same calendar window of other years.
 score_peak: true
+# One CRPS and one CRPSS per forecast for total water volume over the paired days.
+score_volume: true
+# Circular block bootstrap of initialization time. Intervals are 90% bounds
+# on the initiation-month mean. Set bootstrap_iterations to 0 to skip them.
+bootstrap_iterations: 100
+bootstrap_block_size: 2
+bootstrap_circular: true
+bootstrap_ci_level: 0.9
+bootstrap_seed: 0

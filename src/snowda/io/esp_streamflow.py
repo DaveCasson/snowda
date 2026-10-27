@@ -27,6 +27,8 @@ log = get_logger(__name__)
 CLIMO_MEMBER_DIM = "climo_year"
 ENSEMBLE_DIM = "member"
 DEFAULT_RETURN_PERIODS = (5, 10, 20)
+SECONDS_PER_DAY = 86400.0
+VOLUME_UNIT = "m3"
 
 
 @dataclass(frozen=True)
@@ -225,7 +227,10 @@ def observational_climatology_ensemble(
         for i, ts in enumerate(time_index):
             data[i, j] = lookup.get((year, int(ts.month), int(ts.day)), np.nan)
 
-    coords: dict[str, Any] = {time_dim: time_coord, member_dim: np.asarray(years, dtype=int)}
+    coords: dict[str, Any] = {
+        time_dim: time_coord,
+        member_dim: np.asarray(years, dtype=int),
+    }
     coords.update(extra_coords)
     climo = xr.DataArray(
         data,
@@ -292,6 +297,87 @@ def peak_over_horizon(
     return fcst_peak, obs_peak
 
 
+def volume_over_horizon(
+    fcst: xr.DataArray,
+    obs: xr.DataArray,
+    *,
+    dim: str = "lead",
+    seconds_per_step: float = SECONDS_PER_DAY,
+) -> tuple[xr.DataArray, xr.DataArray]:
+    """Total water volume over the paired horizon.
+
+    Each lead is a daily mean discharge in m³/s, so the volume is the sum of
+    those means times ``seconds_per_step``. A member or observation with any
+    missing lead is missing: a partial sum would undercount the horizon.
+    """
+    if dim not in fcst.dims:
+        raise ValueError(f"Forecast is missing horizon dimension {dim!r}.")
+    if dim not in obs.dims:
+        raise ValueError(f"Observations are missing horizon dimension {dim!r}.")
+    scale = float(seconds_per_step)
+    fcst_volume = (
+        (fcst.astype(float) * scale).sum(dim=dim, skipna=False).rename("fcst_volume")
+    )
+    obs_volume = (
+        (obs.astype(float) * scale).sum(dim=dim, skipna=False).rename("obs_volume")
+    )
+    fcst_volume.attrs["units"] = VOLUME_UNIT
+    obs_volume.attrs["units"] = VOLUME_UNIT
+    fcst_volume.attrs["long_name"] = "forecast water volume over the paired horizon"
+    obs_volume.attrs["long_name"] = "observed water volume over the paired horizon"
+    return fcst_volume, obs_volume
+
+
+def climatology_window_volumes(
+    obs: xr.DataArray,
+    valid_time: xr.DataArray | pd.DatetimeIndex | np.ndarray,
+    *,
+    exclude_years: Sequence[int] | None = None,
+    member_dim: str = CLIMO_MEMBER_DIM,
+    seconds_per_step: float = SECONDS_PER_DAY,
+) -> xr.DataArray:
+    """Observed water volume on the forecast's calendar days in each other year.
+
+    A climatology year is missing when any of those calendar days is missing.
+    A horizon that includes 29 February therefore drops non-leap years. The
+    forecast and verifying observation still include that day.
+    """
+    if isinstance(valid_time, xr.DataArray):
+        times = pd.DatetimeIndex(pd.to_datetime(valid_time.values)).normalize()
+    else:
+        times = pd.DatetimeIndex(pd.to_datetime(np.asarray(valid_time))).normalize()
+    obs_index = pd.DatetimeIndex(pd.to_datetime(obs["time"].values)).normalize()
+    values = np.asarray(obs.values, dtype=float)
+    lookup: dict[tuple[int, int, int], float] = {}
+    for ts, value in zip(obs_index, values):
+        lookup[(int(ts.year), int(ts.month), int(ts.day))] = float(value)
+
+    exclude = {int(year) for year in (exclude_years or [])}
+    years = sorted({int(ts.year) for ts in obs_index if int(ts.year) not in exclude})
+    volumes = np.full(len(years), np.nan, dtype=float)
+    scale = float(seconds_per_step)
+    for i, year in enumerate(years):
+        day_values: list[float] = []
+        for ts in times:
+            value = lookup.get((year, int(ts.month), int(ts.day)), np.nan)
+            if not np.isfinite(value):
+                day_values = []
+                break
+            day_values.append(value)
+        if day_values:
+            volumes[i] = float(np.sum(day_values) * scale)
+    return xr.DataArray(
+        volumes,
+        dims=(member_dim,),
+        coords={member_dim: np.asarray(years, dtype=int)},
+        name="climo_volume",
+        attrs={
+            "units": VOLUME_UNIT,
+            "long_name": "climatology water volume over the forecast calendar days",
+        },
+    )
+
+
 def read_return_period_thresholds(path: str | Path) -> xr.DataArray:
     """Read a CSV with ``T_yrs`` and ``Yp`` columns into a ``return_period`` DataArray."""
     csv_path = Path(path)
@@ -323,7 +409,9 @@ def select_return_period_thresholds(
     thresholds: xr.DataArray,
     return_periods: Sequence[float] = DEFAULT_RETURN_PERIODS,
 ) -> xr.DataArray:
-    missing = [t for t in return_periods if t not in set(thresholds["return_period"].values)]
+    missing = [
+        t for t in return_periods if t not in set(thresholds["return_period"].values)
+    ]
     if missing:
         available = list(thresholds["return_period"].values)
         raise KeyError(

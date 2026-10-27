@@ -4,6 +4,8 @@
 - Create/activate environment
 - Install in editable mode:
   - `pip install -e '.[dev]'`
+- Register the environment as a Jupyter kernel:
+  - `python -m ipykernel install --user --name snowda --display-name "Python (snowda)"`
 
 ## Style
 - Format with black

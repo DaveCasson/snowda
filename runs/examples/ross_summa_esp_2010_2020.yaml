@@ -12,10 +12,10 @@ base_file_manager: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/f
 forcing_file_base: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/Ross_
 ensemble_forcing_mode: historic
 ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensemble
-num_ens: 10
+num_ens: 20
 num_workers: 10
 
-start_time: "2010-02-01 00:00"
+start_time: "2000-01-01 00:00"
 end_time: "2020-08-01 00:00"
 time_delta_days: 1
 
@@ -35,10 +35,11 @@ file_list_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
 summa_output_suffix: timestep.nc
 
 esp:
-  start_year: 2010  
+  start_year: 2000 
   end_year: 2020
   forecast_end: "08-01"
-  n_members: 10
+  initialization: balanced_independent
+  n_members: 20
   seed: 20270101
   dates: &forecast_dates
     # 1 March, 1 April, and 1 May. Dates before start_time are skipped.
@@ -99,6 +100,12 @@ esp:
     - "2018-03-01 00:00"
     - "2018-04-01 00:00"
     - "2018-05-01 00:00"
+    - "2019-03-01 00:00"
+    - "2019-04-01 00:00"
+    - "2019-05-01 00:00"
+    - "2020-03-01 00:00"
+    - "2020-04-01 00:00"
+    - "2020-05-01 00:00"
   restart_file_filter: restart
   run_mizuroute: true
   mizuroute:

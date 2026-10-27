@@ -10,6 +10,7 @@ import pytest
 import xarray as xr
 
 from snowda.adapters.scores import (
+    block_bootstrap,
     brier_score_for_ensemble,
     crps_for_ensemble,
     false_alarm_ratio,
@@ -20,8 +21,10 @@ from snowda.adapters.scores import (
     skill_score,
 )
 from snowda.io.esp_streamflow import (
+    SECONDS_PER_DAY,
     EspPairedForecast,
     climatology_window_peaks,
+    climatology_window_volumes,
     group_esp_trace_files,
     group_forecasts_by_init_month,
     init_month_key,
@@ -30,6 +33,7 @@ from snowda.io.esp_streamflow import (
     peak_over_horizon,
     read_return_period_thresholds,
     select_return_period_thresholds,
+    volume_over_horizon,
 )
 from snowda.workflows.evaluate_esp_streamflow import (
     compute_esp_metrics,
@@ -568,6 +572,42 @@ def test_peak_over_horizon_and_climatology_window():
     assert float(peaks.sel(climo_year=2001)) == pytest.approx(12.0)
 
 
+def test_volume_over_horizon_sums_complete_days_only():
+    fcst = xr.DataArray(
+        [[1.0, 2.0, 3.0], [1.0, np.nan, 3.0]],
+        dims=("member", "lead"),
+        coords={"member": ["a", "b"], "lead": [0, 1, 2]},
+    )
+    obs = xr.DataArray([1.0, 2.0, 3.0], dims=("lead",), coords={"lead": [0, 1, 2]})
+    fcst_volume, obs_volume = volume_over_horizon(fcst, obs)
+    assert float(fcst_volume.sel(member="a")) == pytest.approx(6.0 * SECONDS_PER_DAY)
+    assert np.isnan(float(fcst_volume.sel(member="b")))
+    assert float(obs_volume) == pytest.approx(6.0 * SECONDS_PER_DAY)
+    assert fcst_volume.attrs["units"] == "m3"
+
+
+def test_climatology_window_volumes_drop_incomplete_years():
+    times = pd.date_range("1999-02-01", "2001-02-03", freq="D")
+    values = np.full(times.size, 2.0)
+    values[times == pd.Timestamp("2001-02-02")] = np.nan
+    obs = _series(times, values)
+    valid = pd.date_range("2000-02-01", periods=3, freq="D")
+    volumes = climatology_window_volumes(obs, valid, exclude_years=[2000])
+    assert float(volumes.sel(climo_year=1999)) == pytest.approx(6.0 * SECONDS_PER_DAY)
+    assert np.isnan(float(volumes.sel(climo_year=2001)))
+
+    leap_times = pd.date_range("2007-01-01", "2012-12-31", freq="D")
+    leap_obs = _series(leap_times, np.ones(leap_times.size))
+    leap_valid = pd.to_datetime(["2012-02-28", "2012-02-29", "2012-03-01"])
+    leap_volumes = climatology_window_volumes(
+        leap_obs, leap_valid, exclude_years=[2012]
+    )
+    assert float(leap_volumes.sel(climo_year=2008)) == pytest.approx(
+        3.0 * SECONDS_PER_DAY
+    )
+    assert np.isnan(float(leap_volumes.sel(climo_year=2009)))
+
+
 def test_compute_esp_metrics_perfect_forecast_and_month_aggregation():
     obs_times = pd.date_range("1997-01-01", "2002-12-31", freq="D")
     # Climatology is a large constant; verification years follow the forecast obs.
@@ -745,6 +785,20 @@ def test_peak_crps_is_one_score_per_forecast_against_peak_climatology():
         expected_imperfect
     )
     assert payload["peak_definition"] == "maximum streamflow over the forecast horizon"
+    assert payload["volume_definition"].startswith("sum of paired daily mean discharge")
+    expected_volume = _ecdf_crps(
+        np.array([6.0, 6.0, 7.0]) * SECONDS_PER_DAY, 5.0 * SECONDS_PER_DAY
+    )
+    expected_volume_ref = _ecdf_crps(
+        np.full(4, 30.0 * SECONDS_PER_DAY), 5.0 * SECONDS_PER_DAY
+    )
+    assert float(
+        metrics["volume_crps"].sel(init_month="02-01", init_time="2001-02-01")
+    ) == pytest.approx(expected_volume)
+    assert float(
+        metrics["volume_crpss"].sel(init_month="02-01", init_time="2001-02-01")
+    ) == pytest.approx(1.0 - expected_volume / expected_volume_ref)
+    assert "2001-03-01 00:00:00" not in feb_payload["volume_crps"]
 
 
 def test_peak_crpss_is_zero_when_forecast_matches_peak_climatology():
@@ -1044,3 +1098,238 @@ def test_evaluate_esp_streamflow_from_yaml(tmp_path: Path):
     march = payload["by_init_month"]["03-01"]
     assert march["peak_crps_mean"] == pytest.approx(0.0, abs=1e-12)
     assert set(march["peak_crps"]) == {"2001-03-01 00:00:00"}
+    assert march["volume_crps_mean"] == pytest.approx(0.0, abs=1e-12)
+    assert payload["bootstrap_circular"] == "True"
+    assert payload["bootstrap_iterations"] == 100
+    assert np.isnan(march["crps_mean_ci_lower"])
+    resolved = json.loads(
+        (eval_dir / "config.resolved.json").read_text(encoding="utf-8")
+    )
+    assert resolved["bootstrap_circular"] is True
+    assert resolved["score_volume"] is True
+    assert resolved["bootstrap_iterations"] == 100
+
+
+def _thresholds() -> xr.DataArray:
+    return xr.DataArray(
+        [100.0],
+        dims=("return_period",),
+        coords={"return_period": [5]},
+        name="yp",
+    )
+
+
+def test_score_volume_can_be_disabled_and_bootstrap_can_be_skipped():
+    obs = _series(
+        pd.date_range("1998-01-01", "2002-12-31", freq="D"), np.ones(365 * 5 + 1)
+    )
+    forecast = _paired_forecast(
+        "2001-02-01", {"a": [1.0, 1.0], "b": [1.0, 1.0]}, [1.0, 1.0]
+    )
+    quiet = compute_esp_metrics(
+        [forecast],
+        obs,
+        _thresholds(),
+        return_periods=(5,),
+        crps_method="ecdf",
+        fair_brier=False,
+        score_volume=False,
+        bootstrap_iterations=0,
+    )
+    assert "volume_crps" not in quiet
+    assert "crps_ci_lower" not in quiet
+    scored = compute_esp_metrics(
+        [forecast],
+        obs,
+        _thresholds(),
+        return_periods=(5,),
+        crps_method="ecdf",
+        fair_brier=False,
+        score_volume=True,
+        bootstrap_iterations=0,
+    )
+    assert float(scored["volume_crps_mean"].sel(init_month="02-01")) == pytest.approx(
+        0.0, abs=1e-12
+    )
+    assert "volume_crps_mean_ci_lower" not in scored
+
+
+def test_block_bootstrap_intervals_are_reproducible_and_keep_the_point_estimate():
+    obs_times = pd.date_range("1998-01-01", "2008-12-31", freq="D")
+    obs = _series(obs_times, np.full(obs_times.size, 10.0))
+    forecasts = [
+        _paired_forecast(
+            f"{year}-02-01",
+            {"a": [1.0 + bias, 1.0 + bias], "b": [1.0 + bias, 1.0 + bias]},
+            [1.0, 1.0],
+        )
+        for year, bias in zip(range(2001, 2007), range(6))
+    ]
+    common = dict(
+        return_periods=(5,),
+        crps_method="ecdf",
+        fair_brier=False,
+        score_peak=True,
+        score_volume=True,
+        bootstrap_block_size=2,
+        bootstrap_circular=True,
+        bootstrap_ci_level=0.9,
+        bootstrap_seed=0,
+    )
+    point = compute_esp_metrics(
+        forecasts,
+        obs,
+        _thresholds(),
+        bootstrap_iterations=0,
+        **common,
+    )
+    first = compute_esp_metrics(
+        forecasts,
+        obs,
+        _thresholds(),
+        bootstrap_iterations=40,
+        **common,
+    )
+    second = compute_esp_metrics(
+        forecasts,
+        obs,
+        _thresholds(),
+        bootstrap_iterations=40,
+        **common,
+    )
+    month = "02-01"
+    np.testing.assert_allclose(
+        first["crps_mean"].sel(init_month=month).values,
+        point["crps_mean"].sel(init_month=month).values,
+    )
+    np.testing.assert_allclose(
+        first["crps_mean_ci_lower"].sel(init_month=month).values,
+        second["crps_mean_ci_lower"].sel(init_month=month).values,
+    )
+    estimate = float(first["crps_mean"].sel(init_month=month))
+    lower = float(first["crps_mean_ci_lower"].sel(init_month=month))
+    upper = float(first["crps_mean_ci_upper"].sel(init_month=month))
+    assert lower <= estimate <= upper
+    lead_estimate = np.asarray(first["crps"].sel(init_month=month).values, dtype=float)
+    lead_lower = np.asarray(
+        first["crps_ci_lower"].sel(init_month=month).values, dtype=float
+    )
+    lead_upper = np.asarray(
+        first["crps_ci_upper"].sel(init_month=month).values, dtype=float
+    )
+    assert np.all(lead_lower <= lead_estimate)
+    assert np.all(lead_estimate <= lead_upper)
+    for name in ("volume_crps_mean", "peak_crps_mean", "crpss_mean"):
+        center = float(first[name].sel(init_month=month))
+        assert float(first[f"{name}_ci_lower"].sel(init_month=month)) <= center
+        assert center <= float(first[f"{name}_ci_upper"].sel(init_month=month))
+    payload = esp_metrics_to_dict(first)
+    assert payload["by_init_month"][month][
+        "volume_crps_mean_ci_lower"
+    ] == pytest.approx(float(first["volume_crps_mean_ci_lower"].sel(init_month=month)))
+    assert payload["bootstrap_iterations"] == 40
+
+
+def test_identical_forecast_scores_collapse_the_bootstrap_interval():
+    obs_times = pd.date_range("1998-01-01", "2003-12-31", freq="D")
+    obs = _series(obs_times, np.full(obs_times.size, 4.0))
+    forecasts = [
+        _paired_forecast(f"{year}-03-01", {"a": [4.0], "b": [4.0]}, [4.0])
+        for year in (2001, 2002, 2003)
+    ]
+    metrics = compute_esp_metrics(
+        forecasts,
+        obs,
+        _thresholds(),
+        return_periods=(5,),
+        crps_method="ecdf",
+        fair_brier=False,
+        bootstrap_iterations=15,
+        bootstrap_block_size=2,
+        bootstrap_seed=1,
+    )
+    assert float(metrics["crps_mean"].sel(init_month="03-01")) == pytest.approx(
+        0.0, abs=1e-12
+    )
+    assert float(
+        metrics["crps_mean_ci_lower"].sel(init_month="03-01")
+    ) == pytest.approx(0.0, abs=1e-12)
+    assert float(
+        metrics["crps_mean_ci_upper"].sel(init_month="03-01")
+    ) == pytest.approx(0.0, abs=1e-12)
+    assert float(metrics["volume_crps_mean"].sel(init_month="03-01")) == pytest.approx(
+        0.0, abs=1e-12
+    )
+    assert float(
+        metrics["volume_crps_mean_ci_lower"].sel(init_month="03-01")
+    ) == pytest.approx(0.0, abs=1e-12)
+
+
+def test_block_bootstrap_restores_the_numpy_generator():
+    sample = xr.DataArray(
+        np.arange(6, dtype=float),
+        dims=("init_time",),
+        coords={"init_time": pd.date_range("2001-02-01", periods=6, freq="365D")},
+    )
+    np.random.seed(123)
+    expected = np.random.rand()
+    np.random.seed(123)
+    block_bootstrap(
+        sample,
+        blocks={"init_time": 2},
+        n_iteration=5,
+        circular=True,
+        seed=0,
+    )
+    assert np.random.rand() == pytest.approx(expected)
+
+
+def test_plot_volume_scores_and_lead_interval():
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    from snowda.viz.esp_streamflow import plot_crps_by_lead, plot_volume_scores
+
+    init_time = pd.to_datetime(["2001-02-01", "2002-02-01"])
+    metrics = xr.Dataset(
+        {
+            "crps": xr.DataArray(
+                [[1.0, 2.0]],
+                dims=("init_month", "lead"),
+                coords={"init_month": ["02-01"], "lead": [0, 1]},
+            ),
+            "crps_ci_lower": xr.DataArray(
+                [[0.5, 1.5]],
+                dims=("init_month", "lead"),
+                coords={"init_month": ["02-01"], "lead": [0, 1]},
+            ),
+            "crps_ci_upper": xr.DataArray(
+                [[1.5, 2.5]],
+                dims=("init_month", "lead"),
+                coords={"init_month": ["02-01"], "lead": [0, 1]},
+            ),
+            "volume_crps": xr.DataArray(
+                [3.0, 1.0],
+                dims=("init_time",),
+                coords={"init_time": init_time, "init_month": "02-01"},
+            ),
+            "volume_crpss": xr.DataArray(
+                [0.2, 0.8],
+                dims=("init_time",),
+                coords={"init_time": init_time, "init_month": "02-01"},
+            ),
+        }
+    )
+    fig, ax = plot_crps_by_lead(metrics)
+    assert len(ax.collections) == 1
+    plt.close(fig)
+
+    volume_fig = plot_volume_scores(metrics)
+    volume_ax = volume_fig.axes[0]
+    assert volume_ax.get_ylabel() == "Volume CRPS"
+    np.testing.assert_allclose(volume_ax.lines[0].get_ydata(), [3.0, 1.0])
+    plt.close(volume_fig)
+    with pytest.raises(KeyError, match="score_volume"):
+        plot_volume_scores(xr.Dataset({"crps": metrics["crps"]}))

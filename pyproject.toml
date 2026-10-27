@@ -30,6 +30,8 @@ dependencies = [
   "pint-xarray>=0.4",
   "scores>=2",
   "pysumma>=3.1",
+  "notebook>=7",
+  "ipykernel>=6",
 ]
 
 [project.optional-dependencies]

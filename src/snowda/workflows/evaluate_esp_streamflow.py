@@ -14,6 +14,7 @@ import xarray as xr
 
 from snowda.adapters.scores import (
     DEFAULT_CRPS_METHOD,
+    block_bootstrap,
     brier_score,
     brier_score_for_ensemble,
     crps_for_ensemble,
@@ -27,14 +28,17 @@ from snowda.io.esp_streamflow import (
     CLIMO_MEMBER_DIM,
     DEFAULT_RETURN_PERIODS,
     ENSEMBLE_DIM,
+    VOLUME_UNIT,
     EspPairedForecast,
     climatology_window_peaks,
+    climatology_window_volumes,
     group_forecasts_by_init_month,
     load_esp_forecasts,
     observational_climatology_ensemble,
     peak_over_horizon,
     read_return_period_thresholds,
     select_return_period_thresholds,
+    volume_over_horizon,
 )
 from snowda.io.streamflow import DEFAULT_RESAMPLE
 from snowda.utils.logging import configure_logging, get_logger
@@ -48,6 +52,13 @@ from snowda.workflows.evaluate_streamflow import (
 )
 
 log = get_logger(__name__)
+
+DEFAULT_BOOTSTRAP_ITERATIONS = 100
+DEFAULT_BOOTSTRAP_BLOCK_SIZE = 2
+DEFAULT_BOOTSTRAP_CI_LEVEL = 0.9
+DEFAULT_BOOTSTRAP_SEED = 0
+VOLUME_DEFINITION = "sum of paired daily mean discharge times 86400 s, in m3"
+VOLUME_SKILL_REFERENCE = "observational water volume on the same calendar days"
 
 
 def _exclude_years_for_forecast(
@@ -84,22 +95,22 @@ def _binary_obs_event(obs_peak: xr.DataArray, threshold: float) -> xr.DataArray:
 
 
 def _finite_ensemble(values: xr.DataArray, dim: str) -> xr.DataArray:
-    """Drop ensemble members whose peak is missing."""
+    """Drop ensemble members whose scalar predictand is missing."""
     if dim not in values.dims:
         return values
     mask = np.isfinite(np.asarray(values.values, dtype=float))
     return values.isel({dim: mask})
 
 
-def _scalar_peak_crps(
+def _scalar_ensemble_crps(
     ensemble: xr.DataArray,
-    obs_peak: xr.DataArray,
+    observation: xr.DataArray,
     *,
     member_dim: str,
     crps_method: str,
 ) -> xr.DataArray:
-    """One CRPS for a peak-flow ensemble. NaN when the observation or ensemble is empty."""
-    obs_values = np.ravel(np.asarray(obs_peak.values, dtype=float))
+    """One CRPS for a scalar ensemble. NaN when the observation or ensemble is empty."""
+    obs_values = np.ravel(np.asarray(observation.values, dtype=float))
     obs_value = float(obs_values[0]) if obs_values.size == 1 else np.nan
     members = _finite_ensemble(ensemble, member_dim)
     if int(members.sizes.get(member_dim, 0)) == 0 or not np.isfinite(obs_value):
@@ -146,13 +157,11 @@ def _score_crps_group(
         init = pd.Timestamp(forecast.init_time)
         crps_items.append(crps.expand_dims(init_time=[init]))
         crpss_items.append(crpss.expand_dims(init_time=[init]))
-    crps_by_lead = xr.concat(crps_items, dim="init_time", join="outer").mean(
-        "init_time", skipna=True
+    crps_by_init = xr.concat(crps_items, dim="init_time", join="outer").rename("crps")
+    crpss_by_init = xr.concat(crpss_items, dim="init_time", join="outer").rename(
+        "crpss"
     )
-    crpss_by_lead = xr.concat(crpss_items, dim="init_time", join="outer").mean(
-        "init_time", skipna=True
-    )
-    return crps_by_lead.rename("crps"), crpss_by_lead.rename("crpss")
+    return crps_by_init, crpss_by_init
 
 
 def _stack_peaks(
@@ -209,13 +218,13 @@ def _score_peak_group(
                 forecast, exclude_verification_year
             ),
         )
-        crps = _scalar_peak_crps(
+        crps = _scalar_ensemble_crps(
             fcst_peak,
             obs_peak,
             member_dim=ENSEMBLE_DIM,
             crps_method=crps_method,
         )
-        crps_ref = _scalar_peak_crps(
+        crps_ref = _scalar_ensemble_crps(
             climo_peak,
             obs_peak,
             member_dim=CLIMO_MEMBER_DIM,
@@ -236,6 +245,169 @@ def _score_peak_group(
     )
     peak_crpss.attrs["units"] = "1"
     return peak_crps, peak_crpss
+
+
+def _score_volume_group(
+    forecasts: Sequence[EspPairedForecast],
+    obs: xr.DataArray,
+    *,
+    exclude_verification_year: bool,
+    crps_method: str,
+) -> tuple[xr.DataArray, xr.DataArray]:
+    """One water-volume CRPS and CRPSS per forecast.
+
+    The predictand is the total volume over the paired forecast days. The
+    reference ensemble is the observed volume on those same calendar days in
+    each other year. CRPSS is ``1 - CRPS / CRPS_ref`` for that forecast.
+    """
+    crps_items: list[xr.DataArray] = []
+    crpss_items: list[xr.DataArray] = []
+    for forecast in forecasts:
+        fcst_volume, obs_volume = volume_over_horizon(forecast.fcst, forecast.obs)
+        climo_volume = climatology_window_volumes(
+            obs,
+            forecast.valid_time,
+            exclude_years=_exclude_years_for_forecast(
+                forecast, exclude_verification_year
+            ),
+        )
+        crps = _scalar_ensemble_crps(
+            fcst_volume,
+            obs_volume,
+            member_dim=ENSEMBLE_DIM,
+            crps_method=crps_method,
+        )
+        crps_ref = _scalar_ensemble_crps(
+            climo_volume,
+            obs_volume,
+            member_dim=CLIMO_MEMBER_DIM,
+            crps_method=crps_method,
+        )
+        crpss = skill_score(crps, crps_ref)
+        init = pd.Timestamp(forecast.init_time)
+        crps_items.append(crps.expand_dims(init_time=[init]))
+        crpss_items.append(crpss.expand_dims(init_time=[init]))
+    volume_crps = xr.concat(crps_items, dim="init_time", join="outer").rename(
+        "volume_crps"
+    )
+    volume_crpss = xr.concat(crpss_items, dim="init_time", join="outer").rename(
+        "volume_crpss"
+    )
+    volume_crps.attrs["long_name"] = "CRPS of water volume over the forecast horizon"
+    volume_crps.attrs["units"] = VOLUME_UNIT
+    volume_crpss.attrs["long_name"] = (
+        "CRPSS of water volume versus observational volume climatology"
+    )
+    volume_crpss.attrs["units"] = "1"
+    return volume_crps, volume_crpss
+
+
+def _inits_with_a_score(scores: xr.DataArray, dim: str) -> xr.DataArray:
+    """Keep initializations that have a finite score, in chronological order."""
+    if dim not in scores.dims:
+        return scores
+    other = [name for name in scores.dims if name != dim]
+    finite = np.isfinite(scores)
+    keep = finite.any(dim=other) if other else finite
+    return scores.sel({dim: keep}).sortby(dim)
+
+
+def _nan_reduced(scores: xr.DataArray, reduce_dims: Sequence[str]) -> xr.DataArray:
+    keep_dims = [name for name in scores.dims if name not in set(reduce_dims)]
+    if not keep_dims:
+        return xr.DataArray(np.nan)
+    coords = {name: scores[name] for name in keep_dims}
+    shape = [int(scores.sizes[name]) for name in keep_dims]
+    return xr.DataArray(
+        np.full(shape, np.nan, dtype=float), dims=keep_dims, coords=coords
+    )
+
+
+def _drop_quantile(bounds: xr.DataArray) -> xr.DataArray:
+    if "quantile" in bounds.coords:
+        bounds = bounds.reset_coords("quantile", drop=True)
+    if "quantile" in bounds.dims:
+        bounds = bounds.squeeze("quantile", drop=True)
+    return bounds
+
+
+def _confidence_bounds(
+    scores: xr.DataArray,
+    reductions: dict[str, tuple[str, ...]],
+    *,
+    dim: str = "init_time",
+    block_size: int,
+    n_iteration: int,
+    circular: bool,
+    ci_level: float,
+    seed: int | None,
+) -> dict[str, tuple[xr.DataArray, xr.DataArray]]:
+    """Percentile interval for each reduction after block-resampling ``dim``.
+
+    One resample is reused for every reduction of this score. Fewer than two
+    finite initializations leaves the bounds missing.
+    """
+    sample = _inits_with_a_score(scores, dim)
+    n_inits = int(sample.sizes[dim]) if dim in sample.dims else 0
+    if n_inits < 2 or n_iteration < 1:
+        return {
+            name: (
+                _nan_reduced(scores, reduce_dims),
+                _nan_reduced(scores, reduce_dims),
+            )
+            for name, reduce_dims in reductions.items()
+        }
+    block = min(int(block_size), n_inits)
+    resampled = block_bootstrap(
+        sample,
+        blocks={dim: block},
+        n_iteration=int(n_iteration),
+        circular=circular,
+        seed=seed,
+    )
+    alpha = (1.0 - float(ci_level)) / 2.0
+    bounds: dict[str, tuple[xr.DataArray, xr.DataArray]] = {}
+    for name, reduce_dims in reductions.items():
+        reduced = resampled
+        for reduce_dim in reduce_dims:
+            if reduce_dim in reduced.dims:
+                reduced = reduced.mean(reduce_dim, skipna=True)
+        lower = _drop_quantile(reduced.quantile(alpha, dim="iteration", skipna=True))
+        upper = _drop_quantile(
+            reduced.quantile(1.0 - alpha, dim="iteration", skipna=True)
+        )
+        bounds[name] = (lower.astype(float), upper.astype(float))
+    return bounds
+
+
+def _interval_variables(
+    bounds: dict[str, tuple[xr.DataArray, xr.DataArray]],
+    *,
+    units: dict[str, str],
+    ci_level: float,
+) -> dict[str, xr.DataArray]:
+    percent = f"{ci_level * 100:g}%"
+    variables: dict[str, xr.DataArray] = {}
+    for name, (lower, upper) in bounds.items():
+        unit = units.get(name, "")
+        pair = (
+            (
+                f"{name}_ci_lower",
+                lower,
+                f"lower {percent} block-bootstrap bound for {name}",
+            ),
+            (
+                f"{name}_ci_upper",
+                upper,
+                f"upper {percent} block-bootstrap bound for {name}",
+            ),
+        )
+        for variable_name, values, long_name in pair:
+            da = values.rename(variable_name)
+            da.attrs["units"] = unit
+            da.attrs["long_name"] = long_name
+            variables[variable_name] = da
+    return variables
 
 
 def _score_threshold_group(
@@ -419,6 +591,12 @@ def compute_esp_metrics(
     crps_method: str = DEFAULT_CRPS_METHOD,
     fair_brier: bool = True,
     score_peak: bool = False,
+    score_volume: bool = True,
+    bootstrap_iterations: int = DEFAULT_BOOTSTRAP_ITERATIONS,
+    bootstrap_block_size: int = DEFAULT_BOOTSTRAP_BLOCK_SIZE,
+    bootstrap_circular: bool = True,
+    bootstrap_ci_level: float = DEFAULT_BOOTSTRAP_CI_LEVEL,
+    bootstrap_seed: int | None = DEFAULT_BOOTSTRAP_SEED,
 ) -> xr.Dataset:
     """Score ESP forecasts and aggregate by forecast-initiation month.
 
@@ -426,6 +604,16 @@ def compute_esp_metrics(
     forecast horizon: one CRPS and one CRPSS per forecast, referenced to the
     observed peak in the same calendar window of other years. Month means of
     those scores are the mean across forecasts, matching the lead-time CRPSS.
+
+    When ``score_volume`` is true, score the total water volume over the paired
+    days the same way. The reference ensemble is the observed volume on those
+    calendar days in other years.
+
+    ``bootstrap_iterations`` above zero adds a circular block-bootstrap
+    percentile interval for each CRPS and CRPSS that is averaged over
+    initialization time. Lead time is not resampled. The point estimates are
+    the original means. Set ``bootstrap_iterations`` to zero to skip the
+    intervals.
 
     ``event_probability`` is the fraction of finite ensemble members whose peak
     exceeds each return-period threshold, and ``event_observed`` is the matching
@@ -439,17 +627,33 @@ def compute_esp_metrics(
     """
     if not forecasts:
         raise ValueError("No ESP forecasts to score.")
+    if bootstrap_iterations < 0:
+        raise ValueError("bootstrap_iterations must be zero or positive.")
+    if bootstrap_block_size < 1:
+        raise ValueError("bootstrap_block_size must be at least 1.")
+    if not 0.0 < float(bootstrap_ci_level) < 1.0:
+        raise ValueError("bootstrap_ci_level must be between 0 and 1.")
     selected = select_return_period_thresholds(thresholds, return_periods)
     grouped = group_forecasts_by_init_month(forecasts)
+    flow_units = str(obs.attrs.get("units", "m3 s-1"))
+    bootstrap_kwargs = {
+        "block_size": int(bootstrap_block_size),
+        "n_iteration": int(bootstrap_iterations),
+        "circular": bool(bootstrap_circular),
+        "ci_level": float(bootstrap_ci_level),
+        "seed": bootstrap_seed,
+    }
 
     month_datasets: list[xr.Dataset] = []
     for init_month, group in grouped.items():
-        crps, crpss = _score_crps_group(
+        crps_by_init, crpss_by_init = _score_crps_group(
             group,
             obs,
             exclude_verification_year=exclude_verification_year,
             crps_method=crps_method,
         )
+        crps = crps_by_init.mean("init_time", skipna=True).rename("crps")
+        crpss = crpss_by_init.mean("init_time", skipna=True).rename("crpss")
         fcst_peak, obs_peak, climo_peak = _stack_peaks(
             group,
             obs,
@@ -469,11 +673,40 @@ def compute_esp_metrics(
         month_vars: dict[str, xr.DataArray] = {
             "crps": crps,
             "crpss": crpss,
-            "crps_mean": crps.mean("lead", skipna=True),
-            "crpss_mean": crpss.mean("lead", skipna=True),
+            "crps_mean": crps.mean("lead", skipna=True).rename("crps_mean"),
+            "crpss_mean": crpss.mean("lead", skipna=True).rename("crpss_mean"),
             "rank_histogram": rank_hist,
             "rank_histogram_n": xr.DataArray(rank_n, name="rank_histogram_n"),
         }
+        if bootstrap_iterations > 0:
+            month_vars.update(
+                _interval_variables(
+                    _confidence_bounds(
+                        crps_by_init,
+                        {
+                            "crps": ("init_time",),
+                            "crps_mean": ("init_time", "lead"),
+                        },
+                        **bootstrap_kwargs,
+                    ),
+                    units={"crps": flow_units, "crps_mean": flow_units},
+                    ci_level=float(bootstrap_ci_level),
+                )
+            )
+            month_vars.update(
+                _interval_variables(
+                    _confidence_bounds(
+                        crpss_by_init,
+                        {
+                            "crpss": ("init_time",),
+                            "crpss_mean": ("init_time", "lead"),
+                        },
+                        **bootstrap_kwargs,
+                    ),
+                    units={"crpss": "1", "crpss_mean": "1"},
+                    ci_level=float(bootstrap_ci_level),
+                )
+            )
         if score_peak:
             peak_crps, peak_crpss = _score_peak_group(
                 group,
@@ -489,6 +722,67 @@ def compute_esp_metrics(
             month_vars["peak_crpss_mean"] = peak_crpss.mean(
                 "init_time", skipna=True
             ).rename("peak_crpss_mean")
+            if bootstrap_iterations > 0:
+                month_vars.update(
+                    _interval_variables(
+                        _confidence_bounds(
+                            peak_crps,
+                            {"peak_crps_mean": ("init_time",)},
+                            **bootstrap_kwargs,
+                        ),
+                        units={"peak_crps_mean": flow_units},
+                        ci_level=float(bootstrap_ci_level),
+                    )
+                )
+                month_vars.update(
+                    _interval_variables(
+                        _confidence_bounds(
+                            peak_crpss,
+                            {"peak_crpss_mean": ("init_time",)},
+                            **bootstrap_kwargs,
+                        ),
+                        units={"peak_crpss_mean": "1"},
+                        ci_level=float(bootstrap_ci_level),
+                    )
+                )
+        if score_volume:
+            volume_crps, volume_crpss = _score_volume_group(
+                group,
+                obs,
+                exclude_verification_year=exclude_verification_year,
+                crps_method=crps_method,
+            )
+            month_vars["volume_crps"] = volume_crps
+            month_vars["volume_crpss"] = volume_crpss
+            month_vars["volume_crps_mean"] = volume_crps.mean(
+                "init_time", skipna=True
+            ).rename("volume_crps_mean")
+            month_vars["volume_crpss_mean"] = volume_crpss.mean(
+                "init_time", skipna=True
+            ).rename("volume_crpss_mean")
+            if bootstrap_iterations > 0:
+                month_vars.update(
+                    _interval_variables(
+                        _confidence_bounds(
+                            volume_crps,
+                            {"volume_crps_mean": ("init_time",)},
+                            **bootstrap_kwargs,
+                        ),
+                        units={"volume_crps_mean": VOLUME_UNIT},
+                        ci_level=float(bootstrap_ci_level),
+                    )
+                )
+                month_vars.update(
+                    _interval_variables(
+                        _confidence_bounds(
+                            volume_crpss,
+                            {"volume_crpss_mean": ("init_time",)},
+                            **bootstrap_kwargs,
+                        ),
+                        units={"volume_crpss_mean": "1"},
+                        ci_level=float(bootstrap_ci_level),
+                    )
+                )
         month_ds = xr.Dataset(month_vars)
         month_ds = xr.merge([month_ds, threshold_ds])
         month_ds["n_forecasts"] = n_forecasts = len(group)
@@ -521,11 +815,22 @@ def compute_esp_metrics(
         metrics.attrs["peak_skill_reference"] = (
             "observational peak streamflow in the same calendar window"
         )
+    metrics.attrs["score_volume"] = str(bool(score_volume))
+    if score_volume:
+        metrics.attrs["volume_definition"] = VOLUME_DEFINITION
+        metrics.attrs["volume_skill_reference"] = VOLUME_SKILL_REFERENCE
+    metrics.attrs["bootstrap_iterations"] = int(bootstrap_iterations)
+    metrics.attrs["bootstrap_block_size"] = int(bootstrap_block_size)
+    metrics.attrs["bootstrap_circular"] = str(bool(bootstrap_circular))
+    metrics.attrs["bootstrap_ci_level"] = float(bootstrap_ci_level)
+    metrics.attrs["bootstrap_seed"] = (
+        "" if bootstrap_seed is None else int(bootstrap_seed)
+    )
     return metrics
 
 
-def _peak_scores_by_init(row: xr.Dataset, name: str) -> dict[str, Any]:
-    """Finite per-forecast peak scores, dropping inits that belong to other months."""
+def _scores_by_init(row: xr.Dataset, name: str) -> dict[str, Any]:
+    """Finite per-forecast scores, dropping inits that belong to other months."""
     if name not in row:
         return {}
     da = row[name]
@@ -537,6 +842,20 @@ def _peak_scores_by_init(row: xr.Dataset, name: str) -> dict[str, Any]:
         if np.isfinite(value):
             scores_by_init[str(pd.Timestamp(init))] = _json_safe(value)
     return scores_by_init
+
+
+def _json_values(da: xr.DataArray) -> Any:
+    values = np.asarray(da.values, dtype=float)
+    if values.shape == ():
+        return _json_safe(float(values))
+    return _json_safe(values)
+
+
+def _put_interval(entry: dict[str, Any], row: xr.Dataset, name: str) -> None:
+    for suffix in ("ci_lower", "ci_upper"):
+        key = f"{name}_{suffix}"
+        if key in row:
+            entry[key] = _json_values(row[key])
 
 
 def esp_metrics_to_dict(metrics: xr.Dataset) -> dict[str, Any]:
@@ -578,6 +897,10 @@ def esp_metrics_to_dict(metrics: xr.Dataset) -> dict[str, Any]:
             entry["pod"][key] = _json_safe(np.asarray(cell["pod"].values).item())
             entry["far"][key] = _json_safe(np.asarray(cell["far"].values).item())
             entry["yp"][key] = _json_safe(np.asarray(cell["yp"].values).item())
+        _put_interval(entry, row, "crps")
+        _put_interval(entry, row, "crpss")
+        _put_interval(entry, row, "crps_mean")
+        _put_interval(entry, row, "crpss_mean")
         if "peak_crps" in row:
             entry["peak_crps_mean"] = _json_safe(
                 np.asarray(row["peak_crps_mean"].values).item()
@@ -585,8 +908,21 @@ def esp_metrics_to_dict(metrics: xr.Dataset) -> dict[str, Any]:
             entry["peak_crpss_mean"] = _json_safe(
                 np.asarray(row["peak_crpss_mean"].values).item()
             )
-            entry["peak_crps"] = _peak_scores_by_init(row, "peak_crps")
-            entry["peak_crpss"] = _peak_scores_by_init(row, "peak_crpss")
+            entry["peak_crps"] = _scores_by_init(row, "peak_crps")
+            entry["peak_crpss"] = _scores_by_init(row, "peak_crpss")
+            _put_interval(entry, row, "peak_crps_mean")
+            _put_interval(entry, row, "peak_crpss_mean")
+        if "volume_crps" in row:
+            entry["volume_crps_mean"] = _json_safe(
+                np.asarray(row["volume_crps_mean"].values).item()
+            )
+            entry["volume_crpss_mean"] = _json_safe(
+                np.asarray(row["volume_crpss_mean"].values).item()
+            )
+            entry["volume_crps"] = _scores_by_init(row, "volume_crps")
+            entry["volume_crpss"] = _scores_by_init(row, "volume_crpss")
+            _put_interval(entry, row, "volume_crps_mean")
+            _put_interval(entry, row, "volume_crpss_mean")
         by_month[month] = entry
     payload["by_init_month"] = by_month
     return payload
@@ -631,6 +967,12 @@ def evaluate_esp_run(
     crps_method: str = DEFAULT_CRPS_METHOD,
     fair_brier: bool = True,
     score_peak: bool = False,
+    score_volume: bool = True,
+    bootstrap_iterations: int = DEFAULT_BOOTSTRAP_ITERATIONS,
+    bootstrap_block_size: int = DEFAULT_BOOTSTRAP_BLOCK_SIZE,
+    bootstrap_circular: bool = True,
+    bootstrap_ci_level: float = DEFAULT_BOOTSTRAP_CI_LEVEL,
+    bootstrap_seed: int | None = DEFAULT_BOOTSTRAP_SEED,
     resample: str | None = DEFAULT_RESAMPLE,
     variable: str = "IRFroutedRunoff",
     seg: int = 0,
@@ -669,6 +1011,12 @@ def evaluate_esp_run(
         "crps_method": crps_method,
         "fair_brier": fair_brier,
         "score_peak": score_peak,
+        "score_volume": score_volume,
+        "bootstrap_iterations": bootstrap_iterations,
+        "bootstrap_block_size": bootstrap_block_size,
+        "bootstrap_circular": bootstrap_circular,
+        "bootstrap_ci_level": bootstrap_ci_level,
+        "bootstrap_seed": bootstrap_seed,
         "resample": resample,
         "variable": variable,
         "seg": seg,
@@ -703,6 +1051,12 @@ def evaluate_esp_run(
         crps_method=crps_method,
         fair_brier=fair_brier,
         score_peak=score_peak,
+        score_volume=score_volume,
+        bootstrap_iterations=bootstrap_iterations,
+        bootstrap_block_size=bootstrap_block_size,
+        bootstrap_circular=bootstrap_circular,
+        bootstrap_ci_level=bootstrap_ci_level,
+        bootstrap_seed=bootstrap_seed,
     )
     metrics_dict = write_esp_evaluation_products(metrics, eval_dir)
 
@@ -786,6 +1140,22 @@ def _load_esp_eval_config(config_path: str | Path) -> dict[str, Any]:
         "crps_method": str(raw.get("crps_method", DEFAULT_CRPS_METHOD)),
         "fair_brier": _as_bool(raw.get("fair_brier"), True),
         "score_peak": _as_bool(raw.get("score_peak"), False),
+        "score_volume": _as_bool(raw.get("score_volume"), True),
+        "bootstrap_iterations": int(
+            raw.get("bootstrap_iterations", DEFAULT_BOOTSTRAP_ITERATIONS)
+        ),
+        "bootstrap_block_size": int(
+            raw.get("bootstrap_block_size", DEFAULT_BOOTSTRAP_BLOCK_SIZE)
+        ),
+        "bootstrap_circular": _as_bool(raw.get("bootstrap_circular"), True),
+        "bootstrap_ci_level": float(
+            raw.get("bootstrap_ci_level", DEFAULT_BOOTSTRAP_CI_LEVEL)
+        ),
+        "bootstrap_seed": (
+            None
+            if raw.get("bootstrap_seed", DEFAULT_BOOTSTRAP_SEED) is None
+            else int(raw.get("bootstrap_seed", DEFAULT_BOOTSTRAP_SEED))
+        ),
         "_raw": raw,
         "_config_path": str(Path(config_path).resolve()),
     }
@@ -807,6 +1177,12 @@ def evaluate_esp_streamflow(config_path: str | Path) -> Path:
         crps_method=cfg["crps_method"],
         fair_brier=cfg["fair_brier"],
         score_peak=cfg["score_peak"],
+        score_volume=cfg["score_volume"],
+        bootstrap_iterations=cfg["bootstrap_iterations"],
+        bootstrap_block_size=cfg["bootstrap_block_size"],
+        bootstrap_circular=cfg["bootstrap_circular"],
+        bootstrap_ci_level=cfg["bootstrap_ci_level"],
+        bootstrap_seed=cfg["bootstrap_seed"],
         resample=cfg["resample"],
         variable=cfg["variable"],
         seg=cfg["seg"],

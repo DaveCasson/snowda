@@ -42,11 +42,30 @@ def plot_crps_by_lead(
     if var not in metrics:
         raise KeyError(f"Metrics dataset is missing {var!r}.")
     months = [str(m) for m in np.atleast_1d(metrics["init_month"].values)]
+    lower_name = f"{var}_ci_lower"
+    upper_name = f"{var}_ci_upper"
     for month in months:
         row = metrics[var].sel(init_month=month)
         lead = np.asarray(row["lead"].values)
         values = np.asarray(row.values, dtype=float)
-        ax.plot(lead, values, marker="o", markersize=3, linewidth=1.6, label=month)
+        (line,) = ax.plot(
+            lead, values, marker="o", markersize=3, linewidth=1.6, label=month
+        )
+        if lower_name in metrics and upper_name in metrics:
+            lower = np.asarray(
+                metrics[lower_name].sel(init_month=month).values, dtype=float
+            )
+            upper = np.asarray(
+                metrics[upper_name].sel(init_month=month).values, dtype=float
+            )
+            ax.fill_between(
+                lead,
+                lower,
+                upper,
+                color=line.get_color(),
+                alpha=0.2,
+                linewidth=0,
+            )
     ax.set_xlabel("Lead (days)")
     ax.set_ylabel("CRPSS" if skill else "CRPS")
     ax.set_title("CRPSS vs lead" if skill else "CRPS vs lead")
@@ -60,12 +79,15 @@ def plot_crps_by_lead(
     return fig, ax
 
 
-def _peak_series(da: xr.DataArray) -> list[tuple[str, pd.DatetimeIndex, np.ndarray]]:
-    """Finite peak scores grouped by initiation month, in initialization-time order."""
+def _horizon_score_series(
+    da: xr.DataArray,
+    *,
+    enable_hint: str,
+) -> list[tuple[str, pd.DatetimeIndex, np.ndarray]]:
+    """Finite scores grouped by initiation month, in initialization-time order."""
     if "init_time" not in da.dims:
         raise ValueError(
-            f"{da.name or 'peak score'} has no init_time dimension. "
-            "Enable score_peak to store one peak score per forecast."
+            f"{da.name or 'score'} has no init_time dimension. {enable_hint}"
         )
     if "init_month" in da.dims:
         groups = [
@@ -87,34 +109,40 @@ def _peak_series(da: xr.DataArray) -> list[tuple[str, pd.DatetimeIndex, np.ndarr
             (label, pd.DatetimeIndex(times[finite][order]), values[finite][order])
         )
     if not series:
-        raise ValueError(f"{da.name or 'peak score'} has no finite values to plot.")
+        raise ValueError(f"{da.name or 'score'} has no finite values to plot.")
     return series
 
 
-def plot_peak_scores(
+def _plot_horizon_scores(
     metrics: xr.Dataset,
+    crps_name: str,
+    crpss_name: str,
     *,
+    crps_label: str,
+    crpss_label: str,
+    missing_flag: str,
     fig: Figure | None = None,
 ) -> Figure:
-    """Peak-flow CRPS and CRPSS versus forecast initialization time.
+    """CRPS and CRPSS versus forecast initialization time.
 
     One point per initialization. Forecasts that share an initiation month
     use the same color. Non-finite scores from other months are omitted.
     """
-    if "peak_crps" not in metrics or "peak_crpss" not in metrics:
+    if crps_name not in metrics or crpss_name not in metrics:
         raise KeyError(
-            "Metrics dataset is missing peak_crps and peak_crpss. "
-            "Recompute with score_peak=True."
+            f"Metrics dataset is missing {crps_name} and {crpss_name}. "
+            f"Recompute with {missing_flag}=True."
         )
-    crps_series = _peak_series(metrics["peak_crps"])
-    crpss_series = _peak_series(metrics["peak_crpss"])
+    hint = f"Enable {missing_flag} to store one score per forecast."
+    crps_series = _horizon_score_series(metrics[crps_name], enable_hint=hint)
+    crpss_series = _horizon_score_series(metrics[crpss_name], enable_hint=hint)
     if fig is None:
         fig, axes = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
     else:
         axes = np.asarray(fig.axes).reshape(2)
     panels = (
-        (axes[0], crps_series, "Peak CRPS", "Peak CRPS vs initialization"),
-        (axes[1], crpss_series, "Peak CRPSS", "Peak CRPSS vs initialization"),
+        (axes[0], crps_series, crps_label, f"{crps_label} vs initialization"),
+        (axes[1], crpss_series, crpss_label, f"{crpss_label} vs initialization"),
     )
     for ax, series, ylabel, title in panels:
         for label, times, values in series:
@@ -136,6 +164,40 @@ def plot_peak_scores(
     fig.autofmt_xdate()
     fig.tight_layout()
     return fig
+
+
+def plot_peak_scores(
+    metrics: xr.Dataset,
+    *,
+    fig: Figure | None = None,
+) -> Figure:
+    """Peak-flow CRPS and CRPSS versus forecast initialization time."""
+    return _plot_horizon_scores(
+        metrics,
+        "peak_crps",
+        "peak_crpss",
+        crps_label="Peak CRPS",
+        crpss_label="Peak CRPSS",
+        missing_flag="score_peak",
+        fig=fig,
+    )
+
+
+def plot_volume_scores(
+    metrics: xr.Dataset,
+    *,
+    fig: Figure | None = None,
+) -> Figure:
+    """Water-volume CRPS and CRPSS versus forecast initialization time."""
+    return _plot_horizon_scores(
+        metrics,
+        "volume_crps",
+        "volume_crpss",
+        crps_label="Volume CRPS",
+        crpss_label="Volume CRPSS",
+        missing_flag="score_volume",
+        fig=fig,
+    )
 
 
 def plot_threshold_metrics(

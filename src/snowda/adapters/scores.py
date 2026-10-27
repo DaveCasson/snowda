@@ -30,6 +30,7 @@ from scores.probability import brier_score_for_ensemble as _brier_score_for_ense
 from scores.probability import crps_for_ensemble as _crps_for_ensemble
 from scores.probability import rank_histogram as _rank_histogram
 from scores.probability import roc_curve_data as _roc_curve_data
+from scores.processing import block_bootstrap as _block_bootstrap
 
 DEFAULT_REDUCE_DIMS = "time"
 DEFAULT_ENSEMBLE_DIM = "member"
@@ -220,6 +221,39 @@ def compute_deterministic_metrics(
         ds.attrs["time_start"] = str(aligned_fcst["time"].min().values)
         ds.attrs["time_end"] = str(aligned_fcst["time"].max().values)
     return ds
+
+
+def block_bootstrap(
+    array_list: xr.DataArray | xr.Dataset | Sequence[xr.DataArray | xr.Dataset],
+    *,
+    blocks: dict[str, int],
+    n_iteration: int,
+    circular: bool = True,
+    exclude_dims: Sequence[Sequence[str]] | None = None,
+    seed: int | None = None,
+) -> Any:
+    """Resample blocks with ``scores.processing.block_bootstrap``.
+
+    ``scores`` draws from the global NumPy random generator and has no seed
+    argument. When ``seed`` is set, the generator is seeded for this call and
+    its previous state is restored. ``circular`` wraps a block off the end of
+    a dimension back to the start (Gilleland 2020).
+    """
+    excluded = None if exclude_dims is None else [list(dims) for dims in exclude_dims]
+    state = np.random.get_state()
+    try:
+        if seed is not None:
+            np.random.seed(seed)
+        return _block_bootstrap(
+            array_list,
+            blocks=blocks,
+            n_iteration=n_iteration,
+            exclude_dims=excluded,
+            circular=circular,
+        )
+    finally:
+        if seed is not None:
+            np.random.set_state(state)
 
 
 def skill_score(
