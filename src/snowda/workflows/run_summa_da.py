@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 import glob
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import pandas as pd
 import xarray as xr
 
 from snowda.adapters.pysumma import run_ensemble
+from snowda.config.loader import config_label
 from snowda.config.pysummada import (
     AssimilationConfig,
+    MizuRouteEspConfig,
     PysummadaConfig,
     load_pysummada_config,
     validate_da_config,
@@ -34,7 +37,11 @@ from snowda.io.fsca_obs import read_fsca_observations
 from snowda.io.summa_ensemble import SummaEnsembleReader, update_file_manager_option
 from snowda.io.summa_fsca import calc_summa_fsca, prepare_summa_fsca_input
 from snowda.io.swe_obs import read_member_hru_swe, read_model_equivalent_swe
-from snowda.workflows.esp import run_balanced_esp_traces, run_esp_traces
+from snowda.workflows.esp import (
+    balanced_trigger_dates,
+    run_balanced_esp_issue,
+    run_esp_traces,
+)
 from snowda.workflows.summa_common import (
     apply_run_time,
     apply_segment_initial_conditions,
@@ -48,6 +55,20 @@ from snowda.workflows.summa_common import (
 )
 
 SUMMA_TIMESTEP_SUFFIX = "timestep.nc"
+
+
+def _ensemble_routing(cfg: PysummadaConfig) -> MizuRouteEspConfig | None:
+    """mizuRoute settings used while the assimilated ensemble is integrated.
+
+    Top-level ``mizuroute`` wins. Otherwise use ``esp.mizuroute`` when ESP
+    routing is enabled, so each post-DA particle keeps a SUMMA restart and
+    the matching mizuRoute restart.
+    """
+    if cfg.mizuroute is not None:
+        return cfg.mizuroute
+    if cfg.esp is None:
+        return None
+    return cfg.esp.mizuroute
 
 
 def _freq_restart(cfg: PysummadaConfig) -> str:
@@ -85,6 +106,7 @@ def _run_swe_assimilation(
     run_dir: Path,
     summa_output_dir: Path,
     run_log: Any,
+    on_particle_catalog: Callable[[Path, datetime], None] | None = None,
 ) -> list[dict[str, Any]]:
     schedule = cfg.assimilation
     if schedule is None:
@@ -124,6 +146,7 @@ def _run_swe_assimilation(
     updates: list[dict[str, Any]] = []
     previous_resampled = False
     routing_restarts: dict[str, Path | None] = {}
+    mizu = _ensemble_routing(cfg)
     for index, (segment_start, segment_end, do_assimilate) in enumerate(segments):
         run_log.info("Starting ensemble run %s to %s", segment_start, segment_end)
         current_run_config = apply_run_time(
@@ -149,16 +172,16 @@ def _run_swe_assimilation(
             freq_restart=_freq_restart(cfg),
             log_stdout=True,
         )
-        if cfg.mizuroute is not None:
+        if mizu is not None:
             route_ensemble_segment(
-                cfg.mizuroute,
+                mizu,
                 run_dir,
                 labels,
                 summa_output_dir,
                 segment_start,
                 segment_end,
                 routing_restarts,
-                require_restart=index < len(segments) - 1,
+                require_restart=index < len(segments) - 1 or do_assimilate,
                 num_workers=cfg.num_workers,
             )
         previous_resampled = False
@@ -204,6 +227,8 @@ def _run_swe_assimilation(
             run_log,
             routing_restarts,
         )
+        if on_particle_catalog is not None:
+            on_particle_catalog(run_dir, observation.date)
         previous_resampled = resampled
         updates.append(
             {
@@ -378,7 +403,9 @@ def _write_bound_particle_catalog(
                 f"is missing: {summa_restart}"
             )
         route = routing_restarts.get(member)
-        if cfg.mizuroute is not None and (route is None or not Path(route).is_file()):
+        if _ensemble_routing(cfg) is not None and (
+            route is None or not Path(route).is_file()
+        ):
             raise FileNotFoundError(
                 f"Post-DA mizuRoute restart for member {member} (donor {donor}) "
                 "is missing. SUMMA and mizuRoute restarts are stored as one particle."
@@ -407,6 +434,7 @@ def _run_fsca_assimilation(
     summa_output_dir: Path,
     run_dir: Path,
     run_log: Any,
+    on_particle_catalog: Callable[[Path, datetime], None] | None = None,
 ) -> None:
     run_period = assimilation.set_run_period()
     fsca_obs_nc = cfg.fsca_obs_nc
@@ -420,6 +448,8 @@ def _run_fsca_assimilation(
     labels = cfg.ens_label_array
     previous_resampled = False
     routing_restarts: dict[str, Path | None] = {}
+    mizu = _ensemble_routing(cfg)
+    may_catalog = bool(fsca_obs_nc and summa_output_dir and fsca_output_dir)
 
     for idx, start_time in enumerate(run_period):
         end_time_current_run = start_time + cfg.time_delta
@@ -447,16 +477,16 @@ def _run_fsca_assimilation(
             run_suffix=end_time_current_run.strftime("%Y_%m_%d"),
             log_stdout=True,
         )
-        if cfg.mizuroute is not None:
+        if mizu is not None:
             route_ensemble_segment(
-                cfg.mizuroute,
+                mizu,
                 run_dir,
                 labels,
                 summa_output_dir,
                 start_time,
                 end_time_current_run,
                 routing_restarts,
-                require_restart=idx < len(run_period) - 1,
+                require_restart=idx < len(run_period) - 1 or may_catalog,
                 num_workers=cfg.num_workers,
             )
         previous_resampled = False
@@ -537,6 +567,8 @@ def _run_fsca_assimilation(
             routing_restarts,
             run_dir=run_dir,
         )
+        if on_particle_catalog is not None:
+            on_particle_catalog(run_dir, end_time_current_run)
         weights_out = fsca_ens_dir / "fsca_weights.csv"
         weights_fsca.to_csv(weights_out)
         run_log.info("Wrote fSCA weights: %s", weights_out)
@@ -559,6 +591,7 @@ def run_summa_assimilation(
     log_filename: str,
     logger_name: str,
     start_message: str,
+    on_particle_catalog: Callable[[Path, datetime], None] | None = None,
 ) -> AssimilationRun:
     """Carry the ensemble through the run, updating weights at assimilation dates."""
     run_dir, log = setup_run_directory(
@@ -594,6 +627,7 @@ def run_summa_assimilation(
             run_dir,
             summa_output_dir,
             log,
+            on_particle_catalog,
         )
     else:
         _run_fsca_assimilation(
@@ -606,6 +640,7 @@ def run_summa_assimilation(
             summa_output_dir,
             run_dir,
             log,
+            on_particle_catalog,
         )
 
     log.info("Assimilation complete.")
@@ -626,7 +661,7 @@ def assimilation_provenance(
     variant: str,
 ) -> dict[str, Any]:
     return {
-        "config_path": str(Path(config_path).resolve()),
+        "config_path": str(config_path),
         "model_result_output_dir": str(cfg.model_result_output_dir),
         "variant": variant,
         "pf_scheme": cfg.pf_scheme,
@@ -637,28 +672,53 @@ def assimilation_provenance(
     }
 
 
-def run_summa_da(config_path: str | Path) -> Path:
-    cfg = load_pysummada_config(config_path)
+def run_summa_da(config: str | Path | Mapping[str, Any]) -> Path:
+    cfg = load_pysummada_config(config)
+    label = config_label(config)
     validate_da_config(cfg)
     if cfg.esp is None:
         raise ValueError("SUMMA DA requires an `esp` section.")
 
+    esp_records: list = []
+    issued: set[str] = set()
+    on_catalog = None
+    triggers: list[datetime] = []
+    if cfg.esp.initialization == INITIALIZATION_BALANCED:
+        triggers = balanced_trigger_dates(cfg, cfg.esp)
+        trigger_keys = {trigger.strftime("%Y%m%d%H") for trigger in triggers}
+
+        def on_catalog(catalog_run_dir: Path, when: datetime) -> None:
+            key = when.strftime("%Y%m%d%H")
+            if key not in trigger_keys or key in issued:
+                return
+            issued.add(key)
+            esp_records.extend(
+                run_balanced_esp_issue(cfg, cfg.esp, catalog_run_dir, when)
+            )
+
     result = run_summa_assimilation(
         cfg,
-        config_path,
+        label,
         log_filename="summa_da.log",
         logger_name=__name__,
         start_message="snowda SUMMA DA run starting",
+        on_particle_catalog=on_catalog,
     )
     if cfg.esp.initialization == INITIALIZATION_BALANCED:
-        result.log.info("Starting balanced independent ESP traces.")
-        esp_records = run_balanced_esp_traces(cfg, cfg.esp, result.run_dir)
+        for trigger in triggers:
+            key = trigger.strftime("%Y%m%d%H")
+            if key in issued:
+                continue
+            issued.add(key)
+            esp_records.extend(
+                run_balanced_esp_issue(cfg, cfg.esp, result.run_dir, trigger)
+            )
     else:
         result.log.info("Starting incremental ESP sequencing + traces.")
         esp_records = run_esp_traces(cfg, cfg.esp, result.run_dir)
     result.log.info("ESP complete. Generated %s traces.", len(esp_records))
 
-    provenance = assimilation_provenance(cfg, config_path, result, variant="da")
+    provenance = assimilation_provenance(cfg, label, result, variant="da")
     provenance["esp_trace_count"] = len(esp_records)
     provenance["esp_traces"] = [record.__dict__ for record in esp_records]
     if cfg.esp.initialization == INITIALIZATION_BALANCED:
@@ -674,7 +734,7 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Run SUMMA data assimilation followed by ESP traces."
+        description="Run SUMMA data assimilation and ESP traces."
     )
     parser.add_argument("config", type=str, help="Path to YAML config file")
     args = parser.parse_args()

@@ -6,7 +6,6 @@ log_file: logs/chena_summa_deterministic.log
 
 model_run_id: chena_summa_deterministic
 base_file_manager: /Users/dcasson/Data/snowda/summa/chena_lumped/settings/SUMMA/fileManager.txt
-#forcing_file_base: /Users/dcasson/Data/snowda/summa/chena_lumped/forcing/chena_
 forcing_file_base: /Users/dcasson/Data/snowda/summa/chena_lumped/forcing/mean/yrb_rf_prod
 num_ens: 1
 

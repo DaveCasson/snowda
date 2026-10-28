@@ -1,17 +1,16 @@
 case_name: ross_summa_deterministic
-description: Deterministic SUMMA run for Ross River (no DA, no ESP).
+description: Deterministic SUMMA run for ross River (no DA, no ESP).
 
 # Run artifacts and SUMMA outputPath go to <repo>/outputs/<case_name>/<timestamp>/
 log_file: logs/ross_summa_deterministic.log
 
 model_run_id: ross_summa_deterministic
 base_file_manager: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
-#forcing_file_base: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/Ross_
 forcing_file_base: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/mean/yrb_rf_prod
 num_ens: 1
 
-start_time: "1980-08-01 00:00"
-end_time: "2024-08-01 00:00"
+start_time: "1980-01-01 00:00"
+end_time: "2024-12-29 00:00"
 time_delta_days: 1
 
 summa_exe: /Users/dcasson/GitHub/summa/bin/summa.exe
@@ -28,7 +27,7 @@ mizuroute:
   executable: /Users/dcasson/GitHub/mizuRoute/route/bin/route_runoff.exe
   control_file: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/mizuroute.control
   ancil_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/
-  case_name: Ross
+  case_name: ross
   restart_write: never
   log_output: false
 

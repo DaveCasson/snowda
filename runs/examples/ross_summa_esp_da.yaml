@@ -15,8 +15,8 @@ ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensem
 num_ens: 20
 num_workers: 10
 
-start_time: "2000-01-01 00:00"
-end_time: "2020-08-01 00:00"
+start_time: "1999-01-01 00:00"
+end_time: "2019-08-01 00:00"
 time_delta_days: 1
 
 summa_exe: /Users/dcasson/GitHub/summa/bin/summa.exe
@@ -38,8 +38,8 @@ file_list_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
 summa_output_suffix: timestep.nc
 
 esp:
-  start_year: 2000  
-  end_year: 2020
+  start_year: 1999  
+  end_year: 2019
   forecast_end: "08-01"
   initialization: balanced_independent
   seed: 20270101

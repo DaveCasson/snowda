@@ -131,7 +131,7 @@ def test_run_summa_esp_writes_da_segment_suffixes(
         )
         return {}
 
-    def fake_traces(_cfg, _esp, run_dir):
+    def fake_traces(_cfg, _esp, run_dir, _when):
         catalog = json.loads(
             (run_dir / "assimilation" / "post_da_2014030100.json").read_text(
                 encoding="utf-8"
@@ -156,7 +156,7 @@ def test_run_summa_esp_writes_da_segment_suffixes(
         "snowda.workflows.run_summa_esp.run_ensemble", fake_run_ensemble
     )
     monkeypatch.setattr(
-        "snowda.workflows.run_summa_esp.run_balanced_esp_traces", fake_traces
+        "snowda.workflows.run_summa_esp.run_balanced_esp_issue", fake_traces
     )
     monkeypatch.setattr(
         "snowda.workflows.run_summa_esp.route_ensemble_segment",
@@ -238,7 +238,7 @@ def test_run_summa_esp_routes_open_loop_when_mizuroute_is_set(
         fake_run_ensemble,
     )
     monkeypatch.setattr(
-        "snowda.workflows.run_summa_esp.run_balanced_esp_traces",
+        "snowda.workflows.run_summa_esp.run_balanced_esp_issue",
         lambda *_args, **_kwargs: [],
     )
     monkeypatch.setattr(
@@ -262,3 +262,49 @@ def test_run_summa_esp_routes_open_loop_when_mizuroute_is_set(
         assert particle["donor_label"] == label
         assert Path(particle["summa_restart"]).read_bytes() == f"summa-{label}".encode()
         assert Path(particle["mizuroute_restart"]).read_bytes() == f"route-{label}".encode()
+
+
+def test_run_summa_esp_issues_traces_before_the_next_segment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    extra = _esp_dates()
+    extra["esp"]["dates"] = ["2014-03-01 00:00", "2014-04-01 00:00"]
+    extra["end_time"] = "2014-05-01 00:00"
+    config_file = _build_config(tmp_path, extra=extra)
+    events: list[tuple[str, datetime]] = []
+
+    def fake_run_ensemble(_exe, ens_config, **kwargs):
+        when = datetime.strptime(kwargs["run_suffix"], "%Y_%m_%d")
+        _write_member_restarts(ens_config, when)
+        events.append(("ensemble", when))
+        return {}
+
+    def fake_issue(_cfg, _esp, _run_dir, when):
+        events.append(("esp", when))
+        return []
+
+    monkeypatch.setattr(
+        "snowda.workflows.run_summa_esp.prepare_ensemble",
+        _prepare_ensemble(tmp_path),
+    )
+    monkeypatch.setattr(
+        "snowda.workflows.run_summa_esp.run_ensemble",
+        fake_run_ensemble,
+    )
+    monkeypatch.setattr(
+        "snowda.workflows.run_summa_esp.run_balanced_esp_issue",
+        fake_issue,
+    )
+    monkeypatch.setattr(
+        "snowda.workflows.run_summa_esp.route_ensemble_segment",
+        lambda *_args, **_kwargs: None,
+    )
+
+    run_summa_esp(config_file)
+    assert events == [
+        ("ensemble", datetime(2014, 3, 1)),
+        ("esp", datetime(2014, 3, 1)),
+        ("ensemble", datetime(2014, 4, 1)),
+        ("esp", datetime(2014, 4, 1)),
+        ("ensemble", datetime(2014, 5, 1)),
+    ]

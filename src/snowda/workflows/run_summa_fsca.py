@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, List
 
-from snowda.config.loader import load_config
 import xarray as xr
 
 from snowda.adapters.pysumma import run_simulation
+from snowda.config.loader import as_config_dict, config_label
 from snowda.io.fsca_obs import read_fsca_observations
 from snowda.io.summa_fsca import calc_summa_fsca, prepare_summa_fsca_input
 from snowda.utils.logging import configure_logging, get_logger
@@ -25,16 +26,21 @@ def _ensure_dir(path: str | Path) -> Path:
     return p
 
 
-def _normalize_path(raw: str, base_dir: Path, *, allow_relative: bool) -> Path:
+def _normalize_path(raw: str, base_dir: Path | None, *, allow_relative: bool) -> Path:
     p = Path(raw).expanduser()
     if not p.is_absolute():
         if not allow_relative:
             raise ValueError(f"Path must be absolute (got: {raw})")
+        if base_dir is None:
+            raise ValueError(
+                f"Relative path {raw!r} needs `_meta.config_dir`. "
+                "Load the YAML with snowda.config.loader.load_config() before editing it."
+            )
         p = (base_dir / p).resolve()
     return p
 
 
-def _load_summa_output_files(cfg: Dict[str, Any], base_dir: Path) -> List[Path]:
+def _load_summa_output_files(cfg: Dict[str, Any], base_dir: Path | None) -> List[Path]:
     files = cfg.get("summa_output_files")
     if files:
         return [
@@ -52,7 +58,7 @@ def _load_summa_output_files(cfg: Dict[str, Any], base_dir: Path) -> List[Path]:
 
 def _ensure_summa_outputs(
     cfg: Dict[str, Any],
-    base_dir: Path,
+    base_dir: Path | None,
     output_files: List[Path],
 ) -> List[Path]:
     missing = [path for path in output_files if not path.exists()]
@@ -99,9 +105,12 @@ def _ensure_summa_outputs(
     return output_files
 
 
-def run_summa_fsca(config_path: str | Path) -> Path:
-    cfg: Dict[str, Any] = load_config(config_path)
-    base_dir = Path(cfg.get("_meta", {}).get("config_dir", Path(config_path).resolve().parent))
+def run_summa_fsca(config: str | Path | Mapping[str, Any]) -> Path:
+    cfg: Dict[str, Any] = as_config_dict(config)
+    label = config_label(config)
+    meta = cfg.get("_meta") or {}
+    config_dir = meta.get("config_dir") if isinstance(meta, Mapping) else None
+    base_dir = Path(str(config_dir)) if config_dir else None
 
     output_dir = cfg.get("output_dir")
     if not output_dir:
@@ -118,7 +127,7 @@ def run_summa_fsca(config_path: str | Path) -> Path:
     configure_logging(level=logging.INFO, log_file=log_file)
     log = get_logger(__name__)
     log.info("snowda fSCA run starting")
-    log.info("Config: %s", cfg.get("_meta", {}).get("config_path", str(config_path)))
+    log.info("Config: %s", label)
     log.info("Run dir: %s", run_dir)
 
     config_out = run_dir / "config.resolved.yaml"
@@ -173,7 +182,7 @@ def run_summa_fsca(config_path: str | Path) -> Path:
 
     prov = {
         "timestamp_utc": datetime.utcnow().isoformat() + "Z",
-        "config_path": cfg.get("_meta", {}).get("config_path", str(config_path)),
+        "config_path": label,
         "run_dir": str(run_dir),
         "fsca_input": str(fsca_input_path),
         "fsca_output": str(fsca_output_path),

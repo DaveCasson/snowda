@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 from snowda.adapters.pysumma import run_ensemble
+from snowda.config.loader import config_label
 from snowda.config.pysummada import (
     PysummadaConfig,
     load_pysummada_config,
@@ -23,13 +26,14 @@ def _freq_restart(cfg: PysummadaConfig) -> str:
     return cfg.summa_args.get("-r") or cfg.summa_args.get("freq_restart") or "e"
 
 
-def run_summa_historic(config_path: str | Path) -> Path:
+def run_summa_historic(config: str | Path | Mapping[str, Any]) -> Path:
     """Run the historic ensemble once, without assimilation or ESP."""
-    cfg = load_pysummada_config(config_path)
+    cfg = load_pysummada_config(config)
+    label = config_label(config)
     validate_historic_config(cfg)
     run_dir, log = setup_run_directory(
         cfg,
-        config_path,
+        label,
         log_filename="summa_historic.log",
         logger_name=__name__,
         start_message="snowda SUMMA historic run starting",
@@ -78,7 +82,7 @@ def run_summa_historic(config_path: str | Path) -> Path:
     write_provenance(
         run_dir,
         {
-            "config_path": str(Path(config_path).resolve()),
+            "config_path": label,
             "model_result_output_dir": str(cfg.model_result_output_dir),
             "variant": "historic",
             "ensemble_forcing_mode": cfg.ensemble_forcing_mode,

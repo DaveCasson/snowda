@@ -736,6 +736,156 @@ def _run_balanced_assignment(
     )
 
 
+def balanced_trigger_dates(cfg: PysummadaConfig, esp: EspConfig) -> list[datetime]:
+    """Forecast issue dates on or after the run start, in chronological order."""
+    triggers: list[datetime] = []
+    for trigger in sorted(
+        resolve_esp_trigger_dates(
+            cfg.start_time,
+            cfg.end_time,
+            list(esp.dates),
+            esp.frequency_days,
+            esp.months,
+        )
+    ):
+        if trigger < cfg.start_time:
+            log.warning("Skipping ESP trigger %s before %s.", trigger, cfg.start_time)
+            continue
+        triggers.append(trigger)
+    return triggers
+
+
+def _issue_members(assignments: Sequence[ForecastAssignment]) -> list[dict[str, Any]]:
+    members: list[dict[str, Any]] = []
+    for assignment in assignments:
+        members.append(
+            {
+                "forecast_id": assignment.forecast_id,
+                "state_label": assignment.particle.label,
+                "donor_label": assignment.particle.donor_label,
+                "trace_year": assignment.trace_year,
+                "weighting": assignment.weighting,
+                "summa_restart": assignment.particle.summa_restart,
+                "mizuroute_restart": assignment.particle.mizuroute_restart,
+                "file_manager": assignment.particle.file_manager,
+            }
+        )
+    return members
+
+
+def _append_member_map(
+    run_dir: Path,
+    esp: EspConfig,
+    trigger: datetime,
+    assignments: Sequence[ForecastAssignment],
+) -> None:
+    map_path = _member_map_path(run_dir)
+    if map_path.is_file():
+        payload = json.loads(map_path.read_text(encoding="utf-8"))
+    else:
+        payload = {
+            "description": ESP_SAMPLING_DESCRIPTION,
+            "initialization": "balanced_independent",
+            "seed": esp.seed,
+            "n_members": esp.n_members,
+            "issues": [],
+        }
+    payload["issues"].append(
+        {
+            "issue_time": trigger.strftime(SUMMA_TIME_FORMAT),
+            "issue_key": trigger.strftime("%Y%m%d%H"),
+            "seed": esp.seed,
+            "state_stream": 0,
+            "weather_stream": 1,
+            "weighting": assignments[0].weighting if assignments else None,
+            "members": _issue_members(assignments),
+        }
+    )
+    map_path.parent.mkdir(parents=True, exist_ok=True)
+    map_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+def _require_balanced_esp(esp: EspConfig) -> None:
+    if esp.n_members is None or esp.seed is None:
+        raise ValueError("Balanced ESP requires `esp.n_members` and `esp.seed`.")
+
+
+def run_balanced_esp_issue(
+    cfg: PysummadaConfig,
+    esp: EspConfig,
+    run_dir: Path,
+    trigger: datetime,
+) -> list[EspRunRecord]:
+    """Sample and run balanced traces for one forecast issue date.
+
+    The issue is appended to ``esp/member_map.json`` before any trace starts.
+    Each trace copies that particle's SUMMA and mizuRoute restarts together.
+    """
+    _require_balanced_esp(esp)
+    n_members = esp.n_members
+    seed = esp.seed
+    if n_members is None or seed is None:
+        raise ValueError("Balanced ESP requires `esp.n_members` and `esp.seed`.")
+    catalog_path = post_da_catalog_path(run_dir, trigger)
+    if not catalog_path.is_file():
+        raise FileNotFoundError(
+            f"No post-DA particle catalog for {trigger}. Expected {catalog_path}."
+        )
+    particles = _select_catalog_particles(
+        read_post_da_catalog(catalog_path),
+        esp.state_members,
+        trigger,
+    )
+    require_routing = bool(esp.run_mizuroute and esp.mizuroute)
+    for particle in particles:
+        validate_particle_binding(particle, trigger, require_routing=require_routing)
+    years = list(range(esp.start_year, esp.end_year + 1))
+    assignments = sample_forecast_members(
+        particles,
+        years,
+        n_members=n_members,
+        seed=seed,
+        issue_key=trigger.strftime("%Y%m%d%H"),
+        weighting=weighting_mode(particles),
+    )
+    _append_member_map(run_dir, esp, trigger, assignments)
+    log.info("Starting balanced ESP traces for %s.", trigger)
+    forcing_path, forcing_list = _base_forcing(cfg.base_file_manager)
+    records: list[EspRunRecord] = []
+    for assignment in assignments:
+        private_root = (
+            run_dir
+            / "esp_states"
+            / "forecast"
+            / trigger.strftime("%Y%m%d%H")
+            / assignment.forecast_id
+        )
+        summa_copy = _copy_restart(
+            Path(assignment.particle.summa_restart),
+            private_root / "summa",
+        )
+        route_copy = None
+        if assignment.particle.mizuroute_restart:
+            route_copy = _copy_restart(
+                Path(assignment.particle.mizuroute_restart),
+                private_root / "mizuroute",
+            )
+        records.append(
+            _run_balanced_assignment(
+                cfg,
+                esp,
+                run_dir,
+                trigger,
+                assignment,
+                summa_restart=summa_copy,
+                mizuroute_restart=route_copy,
+                forcing_path=forcing_path,
+                forcing_list=forcing_list,
+            )
+        )
+    return records
+
+
 def run_balanced_esp_traces(
     cfg: PysummadaConfig,
     esp: EspConfig,
@@ -745,130 +895,14 @@ def run_balanced_esp_traces(
 
     Each selected particle contributes its SUMMA restart and its matching
     mizuRoute restart. Those two files are copied together and are not drawn
-    from different members.
+    from different members. Issue dates run in chronological order.
     """
-    if esp.n_members is None or esp.seed is None:
-        raise ValueError(
-            "Balanced ESP requires `esp.n_members` and `esp.seed`."
-        )
-    forcing_path, forcing_list = _base_forcing(cfg.base_file_manager)
-    trigger_dates = sorted(
-        resolve_esp_trigger_dates(
-            cfg.start_time,
-            cfg.end_time,
-            list(esp.dates),
-            esp.frequency_days,
-            esp.months,
-        )
-    )
-    if not trigger_dates:
+    _require_balanced_esp(esp)
+    triggers = balanced_trigger_dates(cfg, esp)
+    if not triggers:
         log.warning("ESP enabled but no trigger dates resolved.")
         return []
-
-    planned: list[tuple[datetime, list[ForecastAssignment]]] = []
-    for trigger in trigger_dates:
-        if trigger < cfg.start_time:
-            log.warning("Skipping ESP trigger %s before %s.", trigger, cfg.start_time)
-            continue
-        catalog_path = post_da_catalog_path(run_dir, trigger)
-        if not catalog_path.is_file():
-            raise FileNotFoundError(
-                f"No post-DA particle catalog for {trigger}. Expected {catalog_path}."
-            )
-        particles = _select_catalog_particles(
-            read_post_da_catalog(catalog_path),
-            esp.state_members,
-            trigger,
-        )
-        require_routing = bool(esp.run_mizuroute and esp.mizuroute)
-        for particle in particles:
-            validate_particle_binding(particle, trigger, require_routing=require_routing)
-        years = list(range(esp.start_year, esp.end_year + 1))
-        assignments = sample_forecast_members(
-            particles,
-            years,
-            n_members=esp.n_members,
-            seed=esp.seed,
-            issue_key=trigger.strftime("%Y%m%d%H"),
-            weighting=weighting_mode(particles),
-        )
-        planned.append((trigger, assignments))
-
-    issues: list[dict[str, Any]] = []
-    for trigger, assignments in planned:
-        members: list[dict[str, Any]] = []
-        for assignment in assignments:
-            members.append(
-                {
-                    "forecast_id": assignment.forecast_id,
-                    "state_label": assignment.particle.label,
-                    "donor_label": assignment.particle.donor_label,
-                    "trace_year": assignment.trace_year,
-                    "weighting": assignment.weighting,
-                    "summa_restart": assignment.particle.summa_restart,
-                    "mizuroute_restart": assignment.particle.mizuroute_restart,
-                    "file_manager": assignment.particle.file_manager,
-                }
-            )
-        issues.append(
-            {
-                "issue_time": trigger.strftime(SUMMA_TIME_FORMAT),
-                "issue_key": trigger.strftime("%Y%m%d%H"),
-                "seed": esp.seed,
-                "state_stream": 0,
-                "weather_stream": 1,
-                "weighting": assignments[0].weighting if assignments else None,
-                "members": members,
-            }
-        )
-    map_path = _member_map_path(run_dir)
-    map_path.parent.mkdir(parents=True, exist_ok=True)
-    map_path.write_text(
-        json.dumps(
-            {
-                "description": ESP_SAMPLING_DESCRIPTION,
-                "initialization": "balanced_independent",
-                "seed": esp.seed,
-                "n_members": esp.n_members,
-                "issues": issues,
-            },
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-
     records: list[EspRunRecord] = []
-    for trigger, assignments in planned:
-        for assignment in assignments:
-            private_root = (
-                run_dir
-                / "esp_states"
-                / "forecast"
-                / trigger.strftime("%Y%m%d%H")
-                / assignment.forecast_id
-            )
-            summa_copy = _copy_restart(
-                Path(assignment.particle.summa_restart),
-                private_root / "summa",
-            )
-            route_copy = None
-            if assignment.particle.mizuroute_restart:
-                route_copy = _copy_restart(
-                    Path(assignment.particle.mizuroute_restart),
-                    private_root / "mizuroute",
-                )
-            records.append(
-                _run_balanced_assignment(
-                    cfg,
-                    esp,
-                    run_dir,
-                    trigger,
-                    assignment,
-                    summa_restart=summa_copy,
-                    mizuroute_restart=route_copy,
-                    forcing_path=forcing_path,
-                    forcing_list=forcing_list,
-                )
-            )
+    for trigger in triggers:
+        records.extend(run_balanced_esp_issue(cfg, esp, run_dir, trigger))
     return records

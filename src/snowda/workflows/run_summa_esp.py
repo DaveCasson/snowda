@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Callable, Sequence
 
 from snowda.adapters.pysumma import run_ensemble
+from snowda.config.loader import config_label
 from snowda.config.pysummada import (
     PysummadaConfig,
     load_pysummada_config,
@@ -17,7 +19,11 @@ from snowda.core.esp_sampling import (
     ParticleState,
     write_post_da_catalog,
 )
-from snowda.workflows.esp import resolve_esp_trigger_dates, run_balanced_esp_traces
+from snowda.workflows.esp import (
+    balanced_trigger_dates,
+    resolve_esp_trigger_dates,
+    run_balanced_esp_issue,
+)
 from snowda.workflows.summa_common import (
     apply_run_time,
     apply_segment_initial_conditions,
@@ -120,12 +126,14 @@ def run_open_loop_historic(
     cfg: PysummadaConfig,
     run_dir: Path,
     log: logging.Logger,
+    on_issue: Callable[[datetime], None] | None = None,
 ) -> Path:
     """Write historic ensemble segments to ``<run_dir>/summa`` and ``<run_dir>/states``.
 
     Segment ends match a DA run that uses the same ESP dates. Members continue
     from their own restarts. Each in-window issue date writes a particle catalog
-    binding that member's SUMMA restart to its mizuRoute restart.
+    binding that member's SUMMA restart to its mizuRoute restart, then calls
+    ``on_issue`` before the next segment starts.
     """
     if cfg.esp is None:
         raise ValueError("ESP workflow requires an `esp` section.")
@@ -194,32 +202,50 @@ def run_open_loop_historic(
                 routing_restarts,
                 require_routing=mizu is not None,
             )
+            if on_issue is not None:
+                on_issue(segment_end)
     return summa_output_dir
 
 
-def run_summa_esp(config_path: str | Path) -> Path:
-    cfg = load_pysummada_config(config_path)
+def run_summa_esp(config: str | Path | Mapping[str, Any]) -> Path:
+    cfg = load_pysummada_config(config)
+    label = config_label(config)
     validate_esp_config(cfg)
     if cfg.esp is None:
         raise ValueError("ESP workflow requires an `esp` section.")
 
     run_dir, log = setup_run_directory(
         cfg,
-        config_path,
+        label,
         log_filename="summa_esp.log",
         logger_name=__name__,
         start_message="snowda SUMMA ESP run starting",
     )
 
-    summa_output_dir = run_open_loop_historic(cfg, run_dir, log)
-    log.info("Starting balanced ESP traces from historic members.")
-    esp_records = run_balanced_esp_traces(cfg, cfg.esp, run_dir)
+    triggers = balanced_trigger_dates(cfg, cfg.esp)
+    issued: set[str] = set()
+    esp_records = []
+
+    def _issue(when: datetime) -> None:
+        key = when.strftime("%Y%m%d%H")
+        if key in issued:
+            return
+        esp_records.extend(run_balanced_esp_issue(cfg, cfg.esp, run_dir, when))
+        issued.add(key)
+
+    summa_output_dir = run_open_loop_historic(cfg, run_dir, log, on_issue=_issue)
+    for trigger in triggers:
+        key = trigger.strftime("%Y%m%d%H")
+        if key in issued:
+            continue
+        esp_records.extend(run_balanced_esp_issue(cfg, cfg.esp, run_dir, trigger))
+        issued.add(key)
     log.info("ESP complete. Generated %s traces.", len(esp_records))
 
     write_provenance(
         run_dir,
         {
-            "config_path": str(Path(config_path).resolve()),
+            "config_path": label,
             "model_result_output_dir": str(cfg.model_result_output_dir),
             "variant": "esp",
             "summa_output_dir": str(summa_output_dir),

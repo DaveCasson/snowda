@@ -1,21 +1,27 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
-from snowda.config.loader import load_config
+from snowda.config.loader import as_config_dict
 from snowda.utils.logging import get_logger
 
 log = get_logger(__name__)
 
 
-def _normalize_path(raw: str, base_dir: Path, *, allow_relative: bool) -> Path:
+def _normalize_path(raw: str, base_dir: Path | None, *, allow_relative: bool) -> Path:
     p = Path(raw).expanduser()
     if not p.is_absolute():
         if not allow_relative:
             raise ValueError(f"Path must be absolute (got: {raw})")
+        if base_dir is None:
+            raise ValueError(
+                f"Relative path {raw!r} needs `_meta.config_dir`. "
+                "Load the YAML with snowda.config.loader.load_config() before editing it."
+            )
         p = (base_dir / p).resolve()
     return p
 
@@ -166,9 +172,13 @@ class PysummadaConfig:
         return [f"{idx + 1:03d}" for idx in range(self.num_ens)]
 
 
-def load_pysummada_config(config_path: str | Path) -> PysummadaConfig:
-    cfg: Dict[str, Any] = load_config(config_path)
-    base_dir = Path(cfg.get("_meta", {}).get("config_dir", Path(config_path).resolve().parent))
+def load_pysummada_config(
+    config: str | Path | Mapping[str, Any],
+) -> PysummadaConfig:
+    cfg: Dict[str, Any] = as_config_dict(config)
+    meta = cfg.get("_meta") or {}
+    config_dir = meta.get("config_dir") if isinstance(meta, Mapping) else None
+    base_dir = Path(str(config_dir)) if config_dir else None
     _warn_ignored_legacy_keys(cfg)
 
     case_name = str(_require(cfg, "case_name"))
@@ -565,7 +575,7 @@ def _parse_esp_horizon(
     return None, _parse_forecast_end(esp_cfg_raw["forecast_end"])
 
 
-def _load_mizuroute_from_raw(mizu_raw: Dict[str, Any], base_dir: Path) -> MizuRouteEspConfig:
+def _load_mizuroute_from_raw(mizu_raw: Dict[str, Any], base_dir: Path | None) -> MizuRouteEspConfig:
     if not isinstance(mizu_raw, dict):
         raise TypeError("`mizuroute` must be a mapping.")
     executable = _normalize_path(str(_require(mizu_raw, "executable")), base_dir, allow_relative=False)
@@ -604,7 +614,7 @@ def _load_mizuroute_from_raw(mizu_raw: Dict[str, Any], base_dir: Path) -> MizuRo
     )
 
 
-def _load_esp_mizuroute(esp_cfg_raw: Dict[str, Any], base_dir: Path) -> Optional[MizuRouteEspConfig]:
+def _load_esp_mizuroute(esp_cfg_raw: Dict[str, Any], base_dir: Path | None) -> Optional[MizuRouteEspConfig]:
     run_mizuroute = bool(esp_cfg_raw.get("run_mizuroute", False))
     if not run_mizuroute:
         return None
@@ -632,7 +642,7 @@ def _validate_historic_members(cfg: PysummadaConfig) -> None:
 
 
 def _load_assimilation_config(
-    cfg: Dict[str, Any], base_dir: Path
+    cfg: Dict[str, Any], base_dir: Path | None
 ) -> Optional[AssimilationConfig]:
     raw = cfg.get("assimilation")
     if not raw:
@@ -718,7 +728,7 @@ def _parse_hru_stations(raw: Any) -> tuple[HruStation, ...]:
     return tuple(pairs)
 
 
-def _load_esp_config(cfg: Dict[str, Any], base_dir: Path) -> Optional[EspConfig]:
+def _load_esp_config(cfg: Dict[str, Any], base_dir: Path | None) -> Optional[EspConfig]:
     esp_cfg_raw = cfg.get("esp")
     if not esp_cfg_raw:
         return None
@@ -814,7 +824,7 @@ def _load_esp_config(cfg: Dict[str, Any], base_dir: Path) -> Optional[EspConfig]
 
 
 def _resolve_mizuroute(
-    cfg: Dict[str, Any], esp: Optional[EspConfig], base_dir: Path
+    cfg: Dict[str, Any], esp: Optional[EspConfig], base_dir: Path | None
 ) -> Optional[MizuRouteEspConfig]:
     mizu_raw = cfg.get("mizuroute")
     if mizu_raw:
@@ -825,7 +835,7 @@ def _resolve_mizuroute(
 
 
 def _load_evaluation_config(
-    cfg: Dict[str, Any], base_dir: Path
+    cfg: Dict[str, Any], base_dir: Path | None
 ) -> Optional[StreamflowEvaluationConfig]:
     raw = cfg.get("evaluation")
     if not raw:

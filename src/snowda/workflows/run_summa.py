@@ -3,12 +3,13 @@ from __future__ import annotations
 import json
 import logging
 import shutil
+from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
 from snowda.adapters.pysumma import run_ensemble, run_simulation
-from snowda.config.loader import load_config
+from snowda.config.loader import as_config_dict, config_label
 from snowda.config.pysummada import load_pysummada_config, validate_deterministic_config
 from snowda.utils.logging import configure_logging, get_logger
 from snowda.workflows.evaluate_streamflow import evaluate_deterministic_run
@@ -23,19 +24,20 @@ from snowda.workflows.summa_common import (
 )
 
 
-def run_summa(config_path: str | Path) -> Path:
-    raw: Dict[str, Any] = load_config(config_path)
+def run_summa(config: str | Path | Mapping[str, Any]) -> Path:
+    raw = as_config_dict(config)
+    label = config_label(config)
     if raw.get("file_manager") and not raw.get("base_file_manager"):
-        return _run_summa_flat(config_path)
-    return _run_summa_deterministic(config_path)
+        return _run_summa_flat(raw, label)
+    return _run_summa_deterministic(raw, label)
 
 
-def _run_summa_deterministic(config_path: str | Path) -> Path:
-    cfg = load_pysummada_config(config_path)
+def _run_summa_deterministic(config: Mapping[str, Any], label: str) -> Path:
+    cfg = load_pysummada_config(config)
     validate_deterministic_config(cfg)
     run_dir, log = setup_run_directory(
         cfg,
-        config_path,
+        label,
         log_filename="summa_deterministic.log",
         logger_name=__name__,
         start_message="snowda SUMMA deterministic run starting",
@@ -92,7 +94,7 @@ def _run_summa_deterministic(config_path: str | Path) -> Path:
     write_provenance(
         run_dir,
         {
-            "config_path": str(Path(config_path).resolve()),
+            "config_path": label,
             "model_result_output_dir": str(cfg.model_result_output_dir),
             "variant": "deterministic",
             "summa_output_dir": str(summa_output_dir),
@@ -115,16 +117,21 @@ def _ensure_dir(path: str | Path) -> Path:
     return p
 
 
-def _normalize_path(raw: str, base_dir: Path, *, allow_relative: bool) -> str:
+def _normalize_path(raw: str, base_dir: Path | None, *, allow_relative: bool) -> str:
     p = Path(raw).expanduser()
     if not p.is_absolute():
         if not allow_relative:
             raise ValueError(f"Path must be absolute (got: {raw})")
+        if base_dir is None:
+            raise ValueError(
+                f"Relative path {raw!r} needs `_meta.config_dir`. "
+                "Load the YAML with snowda.config.loader.load_config() before editing it."
+            )
         p = (base_dir / p).resolve()
     return str(p)
 
 
-def _normalize_flat_config(cfg: Dict[str, Any], base_dir: Path) -> Dict[str, Any]:
+def _normalize_flat_config(cfg: Dict[str, Any], base_dir: Path | None) -> Dict[str, Any]:
     if "summa" in cfg and "paths" in cfg:
         return cfg
 
@@ -167,9 +174,11 @@ def _normalize_flat_config(cfg: Dict[str, Any], base_dir: Path) -> Dict[str, Any
     return cfg
 
 
-def _run_summa_flat(config_path: str | Path) -> Path:
-    cfg: Dict[str, Any] = load_config(config_path)
-    base_dir = Path(cfg.get("_meta", {}).get("config_dir", Path(config_path).resolve().parent))
+def _run_summa_flat(config: Mapping[str, Any], label: str) -> Path:
+    cfg: Dict[str, Any] = dict(config)
+    meta = cfg.get("_meta") or {}
+    config_dir = meta.get("config_dir") if isinstance(meta, Mapping) else None
+    base_dir = Path(str(config_dir)) if config_dir else None
     cfg = _normalize_flat_config(cfg, base_dir)
 
     paths = cfg.get("paths", {})
@@ -192,7 +201,7 @@ def _run_summa_flat(config_path: str | Path) -> Path:
         "runs/examples/ross_summa_deterministic_era5.yaml."
     )
     log.info("snowda SUMMA run starting")
-    log.info("Config: %s", cfg.get("_meta", {}).get("config_path", str(config_path)))
+    log.info("Config: %s", label)
     log.info("Run dir: %s", run_dir)
 
     config_out = run_dir / "config.resolved.yaml"
@@ -315,7 +324,7 @@ def _run_summa_flat(config_path: str | Path) -> Path:
 
     prov = {
         "timestamp_utc": datetime.utcnow().isoformat() + "Z",
-        "config_path": cfg.get("_meta", {}).get("config_path", str(config_path)),
+        "config_path": label,
         "run_dir": str(run_dir),
         "summa_stdout": getattr(sim, "stdout", None),
         "sim_start_time": sim_start_time,

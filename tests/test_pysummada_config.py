@@ -1,8 +1,10 @@
+from datetime import datetime
 from pathlib import Path
 
 import pytest
 import yaml
 
+from snowda.config.loader import config_label, load_config
 from snowda.config.pysummada import (
     load_pysummada_config,
     validate_da_config,
@@ -457,6 +459,62 @@ def test_esp_rejects_neither_horizon_option(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="either `esp.forecast_length_days` or `esp.forecast_end`"):
         load_pysummada_config(config_file)
+
+
+def _absolute_config(tmp_path: Path, **overrides: object) -> dict:
+    fm = tmp_path / "fileManager.txt"
+    _write_base_file_manager(fm)
+    cfg = {
+        "case_name": "test",
+        "output_dir": str(tmp_path / "out"),
+        "model_run_id": "test_run",
+        "base_file_manager": str(fm),
+        "forcing_file_base": "/abs/forcing_",
+        "num_ens": 1,
+        "start_time": "2020-01-01 00:00",
+        "end_time": "2020-01-02 00:00",
+        "time_delta_days": 1,
+        "summa_exe": "/abs/summa",
+    }
+    cfg.update(overrides)
+    return cfg
+
+
+def test_edited_dict_overrides_file(tmp_path: Path) -> None:
+    config_file = _build_config(tmp_path, extra={"num_workers": 4})
+    raw = load_config(config_file)
+    raw["num_workers"] = 7
+    raw["start_time"] = "2019-06-01 00:00"
+    cfg = load_pysummada_config(raw)
+    assert cfg.num_workers == 7
+    assert cfg.start_time == datetime(2019, 6, 1, 0, 0)
+    assert raw["num_workers"] == 7
+    from_file = load_pysummada_config(config_file)
+    assert from_file.num_workers == 4
+    assert from_file.start_time == datetime(2020, 1, 1, 0, 0)
+
+
+def test_absolute_dict_without_meta_loads(tmp_path: Path) -> None:
+    raw = _absolute_config(tmp_path, num_workers=3)
+    cfg = load_pysummada_config(raw)
+    assert cfg.num_workers == 3
+    assert cfg.output_dir == Path(tmp_path / "out")
+    assert "_meta" not in raw
+
+
+def test_relative_output_dir_without_config_dir_raises(tmp_path: Path) -> None:
+    raw = _absolute_config(tmp_path, output_dir="relative/out")
+    with pytest.raises(ValueError, match="config_dir"):
+        load_pysummada_config(raw)
+
+
+def test_config_label_for_path_loaded_dict_and_memory(tmp_path: Path) -> None:
+    config_file = _build_config(tmp_path)
+    resolved = str(config_file.resolve())
+    assert config_label(config_file) == resolved
+    assert config_label(str(config_file)) == resolved
+    assert config_label(load_config(config_file)) == resolved
+    assert config_label({"case_name": "memory"}) == "<in-memory>"
 
 
 @pytest.mark.parametrize("raw", ["13-01", "08/01", "8-1", "02-30"])

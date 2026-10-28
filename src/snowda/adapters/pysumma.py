@@ -217,6 +217,32 @@ def run_ensemble(
     return summary
 
 
+def _refresh_staged_inputs(simulation: Any, sim_config: Dict[str, Any]) -> None:
+    """Reload inputs pysumma snapshotted before ``apply_config``.
+
+    ``Simulation`` reads the forcing list and initial state at startup.
+    ``_write_configuration`` later writes those objects into the staged
+    settings directory. A file-manager override that only changes the
+    path strings would otherwise stage the original member forcing list
+    under the new name.
+    """
+    manager_cfg = sim_config.get("manager") or {}
+    if any(key in manager_cfg for key in ("forcingListFile", "forcingPath")):
+        simulation.force_file_list = simulation.manager.force_file_list
+    if any(key in manager_cfg for key in ("statePath", "initConditionFile")):
+        simulation.initial_conditions = simulation.manager.initial_conditions
+
+
+def _raise_summa_failure(simulation: Any, run_suffix: str | None) -> None:
+    stdout = getattr(simulation, "stdout", None) or ""
+    stderr = getattr(simulation, "stderr", None) or ""
+    detail = stdout[-2000:]
+    if stderr.strip():
+        detail = f"{detail}\n{stderr[-1000:]}"
+    label = run_suffix or "simulation"
+    raise RuntimeError(f"SUMMA run failed ({label}).\n{detail}")
+
+
 def run_simulation(
     summa_exe: str,
     file_manager: str,
@@ -237,6 +263,7 @@ def run_simulation(
     sim = ps.Simulation(summa_exe, file_manager)
     if sim_config:
         sim.apply_config(sim_config)
+        _refresh_staged_inputs(sim, sim_config)
     if write_configuration_name:
         sim.run_suffix = write_configuration_name
         sim._write_configuration(name=write_configuration_name)
@@ -260,4 +287,6 @@ def run_simulation(
     sim.run(**run_kwargs)
     if log_stdout:
         log.info("SUMMA stdout: %s", sim.stdout)
+    if getattr(sim, "status", None) != "Success":
+        _raise_summa_failure(sim, run_suffix)
     return sim
