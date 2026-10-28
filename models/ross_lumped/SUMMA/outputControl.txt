@@ -1,0 +1,12 @@
+pptrate                              | 1 
+airtemp                              | 1 
+scalarSWE                            | 1 
+scalarSnowDepth                      | 1 
+SWRadAtm                             | 1 
+LWRadAtm                             | 1 
+scalarCosZenith                      | 1 
+scalarRainfall                       | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0
+scalarSnowfall                       | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0
+averageRoutedRunoff                  | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 0
+
+
