@@ -1,0 +1,114 @@
+case_name: ross_summa_esp
+description: >
+  Ross River open-loop SUMMA ensemble, then ESP traces.
+  Forecasts are issued on 1 March, 1 April, and 1 May and are initialised
+  from the historic ensemble members. Run with snowda.workflows.run_summa_esp.
+
+#output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_esp
+log_file: logs/ross_summa_esp.log
+
+model_run_id: ross_summa_esp
+base_file_manager: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
+forcing_file_base: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/Ross_
+ensemble_forcing_mode: historic
+ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensemble
+num_ens: 20
+num_workers: 10
+
+start_time: "1999-01-01 00:00"
+end_time: "2019-08-01 00:00"
+time_delta_days: 1
+
+summa_exe: /Users/dcasson/GitHub/summa/bin/summa.exe
+summa_log: false
+
+
+# Daily restarts so a state file exists at each forecast issue date.
+summa_args:
+  "-m": /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
+  "-r": d
+
+file_manager_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
+file_list_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
+
+# SUMMA writes 001_YYYY_MM_DD_timestep.nc under <run_dir>/summa.
+summa_output_suffix: timestep.nc
+
+esp:
+  start_year: 1999 
+  end_year: 2019
+  forecast_end: "08-01"
+  initialization: balanced_independent
+  n_members: 20
+  seed: 20270101
+  dates: &forecast_dates
+    # 1 March, 1 April, and 1 May. Dates before start_time are skipped.
+    - "2000-03-01 00:00"
+    - "2000-04-01 00:00"
+    - "2000-05-01 00:00"
+    - "2001-03-01 00:00"
+    - "2001-04-01 00:00"
+    - "2001-05-01 00:00"
+    - "2002-03-01 00:00"
+    - "2002-04-01 00:00"
+    - "2002-05-01 00:00"
+    - "2003-03-01 00:00"
+    - "2003-04-01 00:00"
+    - "2003-05-01 00:00"
+    - "2004-03-01 00:00"
+    - "2004-04-01 00:00"
+    - "2004-05-01 00:00"
+    - "2005-03-01 00:00"
+    - "2005-04-01 00:00"
+    - "2005-05-01 00:00"
+    - "2006-03-01 00:00"
+    - "2006-04-01 00:00"
+    - "2006-05-01 00:00"
+    - "2007-03-01 00:00"
+    - "2007-04-01 00:00"
+    - "2007-05-01 00:00"
+    - "2008-03-01 00:00"
+    - "2008-04-01 00:00"
+    - "2008-05-01 00:00"
+    - "2009-03-01 00:00"
+    - "2009-04-01 00:00"
+    - "2009-05-01 00:00"
+    - "2010-03-01 00:00"
+    - "2010-04-01 00:00"
+    - "2010-05-01 00:00"
+    - "2011-03-01 00:00"
+    - "2011-04-01 00:00"
+    - "2011-05-01 00:00"
+    - "2012-03-01 00:00"
+    - "2012-04-01 00:00"
+    - "2012-05-01 00:00"
+    - "2013-03-01 00:00"
+    - "2013-04-01 00:00"
+    - "2013-05-01 00:00"
+    - "2014-03-01 00:00"
+    - "2014-04-01 00:00"
+    - "2014-05-01 00:00"
+    - "2015-03-01 00:00"
+    - "2015-04-01 00:00"
+    - "2015-05-01 00:00"
+    - "2016-03-01 00:00"
+    - "2016-04-01 00:00"
+    - "2016-05-01 00:00"
+    - "2017-03-01 00:00"
+    - "2017-04-01 00:00"
+    - "2017-05-01 00:00"
+    - "2018-03-01 00:00"
+    - "2018-04-01 00:00"
+    - "2018-05-01 00:00"
+    - "2019-03-01 00:00"
+    - "2019-04-01 00:00"
+    - "2019-05-01 00:00"
+  restart_file_filter: restart
+  run_mizuroute: true
+  mizuroute:
+    executable: /Users/dcasson/GitHub/mizuRoute/route/bin/route_runoff.exe
+    control_file: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/mizuroute.control
+    ancil_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/
+    case_name: Ross
+    restart_write: monthly
+    log_output: false

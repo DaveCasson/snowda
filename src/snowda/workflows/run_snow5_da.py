@@ -29,6 +29,25 @@ from snowda.workflows.run_snow5 import _load_cv_array
 log = get_logger(__name__)
 
 
+def _positive_swe_setting(cfg: Dict[str, Any], key: str) -> float:
+    """Read one required SWE observation-uncertainty setting.
+
+    ``swe_relative_uncertainty`` is one standard deviation as a fraction of
+    absolute observed SWE. ``swe_sigma_floor`` is the absolute floor in kg m-2.
+    """
+    if key not in cfg:
+        raise ValueError(
+            f"`{key}` is required for SWE updates. "
+            "`swe_relative_uncertainty` is one standard deviation as a fraction "
+            "of |observed SWE|. `swe_sigma_floor` is the absolute "
+            "standard-deviation floor in kg m-2."
+        )
+    value = float(cfg[key])
+    if not np.isfinite(value) or value <= 0:
+        raise ValueError(f"`{key}` must be finite and > 0.")
+    return value
+
+
 def _parse_time(value: str | None, field_name: str) -> datetime | None:
     if value is None:
         return None
@@ -129,7 +148,7 @@ class Snow5DAEngine:
         assimilation_var: str,
         modeled_var: str,
         observation_da: xr.DataArray,
-        z_var: float,
+        z_var: float | None,
         n_eff_threshold: float,
         fsca_model: str,
         helbig_params: dict[str, np.ndarray] | None,
@@ -139,6 +158,8 @@ class Snow5DAEngine:
         state_mean_name: str,
         state_var_name: str,
         obs_var_name: str,
+        swe_relative_uncertainty: float | None = None,
+        swe_sigma_floor: float | None = None,
         schaake_shuffle_config: SchaakeShuffleConfig | None = None,
     ):
         self.particles = particles
@@ -149,6 +170,8 @@ class Snow5DAEngine:
         self.assimilation_var = assimilation_var
         self.observation = observation_da
         self.z_var = z_var
+        self.swe_relative_uncertainty = swe_relative_uncertainty
+        self.swe_sigma_floor = swe_sigma_floor
         self.n_eff_threshold = n_eff_threshold
         self.fsca_model = fsca_model
         self.helbig_params = helbig_params
@@ -286,6 +309,8 @@ class Snow5DAEngine:
 
     def _update_weights(self, particles_df: pd.DataFrame, obs_df: pd.DataFrame, time: datetime) -> pd.DataFrame:
         if self.assimilation_var == "fsca":
+            if self.z_var is None:
+                raise ValueError("fSCA updates require z_var")
             return self.pf.update_particle_weights_fsca(
                 particles_df,
                 obs_df,
@@ -295,14 +320,19 @@ class Snow5DAEngine:
                 self.ens_labels,
                 obs_column=self.obs_var_name,
             )
+        if self.swe_relative_uncertainty is None or self.swe_sigma_floor is None:
+            raise ValueError(
+                "SWE updates require swe_relative_uncertainty and swe_sigma_floor"
+            )
         return self.pf.update_particle_weights(
             particles_df,
             obs_df,
-            self.z_var,
             time,
             self.hru_index_df,
             self.ens_labels,
             obs_column=self.obs_var_name,
+            relative_uncertainty=self.swe_relative_uncertainty,
+            sigma_floor=self.swe_sigma_floor,
         )
 
     def _apply_resample(self, indices: np.ndarray) -> None:
@@ -664,6 +694,14 @@ def run_snow5_da(config_path: str | Path) -> Path:
         Path(cfg["_meta"]["config_dir"]),
         modeled_var,
     )
+    if obs_var == "fsca":
+        z_var: float | None = float(cfg.get("z_var", 1.0))
+        swe_relative_uncertainty = None
+        swe_sigma_floor = None
+    else:
+        z_var = None
+        swe_relative_uncertainty = _positive_swe_setting(cfg, "swe_relative_uncertainty")
+        swe_sigma_floor = _positive_swe_setting(cfg, "swe_sigma_floor")
     da_engine = Snow5DAEngine(
         particles=particles,
         ens_labels=ens_labels,
@@ -672,8 +710,10 @@ def run_snow5_da(config_path: str | Path) -> Path:
         assimilation_var=obs_var,
         modeled_var=modeled_var,
         observation_da=observation,
-        z_var=float(cfg.get("z_var", 1.0)),
+        z_var=z_var,
         n_eff_threshold=float(cfg.get("n_eff_threshold", 0.5)),
+        swe_relative_uncertainty=swe_relative_uncertainty,
+        swe_sigma_floor=swe_sigma_floor,
         fsca_model=fsca_model,
         helbig_params=helbig_params,
         helbig_settings=helbig_settings,

@@ -298,11 +298,12 @@ def _update_swe_particles(
     weights = particle_filter.update_particle_weights(
         particles,
         measurements,
-        z_var=schedule.z_var,
         end_date_current_run=observation.date,
         hru_index=hru_index,
         ens_label_array=list(member_values),
         obs_column="meas_snw",
+        relative_uncertainty=schedule.swe_relative_uncertainty,
+        sigma_floor=schedule.swe_sigma_floor,
     )
     weight_dir = run_dir / "assimilation"
     weight_dir.mkdir(parents=True, exist_ok=True)
@@ -562,6 +563,7 @@ def _run_fsca_assimilation(
             end_date_current_run=end_time_current_run,
             hru_index=hru_index,
             ens_label_array=list(modeled_cols.keys()),
+            obs_column="fsca_obs",
         )
         previous_resampled = _resample_member_states(
             cfg,

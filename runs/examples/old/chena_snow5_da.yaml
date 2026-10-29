@@ -34,7 +34,10 @@ modeled_var: swe
 modeled_var_name: swe
 state_mean_name: mean_swe
 state_var_name: var_swe
-z_var: 0.5
+# One standard deviation is this fraction of |observed SWE|.
+swe_relative_uncertainty: 0.10
+# Absolute standard-deviation floor, kg m-2. sigma is never smaller than this.
+swe_sigma_floor: 5
 n_eff_threshold: 0.8
 pf_resample: true
 

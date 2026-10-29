@@ -206,4 +206,7 @@ assimilation:
   hru_stations:
     - hru_id: 1
       station_id: "09BA-SC02"
-  z_var: 0.10
+  # One standard deviation is this fraction of |observed SWE|.
+  swe_relative_uncertainty: 0.10
+  # Absolute standard-deviation floor, kg m-2. sigma is never smaller than this.
+  swe_sigma_floor: 5

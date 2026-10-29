@@ -1,0 +1,23 @@
+$Id: gptl.c,v 1.157 2011-03-28 20:55:18 rosinski Exp $
+'count' is cumulative. All other stats are max/min
+name                          processes  threads        count      walltotal   wallmax (proc   thrd  )   wallmin (proc   thrd  )
+PIO:init                              1        1 1.000000e+00   7.920000e-04     0.001 (     0      0)     0.001 (     0      0)
+PIO:initdecomp_dof                    1        1 7.000000e+00   5.750000e-04     0.001 (     0      0)     0.001 (     0      0)
+PIO:openfile                          1        1 2.000000e+00   1.550000e-04     0.000 (     0      0)     0.000 (     0      0)
+PIO:read_darray_nc_serial             1        1 3.000000e+00   1.000000e-06     0.000 (     0      0)     0.000 (     0      0)
+PIO:rearrange_io2comp                 1        1 3.000000e+00   5.000000e-06     0.000 (     0      0)     0.000 (     0      0)
+PIO:closefile                         1        1 2.000000e+00   3.390000e-04     0.000 (     0      0)     0.000 (     0      0)
+PIO:createfile                        1        1 1.000000e+00   1.310000e-04     0.000 (     0      0)     0.000 (     0      0)
+PIO:put_vara_1d_int                   1        1 2.000000e+00   7.300000e-05     0.000 (     0      0)     0.000 (     0      0)
+input                                 1        1 3.944160e+05   5.077289e+02   507.729 (     0      0)   507.729 (     0      0)
+route-total                           1        1 3.944160e+05   6.330960e-01     0.633 (     0      0)     0.633 (     0      0)
+route/scatter-runoff                  1        1 3.944160e+05   2.148410e-01     0.215 (     0      0)     0.215 (     0      0)
+route/tributary-route                 1        1 3.944160e+05   2.588520e-01     0.259 (     0      0)     0.259 (     0      0)
+route_network                         1        1 3.944160e+05   1.014810e-01     0.101 (     0      0)     0.101 (     0      0)
+output                                1        1 3.944160e+05   4.932720e+01    49.327 (     0      0)    49.327 (     0      0)
+PIO:put_vara_1d_double                1        1 7.888320e+05   2.819974e+00     2.820 (     0      0)     2.820 (     0      0)
+PIO:write_darray_real                 1        1 1.183248e+06   3.150440e-01     0.315 (     0      0)     0.315 (     0      0)
+PIO:rearrange_comp2io                 1        1 7.888320e+05   3.831541e+01    38.315 (     0      0)    38.315 (     0      0)
+PIO:write_darray_multi_serial         1        1 7.888320e+05   5.674720e-01     0.567 (     0      0)     0.567 (     0      0)
+t_prf                                 0        0 0.000000e+00   0.000000e+00     0.000 (     0      0)     0.000 (     0      0)
+

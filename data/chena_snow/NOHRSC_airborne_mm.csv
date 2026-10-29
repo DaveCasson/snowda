@@ -1,0 +1,1 @@
+date,source,station_id,station_name,requested_ids,variable,value_mm,status,lower_bound_mm,qc_flag,qa_flag,reporting_year,reporting_month,month_part,source_unit,latitude,longitude,source_url

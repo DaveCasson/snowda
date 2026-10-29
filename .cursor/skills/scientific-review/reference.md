@@ -86,36 +86,52 @@ preprocessing of `μ`, `σz`, `ξ` vs Helbig 2021; units of depth vs SWE.
 `src/snowda/workflows/run_snow5_da.py`,
 `src/snowda/workflows/run_summa_da.py`
 
-**Likelihood (implemented):**
+**Likelihood (implemented):** independent Gaussian product, Arulampalam
+et al. (2002). SWE uses a per-HRU standard deviation. fSCA still uses
+scalar variance `z_var`, passed in as `sigma = sqrt(z_var)`.
 
 ```
-error_mean = nanmean_hru |x_i,hru − z_hru|
-L_i = exp(−0.5 * error_mean * z_var)
-w = L / sum(L)   or uniform if sum(L)=0
+sigma_hru = max(swe_relative_uncertainty * |z_hru|, swe_sigma_floor)
+log L_i = −0.5 * sum_hru ((x_i,hru − z_hru) / sigma_hru)^2
+w = softmax(log L)
 ```
 
-This is not a standard independent-Gaussian product
-`∏ exp(−0.5 (x−z)² / σ²)`. Treat mismatch with any claimed Gaussian
-likelihood as a primary scientific question.
+`swe_relative_uncertainty` is one standard deviation as a fraction of
+absolute observed SWE. The documented config value is 0.10.
+`swe_sigma_floor` is the absolute floor in kg m-2. The documented
+config value is 5. Both are required config settings; the likelihood
+does not hardcode them. The floor binds whenever the relative term is
+smaller, including observed SWE of 0.
+
+The sum is over HRUs with a finite observation. A particle with a
+non-finite prediction on one of those HRUs gets weight 0.
 
 **State estimate:** weighted mean and variance per HRU.
 
 **Effective sample size:**
-`round(1 / (N * mean(w²)))` — confirm against `N_eff = 1 / ∑ w_i²`
-and the `n_eff_threshold` comparison direction
-(`resample_indices` returns `None` when `effweights <= threshold`).
+`round(1 / (N * mean(w²)))`, equal to `N_eff = 1 / ∑ w_i²` when the
+weight row has length N.
+
+**Resample threshold:** resample when `N_eff` is at or below the cutoff.
+A threshold in `(0, 1]` is a fraction of the ensemble (`cutoff = threshold * N`).
+A threshold above 1 is a count. Zero does not resample. `resample_indices`
+returns `None` when `N_eff` is above the cutoff.
 
 **Resampling:** residual/systematic style with
 `zrand = U(0,1)/N` and 1-based then `− 1`. Check empty-slot
 initialization and whether all particles are assigned.
 
 **Suggested checks:** identical particles + identical obs → equal
-weights; one exact match vs outliers; `z_var` scaling (sign and
-σ² vs 1/σ²); weight normalization ∑w=1; synthetic twin experiment
-on 1–2 HRUs; independence vs spatial pooling of `|error|`.
+weights; one exact match vs outliers; a larger relative uncertainty
+flattens the weights; the floor binds when
+`relative * |SWE|` is smaller and is the whole sigma at SWE = 0;
+weight normalization ∑w=1; two HRUs each use their own sigma;
+resample when `N_eff` is at or below the cutoff and keep a
+uniform ensemble above it.
 
-**Existing tests:** none for PF math. Schaake DA integration uses
-`ParticleFilterCore` only as a stub collaborator.
+**Existing tests:** `laugh_tests/test_particle_filter.py` checks the
+Gaussian weights, `N_eff`, and the resample threshold. Schaake DA
+integration uses `ParticleFilterCore` as a collaborator.
 
 ## 4. Schaake Shuffle
 

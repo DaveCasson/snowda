@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -81,7 +82,13 @@ class HruStation:
 
 @dataclass(frozen=True)
 class AssimilationConfig:
-    """Dated SWE assimilation schedule. Dates are explicit; frequency is optional."""
+    """Dated SWE assimilation schedule. Dates are explicit; frequency is optional.
+
+    ``swe_relative_uncertainty`` is one standard deviation as a fraction of
+    absolute observed SWE. ``swe_sigma_floor`` is the absolute standard-deviation
+    floor in kg m-2. On each HRU,
+    ``sigma = max(swe_relative_uncertainty * abs(observed_swe), swe_sigma_floor)``.
+    """
 
     dates: tuple[datetime, ...]
     frequency_days: Optional[int]
@@ -90,7 +97,8 @@ class AssimilationConfig:
     swe_nc: Path
     swe_var: str
     summa_swe_var: str
-    z_var: float
+    swe_relative_uncertainty: float
+    swe_sigma_floor: float
     hru_stations: tuple[HruStation, ...]
 
     def station_hru_map(self) -> dict[str, int]:
@@ -247,6 +255,9 @@ def load_pysummada_config(
     summa_exe = _normalize_path(str(_require(cfg, "summa_exe")), base_dir, allow_relative=False)
     summa_log = bool(cfg.get("summa_log", False))
     pf_scheme = _parse_pf_scheme(cfg)
+    # Values in (0, 1] are a fraction of the ensemble. resample_indices
+    # resamples when N_eff is at or below threshold * num_ens. Values above 1
+    # are counts. Zero does not resample.
     n_eff_threshold = float(cfg.get("n_eff_threshold", 0.0))
 
     summa_args = cfg.get("summa_args", {}) or {}
@@ -666,14 +677,17 @@ def _load_assimilation_config(
     swe_nc = _normalize_path(str(_require(raw, "swe_nc")), base_dir, allow_relative=False)
     if not swe_nc.is_file():
         raise ValueError(f"Assimilation SWE file not found: {swe_nc}")
-    if "z_var" not in raw:
-        raise ValueError(
-            "`assimilation.z_var` is required for SWE updates. "
-            "The weight is exp(-0.5 * mean(abs(error)) * z_var), not a Gaussian variance."
-        )
-    z_var = float(raw["z_var"])
-    if z_var <= 0:
-        raise ValueError("`assimilation.z_var` must be > 0.")
+    swe_relative_uncertainty = _positive_assimilation_setting(
+        raw,
+        "swe_relative_uncertainty",
+        "It is one standard deviation as a fraction of |observed SWE|.",
+    )
+    swe_sigma_floor = _positive_assimilation_setting(
+        raw,
+        "swe_sigma_floor",
+        "It is the absolute SWE observation standard-deviation floor in kg m-2. "
+        "sigma = max(swe_relative_uncertainty * abs(observed_swe), swe_sigma_floor).",
+    )
     hru_stations = _parse_hru_stations(raw.get("hru_stations"))
     return AssimilationConfig(
         dates=explicit_dates,
@@ -683,9 +697,22 @@ def _load_assimilation_config(
         swe_nc=swe_nc,
         swe_var=str(raw.get("swe_var", "swe_model_equivalent")),
         summa_swe_var=str(raw.get("summa_swe_var", "scalarSWE")),
-        z_var=z_var,
+        swe_relative_uncertainty=swe_relative_uncertainty,
+        swe_sigma_floor=swe_sigma_floor,
         hru_stations=hru_stations,
     )
+
+
+def _positive_assimilation_setting(raw: Dict[str, Any], key: str, meaning: str) -> float:
+    if key not in raw:
+        raise ValueError(f"`assimilation.{key}` is required for SWE updates. {meaning}")
+    try:
+        value = float(raw[key])
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"`assimilation.{key}` must be a number.") from exc
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError(f"`assimilation.{key}` must be finite and > 0.")
+    return value
 
 
 def _parse_hru_stations(raw: Any) -> tuple[HruStation, ...]:

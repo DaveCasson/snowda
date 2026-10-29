@@ -52,7 +52,8 @@ def _da_config(tmp_path: Path, swe: Path) -> Path:
                 "dates": ["2014-03-01 00:00"],
                 "obs_window_days": 1,
                 "swe_nc": str(swe),
-                "z_var": 0.1,
+                "swe_relative_uncertainty": 0.10,
+                "swe_sigma_floor": 5,
                 "hru_stations": [{"hru_id": 1, "station_id": "A"}],
             },
             "esp": {

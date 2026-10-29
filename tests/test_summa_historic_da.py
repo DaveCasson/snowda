@@ -81,7 +81,8 @@ def _assimilation_block(swe_nc: Path, **overrides: object) -> dict:
         "dates": ["2014-03-01 00:00", "2014-03-10 00:00"],
         "obs_window_days": 6,
         "swe_nc": str(swe_nc),
-        "z_var": 0.02,
+        "swe_relative_uncertainty": 0.10,
+        "swe_sigma_floor": 5,
         "hru_stations": [{"hru_id": 1, "station_id": "A"}],
     }
     block.update(overrides)
@@ -280,14 +281,18 @@ def test_particle_weights_accept_lumped_frames() -> None:
     weights = ParticleFilterCore().update_particle_weights(
         particles,
         measurements,
-        z_var=0.02,
         end_date_current_run=when,
         hru_index=pd.DataFrame({"hruId": [hru_id]}),
         ens_label_array=["001", "002"],
         obs_column="meas_snw",
+        relative_uncertainty=0.10,
+        sigma_floor=5.0,
     )
     assert list(weights.columns) == ["001", "002"]
-    assert weights.iloc[0, 0] > weights.iloc[0, 1]
+    row = weights.iloc[0].to_numpy(dtype=float)
+    assert np.all(np.isfinite(row))
+    assert row.sum() == pytest.approx(1.0)
+    assert row[0] > row[1]
 
 
 def test_historic_forcing_lists_use_member_ids(tmp_path: Path) -> None:
@@ -424,7 +429,31 @@ def test_swe_da_config_does_not_require_fsca(tmp_path: Path) -> None:
     validate_da_config(cfg)
     assert cfg.assimilation is not None
     assert cfg.assimilation.swe_var == "swe_model_equivalent"
+    assert cfg.assimilation.swe_relative_uncertainty == 0.10
+    assert cfg.assimilation.swe_sigma_floor == 5.0
     assert cfg.assimilation.station_hru_map() == {"A": 1}
+
+
+def test_swe_sigma_floor_is_required(tmp_path: Path) -> None:
+    swe = tmp_path / "swe.nc"
+    _swe_file(swe)
+    block = _assimilation_block(swe)
+    del block["swe_sigma_floor"]
+    config_file = _build_config(tmp_path, extra={"assimilation": block})
+    with pytest.raises(ValueError, match="swe_sigma_floor"):
+        load_pysummada_config(config_file)
+
+
+@pytest.mark.parametrize("floor", [0, -5])
+def test_swe_sigma_floor_must_be_positive(tmp_path: Path, floor: float) -> None:
+    swe = tmp_path / "swe.nc"
+    _swe_file(swe)
+    config_file = _build_config(
+        tmp_path,
+        extra={"assimilation": _assimilation_block(swe, swe_sigma_floor=floor)},
+    )
+    with pytest.raises(ValueError, match="swe_sigma_floor"):
+        load_pysummada_config(config_file)
 
 
 def test_hru_stations_rejects_a_repeated_station(tmp_path: Path) -> None:
@@ -657,7 +686,7 @@ def test_sir_copies_donor_restart(tmp_path: Path) -> None:
         path = tmp_path / f"fileManagerEns{label}.txt"
         path.write_text("initConditionFile\t'coldState.nc'\n", encoding="utf-8")
         managers.append(str(path))
-    weights = pd.DataFrame([[0.5, 0.5]], columns=cfg.ens_label_array)
+    weights = pd.DataFrame([[1.0, 0.0]], columns=cfg.ens_label_array)
     copied = _resample_member_states(
         cfg,
         DataAssimilationCore(cfg),
@@ -672,6 +701,32 @@ def test_sir_copies_donor_restart(tmp_path: Path) -> None:
         text = Path(path).read_text(encoding="utf-8")
         assert "coldState.nc" not in text
         assert "_restart_2014030100_2014_03_01.nc" in text
+
+
+def test_sir_keeps_a_uniform_ensemble(tmp_path: Path) -> None:
+    config_file = _build_config(
+        tmp_path,
+        extra={"pf_scheme": "sir", "num_ens": 2, "n_eff_threshold": 0.5},
+    )
+    cfg = load_pysummada_config(config_file)
+    managers = []
+    for label in cfg.ens_label_array:
+        path = tmp_path / f"fileManagerEns{label}.txt"
+        path.write_text("initConditionFile\t'coldState.nc'\n", encoding="utf-8")
+        managers.append(str(path))
+    weights = pd.DataFrame([[0.5, 0.5]], columns=cfg.ens_label_array)
+    copied = _resample_member_states(
+        cfg,
+        DataAssimilationCore(cfg),
+        managers,
+        ParticleFilterCore(),
+        weights,
+        datetime(2014, 3, 1),
+        cfg.ens_label_array,
+    )
+    assert copied is False
+    for path in managers:
+        assert "coldState.nc" in Path(path).read_text(encoding="utf-8")
 
 
 def test_route_segment_uses_member_summa_and_keeps_routing_restart(

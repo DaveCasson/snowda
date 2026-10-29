@@ -124,9 +124,11 @@ names, dimensions, and units.
 - ESP: historical forcing years replayed from a warm state; leap-day
   rollover is implemented.
 - Assumptions to verify: spatial independence or pooling in the PF;
-  archive sampling without replacement; observation-error variance
-  `z_var` as a scalar; no combined SWE+fSCA likelihood yet
-  (`IMPLEMENTATION_TODO.md`).
+  archive sampling without replacement; SWE observation error is
+  `sigma = max(swe_relative_uncertainty * |SWE|, swe_sigma_floor)`
+  with both settings read from config (documented values 0.10 and
+  5 kg m-2); fSCA still uses scalar variance `z_var`; no combined
+  SWE+fSCA likelihood yet (`IMPLEMENTATION_TODO.md`).
 
 ## Review protocol
 
