@@ -1,0 +1,1145 @@
+2026-10-29 00:00:42 | INFO     | snowda.__main__ | snowda SUMMA historic run starting
+2026-10-29 00:00:42 | INFO     | snowda.__main__ | Config: /home/x-dcasson/GitRepos/snowda/runs/examples/ross_summa_historic_ensemble.yaml
+2026-10-29 00:00:42 | INFO     | snowda.__main__ | Run dir: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T040042Z
+2026-10-29 00:00:42 | INFO     | snowda.__main__ | Wrote config snapshot: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T040042Z/config.resolved.json
+2026-10-29 00:00:42 | INFO     | snowda.snowda.io.summa_ensemble | Creating output directories
+2026-10-29 00:00:42 | INFO     | snowda.snowda.io.summa_ensemble | Deleting ensemble files in /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA
+2026-10-29 00:00:42 | INFO     | snowda.snowda.io.summa_ensemble | Deleting ensemble files in /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA
+/home/x-dcasson/GitRepos/pysumma/pysumma/decisions.py:4: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+2026-10-29 00:00:42 | INFO     | snowda.snowda.io.summa_ensemble | Deleting state files in /home/x-dcasson/GitRepos/snowda/models/ross_lumped/states
+2026-10-29 00:00:42 | INFO     | snowda.snowda.io.summa_ensemble | Writing ensemble file managers to /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T040042Z
+2026-10-29 00:00:42 | INFO     | snowda.snowda.io.summa_ensemble | Writing historic ensemble forcing lists
+2026-10-29 00:00:42 | INFO     | snowda.__main__ | Starting historic ensemble 1980-08-01 00:00:00 to 2024-08-01 00:00:00
+2026-10-29 00:00:42 | INFO     | snowda.snowda.workflows.summa_common | Copied SUMMA initial state coldState.nc to /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T040042Z/states/coldState.nc
+2026-10-29 00:00:42 | INFO     | snowda.snowda.workflows.summa_common | SUMMA statePath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T040042Z/states
+2026-10-29 00:00:42 | INFO     | snowda.__main__ | SUMMA outputPath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T040042Z/summa
+2026-10-29 00:00:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble starting: 50 members, 5 workers, suffix 2024_08_01
+2026-10-29 00:00:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 001 running
+2026-10-29 00:00:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 002 running
+2026-10-29 00:00:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 003 running
+2026-10-29 00:00:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 004 running
+2026-10-29 00:00:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 005 running
+2026-10-29 00:06:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 006 running
+2026-10-29 00:06:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 003 complete (1/50)
+2026-10-29 00:06:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 007 running
+2026-10-29 00:06:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 002 complete (2/50)
+2026-10-29 00:06:48 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 008 running
+2026-10-29 00:06:48 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 005 complete (3/50)
+2026-10-29 00:12:22 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 009 running
+2026-10-29 00:12:22 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 004 complete (4/50)
+2026-10-29 00:12:25 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 010 running
+2026-10-29 00:12:25 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 001 complete (5/50)
+2026-10-29 00:12:39 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 011 running
+2026-10-29 00:12:39 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 006 complete (6/50)
+2026-10-29 00:12:41 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 012 running
+2026-10-29 00:12:41 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 007 complete (7/50)
+2026-10-29 00:12:57 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 013 running
+2026-10-29 00:12:57 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 008 complete (8/50)
+2026-10-29 00:19:16 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 014 running
+2026-10-29 00:19:16 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 011 complete (9/50)
+2026-10-29 00:19:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 015 running
+2026-10-29 00:19:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 010 complete (10/50)
+2026-10-29 00:19:47 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 016 running
+2026-10-29 00:19:47 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 013 complete (11/50)
+2026-10-29 00:23:45 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 017 running
+2026-10-29 00:23:45 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 009 complete (12/50)
+2026-10-29 00:23:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 018 running
+2026-10-29 00:23:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 012 complete (13/50)
+2026-10-29 00:25:44 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 019 running
+2026-10-29 00:25:44 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 015 complete (14/50)
+2026-10-29 00:26:00 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 020 running
+2026-10-29 00:26:00 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 016 complete (15/50)
+2026-10-29 00:26:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 021 running
+2026-10-29 00:26:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 014 complete (16/50)
+2026-10-29 00:31:52 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 022 running
+2026-10-29 00:31:52 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 019 complete (17/50)
+2026-10-29 00:32:10 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 023 running
+2026-10-29 00:32:10 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 020 complete (18/50)
+2026-10-29 00:32:52 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 024 running
+2026-10-29 00:32:52 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 017 complete (19/50)
+2026-10-29 00:33:08 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 025 running
+2026-10-29 00:33:08 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 021 complete (20/50)
+2026-10-29 00:35:49 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 026 running
+2026-10-29 00:35:49 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 018 complete (21/50)
+2026-10-29 00:39:10 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 027 running
+2026-10-29 00:39:10 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 024 complete (22/50)
+2026-10-29 00:39:20 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 028 running
+2026-10-29 00:39:20 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 025 complete (23/50)
+2026-10-29 00:39:53 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 029 running
+2026-10-29 00:39:53 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 022 complete (24/50)
+2026-10-29 00:43:07 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 030 running
+2026-10-29 00:43:07 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 023 complete (25/50)
+2026-10-29 00:44:13 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 031 running
+2026-10-29 00:44:13 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 026 complete (26/50)
+2026-10-29 00:45:32 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 032 running
+2026-10-29 00:45:32 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 028 complete (27/50)
+2026-10-29 00:45:41 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 033 running
+2026-10-29 00:45:41 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 027 complete (28/50)
+2026-10-29 00:47:53 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 034 running
+2026-10-29 00:47:53 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 029 complete (29/50)
+2026-10-29 00:49:49 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 035 running
+2026-10-29 00:49:49 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 030 complete (30/50)
+2026-10-29 00:52:14 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 036 running
+2026-10-29 00:52:14 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 032 complete (31/50)
+2026-10-29 00:52:50 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 037 running
+2026-10-29 00:52:50 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 033 complete (32/50)
+2026-10-29 00:53:39 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 038 running
+2026-10-29 00:53:39 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 031 complete (33/50)
+2026-10-29 00:56:51 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 039 running
+2026-10-29 00:56:51 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 035 complete (34/50)
+2026-10-29 00:58:40 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 040 running
+2026-10-29 00:58:40 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 034 complete (35/50)
+2026-10-29 00:58:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 041 running
+2026-10-29 00:58:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 037 complete (36/50)
+2026-10-29 01:00:02 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 042 running
+2026-10-29 01:00:02 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 038 complete (37/50)
+2026-10-29 01:02:50 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 043 running
+2026-10-29 01:02:50 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 036 complete (38/50)
+2026-10-29 01:03:00 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 044 running
+2026-10-29 01:03:00 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 039 complete (39/50)
+2026-10-29 01:04:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 045 running
+2026-10-29 01:04:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 040 complete (40/50)
+2026-10-29 01:04:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 046 running
+2026-10-29 01:04:54 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 045 finished with status Error (41/50)
+2026-10-29 01:04:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 047 running
+2026-10-29 01:04:54 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 046 finished with status Error (42/50)
+2026-10-29 01:04:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 048 running
+2026-10-29 01:04:54 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 047 finished with status Error (43/50)
+2026-10-29 01:04:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 049 running
+2026-10-29 01:04:54 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 048 finished with status Error (44/50)
+2026-10-29 01:04:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 050 running
+2026-10-29 01:04:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 049 finished with status Error (45/50)
+2026-10-29 01:04:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 050 finished with status Error (46/50)
+2026-10-29 01:06:13 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 042 complete (47/50)
+2026-10-29 01:07:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 041 complete (48/50)
+2026-10-29 01:09:08 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 043 complete (49/50)
+2026-10-29 01:10:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 044 complete (50/50)
+2026-10-29 01:10:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble finished: 44/50 successful
+2026-10-29 01:10:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble summary: {'Success': ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025', '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041', '042', '043', '044'], 'Error': ['045', '046', '047', '048', '049', '050'], 'Other': []}
+2026-10-29 01:10:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA stdout (001): file_suffix is '2024_08_01'.
+file_master is '/home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T040042Z/fileManagerEns001.txt'.
+   1 controlVersion: SUMMA_FILE_MANAGER_V3.0.0
+   2 simStartTime: 1980-08-01 00:00
+   3 simEndTime: 2024-08-01 00:00
+   4 tmZoneInfo: utcTime
+   5 outFilePrefix: 001
+   6 settingsPath: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
+   7 forcingPath: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/forcing/001/
+   8 outputPath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T040042Z/summa/
+   9 statePath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T040042Z/states/
+  10 initConditionFile: coldState.nc
+  11 attributeFile: attributes.nc
+  12 trialParamFile: trialParams.nc
+  13 forcingListFile: forcingFileListEns001.txt
+  14 decisionsFile: modelDecisions.txt
+  15 outputControlFile: outputControl.txt
+  16 globalHruParamFile: localParamInfo.txt
+  17 globalGruParamFile: basinParamInfo.txt
+  18 vegTableFile: TBL_VEGPARM.TBL
+  19 soilTableFile: TBL_SOILPARM.TBL
+  20 generalTableFile: TBL_GENPARM.TBL
+  21 noahmpTableFile: TBL_MPTABLE.TBL
+ WARNING: statistics at timestep level are meaningless, outputting instantaneous variable scalarRainfall in timestep output file 
+ WARNING: statistics at timestep level are meaningless, outputting instantaneous variable scalarSnowfall in timestep output file 
+decisions file =  /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/modelDecisions.txt
+   1 soilCatTbl: ROSETTA
+   2 vegeParTbl: MODIFIED_IGBP_MODIS_NOAH
+   3 soilStress: NoahType
+   4 stomResist: BallBerry
+   5 num_method: itertive
+   6 fDerivMeth: analytic
+   7 LAI_method: monTable
+   8 f_Richards: mixdform
+   9 groundwatr: bigBuckt
+  10 hc_profile: constant
+  11 bcUpprTdyn: nrg_flux
+  12 bcLowrTdyn: zeroFlux
+  13 bcUpprSoiH: liq_flux
+  14 bcLowrSoiH: drainage
+  15 veg_traits: Raupach_BLM1994
+  16 canopyEmis: difTrans
+  17 snowIncept: lightSnow
+  18 windPrfile: logBelowCanopy
+  19 astability: louisinv
+  20 canopySrad: CLM_2stream
+  21 alb_method: varDecay
+  22 compaction: consettl
+  23 snowLayers: CLM_2010
+  24 thCondSnow: jrdn1991
+  25 thCondSoil: funcSoilWet
+  26 spatial_gw: localColumn
+  27 subRouting: timeDlay
+  28 infRateMax: GreenAmpt
+  29 nrgConserv: enthalpyForm
+startTime: iyyy, im, id, ih, imin = 1980  8  1  0  0
+finshTime: iyyy, im, id, ih, imin = 2024  8  1  0  0
+WARNING: deprecated parameter 'upperBoundTheta' found in parameter input file -- ignoring this parameter
+WARNING: deprecated parameter 'lowerBoundTheta' found in parameter input file -- ignoring this parameter
+Skipping over LUTYPE = USGS
+Skipping over SLTYPE = STAS
+Skipping over SLTYPE = STAS-RUC
+satHydCond/WARNING: hydraulic conductivity for macropores [0.100000E-02] is less than the hydraulic conductivity for micropores [0.941684E-02]: resetting macropore conductivity to equal micropore value. Layer = 2
+satHydCond/WARNING: hydraulic conductivity for macropores [0.100000E-02] is less than the hydraulic conductivity for micropores [0.941684E-02]: resetting macropore conductivity to equal micropore value. Layer = 3
+satHydCond/WARNING: hydraulic conductivity for macropores [0.100000E-02] is less than the hydraulic conductivity for micropores [0.941684E-02]: resetting macropore conductivity to equal micropore value. Layer = 4
+ Created output file: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T040042Z/summa/001_2024_08_01_timestep.nc
+1980  9  1  0  0
+ step --->         1000
+1980 10  1  0  0
+ step --->         2000
+1980 11  1  0  0
+1980 12  1  0  0
+ step --->         3000
+1981  1  1  0  0
+ step --->         4000
+1981  2  1  0  0
+ step --->         5000
+1981  3  1  0  0
+1981  4  1  0  0
+ step --->         6000
+1981  5  1  0  0
+ step --->         7000
+1981  6  1  0  0
+ step --->         8000
+1981  7  1  0  0
+1981  8  1  0  0
+ step --->         9000
+1981  9  1  0  0
+ step --->        10000
+1981 10  1  0  0
+1981 11  1  0  0
+ step --->        11000
+1981 12  1  0  0
+ step --->        12000
+1982  1  1  0  0
+ step --->        13000
+1982  2  1  0  0
+1982  3  1  0  0
+ step --->        14000
+1982  4  1  0  0
+ step --->        15000
+1982  5  1  0  0
+ step --->        16000
+1982  6  1  0  0
+1982  7  1  0  0
+ step --->        17000
+1982  8  1  0  0
+ step --->        18000
+1982  9  1  0  0
+1982 10  1  0  0
+ step --->        19000
+1982 11  1  0  0
+ step --->        20000
+1982 12  1  0  0
+ step --->        21000
+1983  1  1  0  0
+1983  2  1  0  0
+ step --->        22000
+1983  3  1  0  0
+ step --->        23000
+1983  4  1  0  0
+ step --->        24000
+1983  5  1  0  0
+1983  6  1  0  0
+ step --->        25000
+1983  7  1  0  0
+ step --->        26000
+1983  8  1  0  0
+ step --->        27000
+1983  9  1  0  0
+1983 10  1  0  0
+ step --->        28000
+1983 11  1  0  0
+ step --->        29000
+1983 12  1  0  0
+1984  1  1  0  0
+ step --->        30000
+1984  2  1  0  0
+ step --->        31000
+1984  3  1  0  0
+ step --->        32000
+1984  4  1  0  0
+1984  5  1  0  0
+ step --->        33000
+1984  6  1  0  0
+ step --->        34000
+1984  7  1  0  0
+ step --->        35000
+1984  8  1  0  0
+1984  9  1  0  0
+ step --->        36000
+1984 10  1  0  0
+ step --->        37000
+1984 11  1  0  0
+1984 12  1  0  0
+ step --->        38000
+1985  1  1  0  0
+ step --->        39000
+1985  2  1  0  0
+ step --->        40000
+1985  3  1  0  0
+1985  4  1  0  0
+ step --->        41000
+1985  5  1  0  0
+ step --->        42000
+1985  6  1  0  0
+ step --->        43000
+1985  7  1  0  0
+1985  8  1  0  0
+ step --->        44000
+1985  9  1  0  0
+ step --->        45000
+1985 10  1  0  0
+ step --->        46000
+1985 11  1  0  0
+1985 12  1  0  0
+ step --->        47000
+1986  1  1  0  0
+ step --->        48000
+1986  2  1  0  0
+1986  3  1  0  0
+ step --->        49000
+1986  4  1  0  0
+ step --->        50000
+1986  5  1  0  0
+ step --->        51000
+1986  6  1  0  0
+1986  7  1  0  0
+ step --->        52000
+1986  8  1  0  0
+ step --->        53000
+1986  9  1  0  0
+ step --->        54000
+1986 10  1  0  0
+1986 11  1  0  0
+ step --->        55000
+1986 12  1  0  0
+ step --->        56000
+1987  1  1  0  0
+ step --->        57000
+1987  2  1  0  0
+1987  3  1  0  0
+ step --->        58000
+1987  4  1  0  0
+ step --->        59000
+1987  5  1  0  0
+1987  6  1  0  0
+ step --->        60000
+1987  7  1  0  0
+ step --->        61000
+1987  8  1  0  0
+ step --->        62000
+1987  9  1  0  0
+1987 10  1  0  0
+ step --->        63000
+1987 11  1  0  0
+ step --->        64000
+1987 12  1  0  0
+ step --->        65000
+1988  1  1  0  0
+1988  2  1  0  0
+ step --->        66000
+1988  3  1  0  0
+ step --->        67000
+1988  4  1  0  0
+1988  5  1  0  0
+ step --->        68000
+1988  6  1  0  0
+ step --->        69000
+1988  7  1  0  0
+ step --->        70000
+1988  8  1  0  0
+1988  9  1  0  0
+ step --->        71000
+1988 10  1  0  0
+ step --->        72000
+1988 11  1  0  0
+ step --->        73000
+1988 12  1  0  0
+1989  1  1  0  0
+ step --->        74000
+1989  2  1  0  0
+ step --->        75000
+1989  3  1  0  0
+1989  4  1  0  0
+ step --->        76000
+1989  5  1  0  0
+ step --->        77000
+1989  6  1  0  0
+ step --->        78000
+1989  7  1  0  0
+1989  8  1  0  0
+ step --->        79000
+1989  9  1  0  0
+ step --->        80000
+1989 10  1  0  0
+ step --->        81000
+1989 11  1  0  0
+1989 12  1  0  0
+ step --->        82000
+1990  1  1  0  0
+ step --->        83000
+1990  2  1  0  0
+1990  3  1  0  0
+ step --->        84000
+1990  4  1  0  0
+ step --->        85000
+1990  5  1  0  0
+ step --->        86000
+1990  6  1  0  0
+1990  7  1  0  0
+ step --->        87000
+1990  8  1  0  0
+ step --->        88000
+1990  9  1  0  0
+ step --->        89000
+1990 10  1  0  0
+1990 11  1  0  0
+ step --->        90000
+1990 12  1  0  0
+ step --->        91000
+1991  1  1  0  0
+ step --->        92000
+1991  2  1  0  0
+1991  3  1  0  0
+ step --->        93000
+1991  4  1  0  0
+ step --->        94000
+1991  5  1  0  0
+1991  6  1  0  0
+ step --->        95000
+1991  7  1  0  0
+ step --->        96000
+1991  8  1  0  0
+ step --->        97000
+1991  9  1  0  0
+1991 10  1  0  0
+ step --->        98000
+1991 11  1  0  0
+ step --->        99000
+1991 12  1  0  0
+ step --->       100000
+1992  1  1  0  0
+1992  2  1  0  0
+ step --->       101000
+1992  3  1  0  0
+ step --->       102000
+1992  4  1  0  0
+1992  5  1  0  0
+ step --->       103000
+1992  6  1  0  0
+ step --->       104000
+1992  7  1  0  0
+ step --->       105000
+1992  8  1  0  0
+1992  9  1  0  0
+ step --->       106000
+1992 10  1  0  0
+ step --->       107000
+1992 11  1  0  0
+ step --->       108000
+1992 12  1  0  0
+1993  1  1  0  0
+ step --->       109000
+1993  2  1  0  0
+ step --->       110000
+1993  3  1  0  0
+ step --->       111000
+1993  4  1  0  0
+1993  5  1  0  0
+ step --->       112000
+1993  6  1  0  0
+ step --->       113000
+1993  7  1  0  0
+1993  8  1  0  0
+ step --->       114000
+1993  9  1  0  0
+ step --->       115000
+1993 10  1  0  0
+ step --->       116000
+1993 11  1  0  0
+1993 12  1  0  0
+ step --->       117000
+1994  1  1  0  0
+ step --->       118000
+1994  2  1  0  0
+ step --->       119000
+1994  3  1  0  0
+1994  4  1  0  0
+ step --->       120000
+1994  5  1  0  0
+ step --->       121000
+1994  6  1  0  0
+1994  7  1  0  0
+ step --->       122000
+1994  8  1  0  0
+ step --->       123000
+1994  9  1  0  0
+ step --->       124000
+1994 10  1  0  0
+1994 11  1  0  0
+ step --->       125000
+1994 12  1  0  0
+ step --->       126000
+1995  1  1  0  0
+ step --->       127000
+1995  2  1  0  0
+1995  3  1  0  0
+ step --->       128000
+1995  4  1  0  0
+ step --->       129000
+1995  5  1  0  0
+ step --->       130000
+1995  6  1  0  0
+1995  7  1  0  0
+ step --->       131000
+1995  8  1  0  0
+ step --->       132000
+1995  9  1  0  0
+1995 10  1  0  0
+ step --->       133000
+1995 11  1  0  0
+ step --->       134000
+1995 12  1  0  0
+ step --->       135000
+1996  1  1  0  0
+1996  2  1  0  0
+ step --->       136000
+1996  3  1  0  0
+ step --->       137000
+1996  4  1  0  0
+ step --->       138000
+1996  5  1  0  0
+1996  6  1  0  0
+ step --->       139000
+1996  7  1  0  0
+ step --->       140000
+1996  8  1  0  0
+ step --->       141000
+1996  9  1  0  0
+1996 10  1  0  0
+ step --->       142000
+1996 11  1  0  0
+ step --->       143000
+1996 12  1  0  0
+1997  1  1  0  0
+ step --->       144000
+1997  2  1  0  0
+ step --->       145000
+1997  3  1  0  0
+ step --->       146000
+1997  4  1  0  0
+1997  5  1  0  0
+ step --->       147000
+1997  6  1  0  0
+ step --->       148000
+1997  7  1  0  0
+ step --->       149000
+1997  8  1  0  0
+1997  9  1  0  0
+ step --->       150000
+1997 10  1  0  0
+ step --->       151000
+1997 11  1  0  0
+1997 12  1  0  0
+ step --->       152000
+1998  1  1  0  0
+ step --->       153000
+1998  2  1  0  0
+ step --->       154000
+1998  3  1  0  0
+1998  4  1  0  0
+ step --->       155000
+1998  5  1  0  0
+ step --->       156000
+1998  6  1  0  0
+ step --->       157000
+1998  7  1  0  0
+1998  8  1  0  0
+ step --->       158000
+1998  9  1  0  0
+ step --->       159000
+1998 10  1  0  0
+1998 11  1  0  0
+ step --->       160000
+1998 12  1  0  0
+ step --->       161000
+1999  1  1  0  0
+ step --->       162000
+1999  2  1  0  0
+1999  3  1  0  0
+ step --->       163000
+1999  4  1  0  0
+ step --->       164000
+1999  5  1  0  0
+ step --->       165000
+1999  6  1  0  0
+1999  7  1  0  0
+ step --->       166000
+1999  8  1  0  0
+ step --->       167000
+1999  9  1  0  0
+ step --->       168000
+1999 10  1  0  0
+1999 11  1  0  0
+ step --->       169000
+1999 12  1  0  0
+ step --->       170000
+2000  1  1  0  0
+2000  2  1  0  0
+ step --->       171000
+2000  3  1  0  0
+ step --->       172000
+2000  4  1  0  0
+ step --->       173000
+2000  5  1  0  0
+2000  6  1  0  0
+ step --->       174000
+2000  7  1  0  0
+ step --->       175000
+2000  8  1  0  0
+ step --->       176000
+2000  9  1  0  0
+2000 10  1  0  0
+ step --->       177000
+2000 11  1  0  0
+ step --->       178000
+2000 12  1  0  0
+2001  1  1  0  0
+ step --->       179000
+2001  2  1  0  0
+ step --->       180000
+2001  3  1  0  0
+ step --->       181000
+2001  4  1  0  0
+2001  5  1  0  0
+ step --->       182000
+2001  6  1  0  0
+ step --->       183000
+2001  7  1  0  0
+ step --->       184000
+2001  8  1  0  0
+2001  9  1  0  0
+ step --->       185000
+2001 10  1  0  0
+ step --->       186000
+2001 11  1  0  0
+ step --->       187000
+2001 12  1  0  0
+2002  1  1  0  0
+ step --->       188000
+2002  2  1  0  0
+ step --->       189000
+2002  3  1  0  0
+2002  4  1  0  0
+ step --->       190000
+2002  5  1  0  0
+ step --->       191000
+2002  6  1  0  0
+ step --->       192000
+2002  7  1  0  0
+2002  8  1  0  0
+ step --->       193000
+2002  9  1  0  0
+ step --->       194000
+2002 10  1  0  0
+ step --->       195000
+2002 11  1  0  0
+2002 12  1  0  0
+ step --->       196000
+2003  1  1  0  0
+ step --->       197000
+2003  2  1  0  0
+2003  3  1  0  0
+ step --->       198000
+2003  4  1  0  0
+ step --->       199000
+2003  5  1  0  0
+ step --->       200000
+2003  6  1  0  0
+2003  7  1  0  0
+ step --->       201000
+2003  8  1  0  0
+ step --->       202000
+2003  9  1  0  0
+ step --->       203000
+2003 10  1  0  0
+2003 11  1  0  0
+ step --->       204000
+2003 12  1  0  0
+ step --->       205000
+2004  1  1  0  0
+ step --->       206000
+2004  2  1  0  0
+2004  3  1  0  0
+ step --->       207000
+2004  4  1  0  0
+ step --->       208000
+2004  5  1  0  0
+2004  6  1  0  0
+ step --->       209000
+2004  7  1  0  0
+ step --->       210000
+2004  8  1  0  0
+ step --->       211000
+2004  9  1  0  0
+2004 10  1  0  0
+ step --->       212000
+2004 11  1  0  0
+ step --->       213000
+2004 12  1  0  0
+ step --->       214000
+2005  1  1  0  0
+2005  2  1  0  0
+ step --->       215000
+2005  3  1  0  0
+ step --->       216000
+2005  4  1  0  0
+2005  5  1  0  0
+ step --->       217000
+2005  6  1  0  0
+ step --->       218000
+2005  7  1  0  0
+ step --->       219000
+2005  8  1  0  0
+2005  9  1  0  0
+ step --->       220000
+2005 10  1  0  0
+ step --->       221000
+2005 11  1  0  0
+ step --->       222000
+2005 12  1  0  0
+2006  1  1  0  0
+ step --->       223000
+2006  2  1  0  0
+ step --->       224000
+2006  3  1  0  0
+2006  4  1  0  0
+ step --->       225000
+2006  5  1  0  0
+ step --->       226000
+2006  6  1  0  0
+ step --->       227000
+2006  7  1  0  0
+2006  8  1  0  0
+ step --->       228000
+2006  9  1  0  0
+ step --->       229000
+2006 10  1  0  0
+ step --->       230000
+2006 11  1  0  0
+2006 12  1  0  0
+ step --->       231000
+2007  1  1  0  0
+ step --->       232000
+2007  2  1  0  0
+2007  3  1  0  0
+ step --->       233000
+2007  4  1  0  0
+ step --->       234000
+2007  5  1  0  0
+ step --->       235000
+2007  6  1  0  0
+2007  7  1  0  0
+ step --->       236000
+2007  8  1  0  0
+ step --->       237000
+2007  9  1  0  0
+ step --->       238000
+2007 10  1  0  0
+2007 11  1  0  0
+ step --->       239000
+2007 12  1  0  0
+ step --->       240000
+2008  1  1  0  0
+ step --->       241000
+2008  2  1  0  0
+2008  3  1  0  0
+ step --->       242000
+2008  4  1  0  0
+ step --->       243000
+2008  5  1  0  0
+2008  6  1  0  0
+ step --->       244000
+2008  7  1  0  0
+ step --->       245000
+2008  8  1  0  0
+ step --->       246000
+2008  9  1  0  0
+2008 10  1  0  0
+ step --->       247000
+2008 11  1  0  0
+ step --->       248000
+2008 12  1  0  0
+ step --->       249000
+2009  1  1  0  0
+2009  2  1  0  0
+ step --->       250000
+2009  3  1  0  0
+ step --->       251000
+2009  4  1  0  0
+ step --->       252000
+2009  5  1  0  0
+2009  6  1  0  0
+ step --->       253000
+2009  7  1  0  0
+ step --->       254000
+2009  8  1  0  0
+2009  9  1  0  0
+ step --->       255000
+2009 10  1  0  0
+ step --->       256000
+2009 11  1  0  0
+ step --->       257000
+2009 12  1  0  0
+2010  1  1  0  0
+ step --->       258000
+2010  2  1  0  0
+ step --->       259000
+2010  3  1  0  0
+ step --->       260000
+2010  4  1  0  0
+2010  5  1  0  0
+ step --->       261000
+2010  6  1  0  0
+ step --->       262000
+2010  7  1  0  0
+2010  8  1  0  0
+ step --->       263000
+2010  9  1  0  0
+ step --->       264000
+2010 10  1  0  0
+ step --->       265000
+2010 11  1  0  0
+2010 12  1  0  0
+ step --->       266000
+2011  1  1  0  0
+ step --->       267000
+2011  2  1  0  0
+ step --->       268000
+2011  3  1  0  0
+2011  4  1  0  0
+ step --->       269000
+2011  5  1  0  0
+ step --->       270000
+2011  6  1  0  0
+2011  7  1  0  0
+ step --->       271000
+2011  8  1  0  0
+ step --->       272000
+2011  9  1  0  0
+ step --->       273000
+2011 10  1  0  0
+2011 11  1  0  0
+ step --->       274000
+2011 12  1  0  0
+ step --->       275000
+2012  1  1  0  0
+ step --->       276000
+2012  2  1  0  0
+2012  3  1  0  0
+ step --->       277000
+2012  4  1  0  0
+ step --->       278000
+2012  5  1  0  0
+ step --->       279000
+2012  6  1  0  0
+2012  7  1  0  0
+ step --->       280000
+2012  8  1  0  0
+ step --->       281000
+2012  9  1  0  0
+2012 10  1  0  0
+ step --->       282000
+2012 11  1  0  0
+ step --->       283000
+2012 12  1  0  0
+ step --->       284000
+2013  1  1  0  0
+2013  2  1  0  0
+ step --->       285000
+2013  3  1  0  0
+ step --->       286000
+2013  4  1  0  0
+ step --->       287000
+2013  5  1  0  0
+2013  6  1  0  0
+ step --->       288000
+2013  7  1  0  0
+ step --->       289000
+2013  8  1  0  0
+ step --->       290000
+2013  9  1  0  0
+2013 10  1  0  0
+ step --->       291000
+2013 11  1  0  0
+ step --->       292000
+2013 12  1  0  0
+2014  1  1  0  0
+ step --->       293000
+2014  2  1  0  0
+ step --->       294000
+2014  3  1  0  0
+ step --->       295000
+2014  4  1  0  0
+2014  5  1  0  0
+ step --->       296000
+2014  6  1  0  0
+ step --->       297000
+2014  7  1  0  0
+ step --->       298000
+2014  8  1  0  0
+2014  9  1  0  0
+ step --->       299000
+2014 10  1  0  0
+ step --->       300000
+2014 11  1  0  0
+2014 12  1  0  0
+ step --->       301000
+2015  1  1  0  0
+ step --->       302000
+2015  2  1  0  0
+ step --->       303000
+2015  3  1  0  0
+2015  4  1  0  0
+ step --->       304000
+2015  5  1  0  0
+ step --->       305000
+2015  6  1  0  0
+ step --->       306000
+2015  7  1  0  0
+2015  8  1  0  0
+ step --->       307000
+2015  9  1  0  0
+ step --->       308000
+2015 10  1  0  0
+ step --->       309000
+2015 11  1  0  0
+2015 12  1  0  0
+ step --->       310000
+2016  1  1  0  0
+ step --->       311000
+2016  2  1  0  0
+2016  3  1  0  0
+ step --->       312000
+2016  4  1  0  0
+ step --->       313000
+2016  5  1  0  0
+ step --->       314000
+2016  6  1  0  0
+2016  7  1  0  0
+ step --->       315000
+2016  8  1  0  0
+ step --->       316000
+2016  9  1  0  0
+ step --->       317000
+2016 10  1  0  0
+2016 11  1  0  0
+ step --->       318000
+2016 12  1  0  0
+ step --->       319000
+2017  1  1  0  0
+2017  2  1  0  0
+ step --->       320000
+2017  3  1  0  0
+ step --->       321000
+2017  4  1  0  0
+ step --->       322000
+2017  5  1  0  0
+2017  6  1  0  0
+ step --->       323000
+2017  7  1  0  0
+ step --->       324000
+2017  8  1  0  0
+ step --->       325000
+2017  9  1  0  0
+2017 10  1  0  0
+ step --->       326000
+2017 11  1  0  0
+ step --->       327000
+2017 12  1  0  0
+ step --->       328000
+2018  1  1  0  0
+2018  2  1  0  0
+ step --->       329000
+2018  3  1  0  0
+ step --->       330000
+2018  4  1  0  0
+2018  5  1  0  0
+ step --->       331000
+2018  6  1  0  0
+ step --->       332000
+2018  7  1  0  0
+ step --->       333000
+2018  8  1  0  0
+2018  9  1  0  0
+ step --->       334000
+2018 10  1  0  0
+ step --->       335000
+2018 11  1  0  0
+ step --->       336000
+2018 12  1  0  0
+2019  1  1  0  0
+ step --->       337000
+2019  2  1  0  0
+ step --->       338000
+2019  3  1  0  0
+2019  4  1  0  0
+ step --->       339000
+2019  5  1  0  0
+ step --->       340000
+2019  6  1  0  0
+ step --->       341000
+2019  7  1  0  0
+2019  8  1  0  0
+ step --->       342000
+2019  9  1  0  0
+ step --->       343000
+2019 10  1  0  0
+ step --->       344000
+2019 11  1  0  0
+2019 12  1  0  0
+ step --->       345000
+2020  1  1  0  0
+ step --->       346000
+2020  2  1  0  0
+2020  3  1  0  0
+ step --->       347000
+2020  4  1  0  0
+ step --->       348000
+2020  5  1  0  0
+ step --->       349000
+2020  6  1  0  0
+2020  7  1  0  0
+ step --->       350000
+2020  8  1  0  0
+ step --->       351000
+2020  9  1  0  0
+ step --->       352000
+2020 10  1  0  0
+2020 11  1  0  0
+ step --->       353000
+2020 12  1  0  0
+ step --->       354000
+2021  1  1  0  0
+ step --->       355000
+2021  2  1  0  0
+2021  3  1  0  0
+ step --->       356000
+2021  4  1  0  0
+ step --->       357000
+2021  5  1  0  0
+2021  6  1  0  0
+ step --->       358000
+2021  7  1  0  0
+ step --->       359000
+2021  8  1  0  0
+ step --->       360000
+2021  9  1  0  0
+2021 10  1  0  0
+ step --->       361000
+2021 11  1  0  0
+ step --->       362000
+2021 12  1  0  0
+ step --->       363000
+2022  1  1  0  0
+2022  2  1  0  0
+ step --->       364000
+2022  3  1  0  0
+ step --->       365000
+2022  4  1  0  0
+2022  5  1  0  0
+ step --->       366000
+2022  6  1  0  0
+ step --->       367000
+2022  7  1  0  0
+ step --->       368000
+2022  8  1  0  0
+2022  9  1  0  0
+ step --->       369000
+2022 10  1  0  0
+ step --->       370000
+2022 11  1  0  0
+ step --->       371000
+2022 12  1  0  0
+2023  1  1  0  0
+ step --->       372000
+2023  2  1  0  0
+ step --->       373000
+2023  3  1  0  0
+2023  4  1  0  0
+ step --->       374000
+2023  5  1  0  0
+ step --->       375000
+2023  6  1  0  0
+ step --->       376000
+2023  7  1  0  0
+2023  8  1  0  0
+ step --->       377000
+2023  9  1  0  0
+ step --->       378000
+2023 10  1  0  0
+ step --->       379000
+2023 11  1  0  0
+2023 12  1  0  0
+ step --->       380000
+2024  1  1  0  0
+ step --->       381000
+2024  2  1  0  0
+ step --->       382000
+2024  3  1  0  0
+2024  4  1  0  0
+ step --->       383000
+2024  5  1  0  0
+ step --->       384000
+2024  6  1  0  0
+2024  7  1  0  0
+ step --->       385000
+2024  8  1  0  0
+
+initial date/time = 2026-10-29   0:00:43.076
+  final date/time = 2026-10-29   0:12:25.480
+
+     elapsed init =   1.8000000E-02 s
+    fraction init =   2.5626278E-05
+
+    elapsed setup =    1.917000     s
+   fraction setup =   2.7291986E-03
+
+  elapsed restart =   2.0000000E-02 s
+ fraction restart =   2.8473642E-05
+
+     elapsed read =    155.4350     s
+    fraction read =   0.2212900    
+
+    elapsed write =    135.9960     s
+   fraction write =   0.1936151    
+
+  elapsed physics =    404.6770     s
+ fraction physics =   0.5761314    
+
+     elapsed time =    702.4040     s
+       or              11.70673     m
+       or             0.1951122     h
+       or             8.1296759E-03 d
+
+   number threads =          1
+
+ FORTRAN STOP: finished simulation successfully.
+
+2026-10-29 01:10:04 | INFO     | snowda.__main__ | Historic SUMMA run complete; routing each ensemble member.
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/run_summa_historic.py", line 116, in <module>
+    main()
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/run_summa_historic.py", line 112, in main
+    run_summa_historic(args.config)
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/run_summa_historic.py", line 74, in run_summa_historic
+    route_ensemble_segment(
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/summa_common.py", line 411, in route_ensemble_segment
+    member_summa_timestep(summa_output_dir, member, sim_end),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/summa_common.py", line 58, in member_summa_timestep
+    raise FileNotFoundError(
+FileNotFoundError: No SUMMA timestep output for member 045 ending 2024_08_01 in /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T040042Z/summa.

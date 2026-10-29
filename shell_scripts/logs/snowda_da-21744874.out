@@ -1,0 +1,8 @@
+Job started: Thu Oct 29 00:00:41 EDT 2026
+Job ID: 21744874
+Node: a224.anvil.rcac.purdue.edu
+CPUs: 10
+Config: /home/x-dcasson/GitRepos/snowda/runs/examples/ross_summa_esp_da.yaml
+/home/x-dcasson/snowda/bin/python
+python: /home/x-dcasson/snowda/bin/python
+prefix: /home/x-dcasson/snowda

@@ -1,0 +1,1993 @@
+2026-10-29 15:54:03 | INFO     | snowda.__main__ | snowda SUMMA historic run starting
+2026-10-29 15:54:03 | INFO     | snowda.__main__ | Config: /home/x-dcasson/GitRepos/snowda/runs/examples/ross_summa_historic_ensemble.yaml
+2026-10-29 15:54:03 | INFO     | snowda.__main__ | Run dir: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z
+2026-10-29 15:54:03 | INFO     | snowda.__main__ | Wrote config snapshot: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/config.resolved.json
+2026-10-29 15:54:03 | INFO     | snowda.snowda.io.summa_ensemble | Creating output directories
+2026-10-29 15:54:03 | INFO     | snowda.snowda.io.summa_ensemble | Deleting forcing lists matching forcingFileList_ross_summa_historic_Ens*.txt in /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA
+/home/x-dcasson/GitRepos/pysumma/pysumma/decisions.py:4: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+2026-10-29 15:54:03 | INFO     | snowda.snowda.io.summa_ensemble | Deleting state files in /home/x-dcasson/GitRepos/snowda/models/ross_lumped/states
+2026-10-29 15:54:03 | INFO     | snowda.snowda.io.summa_ensemble | Writing ensemble file managers to /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z
+2026-10-29 15:54:03 | INFO     | snowda.snowda.io.summa_ensemble | Writing historic ensemble forcing lists
+2026-10-29 15:54:03 | INFO     | snowda.__main__ | Starting historic ensemble 1980-01-01 00:00:00 to 1990-08-01 00:00:00
+2026-10-29 15:54:03 | INFO     | snowda.snowda.workflows.summa_common | Copied SUMMA initial state coldState.nc to /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/states/coldState.nc
+2026-10-29 15:54:04 | INFO     | snowda.snowda.workflows.summa_common | SUMMA statePath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/states
+2026-10-29 15:54:04 | INFO     | snowda.__main__ | SUMMA outputPath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble starting: 50 members, 50 workers, suffix 1990_08_01
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 001 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 002 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 003 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 004 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 005 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 006 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 007 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 008 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 009 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 010 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 011 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 012 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 013 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 014 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 015 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 016 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 017 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 018 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 019 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 020 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 021 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 022 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 023 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 024 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 025 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 026 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 027 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 028 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 029 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 030 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 031 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 032 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 033 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 034 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 035 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 036 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 037 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 038 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 039 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 040 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 041 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 042 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 043 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 044 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 045 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 046 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 047 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 048 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 049 running
+2026-10-29 15:54:04 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 050 running
+2026-10-29 15:55:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 050 complete (1/50)
+2026-10-29 15:55:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 043 complete (2/50)
+2026-10-29 15:55:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 036 complete (3/50)
+2026-10-29 15:55:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 030 complete (4/50)
+2026-10-29 15:55:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 025 complete (5/50)
+2026-10-29 15:55:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 045 complete (6/50)
+2026-10-29 15:55:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 039 complete (7/50)
+2026-10-29 15:55:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 017 complete (8/50)
+2026-10-29 15:55:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 044 complete (9/50)
+2026-10-29 15:55:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 047 complete (10/50)
+2026-10-29 15:55:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 019 complete (11/50)
+2026-10-29 15:55:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 003 complete (12/50)
+2026-10-29 15:55:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 022 complete (13/50)
+2026-10-29 15:55:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 021 complete (14/50)
+2026-10-29 15:55:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 034 complete (15/50)
+2026-10-29 15:55:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 004 complete (16/50)
+2026-10-29 15:55:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 042 complete (17/50)
+2026-10-29 15:55:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 001 complete (18/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 023 complete (19/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 027 complete (20/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 015 complete (21/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 041 complete (22/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 014 complete (23/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 033 complete (24/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 037 complete (25/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 012 complete (26/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 018 complete (27/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 007 complete (28/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 016 complete (29/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 020 complete (30/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 013 complete (31/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 032 complete (32/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 049 complete (33/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 029 complete (34/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 028 complete (35/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 035 complete (36/50)
+2026-10-29 15:55:36 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 031 complete (37/50)
+2026-10-29 15:55:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 005 complete (38/50)
+2026-10-29 15:55:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 046 complete (39/50)
+2026-10-29 15:55:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 010 complete (40/50)
+2026-10-29 15:55:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 002 complete (41/50)
+2026-10-29 15:55:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 024 complete (42/50)
+2026-10-29 15:55:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 008 complete (43/50)
+2026-10-29 15:55:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 048 complete (44/50)
+2026-10-29 15:55:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 006 complete (45/50)
+2026-10-29 15:55:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 009 complete (46/50)
+2026-10-29 15:55:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 011 complete (47/50)
+2026-10-29 15:55:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 038 complete (48/50)
+2026-10-29 15:55:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 040 complete (49/50)
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 026 complete (50/50)
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble finished: 50/50 successful
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble summary: {'Success': ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025', '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041', '042', '043', '044', '045', '046', '047', '048', '049', '050'], 'Error': [], 'Other': []}
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA stdout (001): file_suffix is '1990_08_01'.
+file_master is '/home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/fileManagerEns001.txt'.
+   1 controlVersion: SUMMA_FILE_MANAGER_V3.0.0
+   2 simStartTime: 1980-01-01 00:00
+   3 simEndTime: 1990-08-01 00:00
+   4 tmZoneInfo: utcTime
+   5 outFilePrefix: 001
+   6 settingsPath: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
+   7 forcingPath: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/forcing/001/
+   8 outputPath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+   9 statePath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/states/
+  10 initConditionFile: coldState.nc
+  11 attributeFile: attributes.nc
+  12 trialParamFile: trialParams.nc
+  13 forcingListFile: forcingFileList_ross_summa_historic_Ens001.txt
+  14 decisionsFile: modelDecisions.txt
+  15 outputControlFile: outputControl.txt
+  16 globalHruParamFile: localParamInfo.txt
+  17 globalGruParamFile: basinParamInfo.txt
+  18 vegTableFile: TBL_VEGPARM.TBL
+  19 soilTableFile: TBL_SOILPARM.TBL
+  20 generalTableFile: TBL_GENPARM.TBL
+  21 noahmpTableFile: TBL_MPTABLE.TBL
+ WARNING: statistics at timestep level are meaningless, outputting instantaneous variable scalarRainfall in timestep output file 
+ WARNING: statistics at timestep level are meaningless, outputting instantaneous variable scalarSnowfall in timestep output file 
+decisions file =  /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/modelDecisions.txt
+   1 soilCatTbl: ROSETTA
+   2 vegeParTbl: MODIFIED_IGBP_MODIS_NOAH
+   3 soilStress: NoahType
+   4 stomResist: BallBerry
+   5 num_method: itertive
+   6 fDerivMeth: analytic
+   7 LAI_method: monTable
+   8 f_Richards: mixdform
+   9 groundwatr: bigBuckt
+  10 hc_profile: constant
+  11 bcUpprTdyn: nrg_flux
+  12 bcLowrTdyn: zeroFlux
+  13 bcUpprSoiH: liq_flux
+  14 bcLowrSoiH: drainage
+  15 veg_traits: Raupach_BLM1994
+  16 canopyEmis: difTrans
+  17 snowIncept: lightSnow
+  18 windPrfile: logBelowCanopy
+  19 astability: louisinv
+  20 canopySrad: CLM_2stream
+  21 alb_method: varDecay
+  22 compaction: consettl
+  23 snowLayers: CLM_2010
+  24 thCondSnow: jrdn1991
+  25 thCondSoil: funcSoilWet
+  26 spatial_gw: localColumn
+  27 subRouting: timeDlay
+  28 infRateMax: GreenAmpt
+  29 nrgConserv: enthalpyForm
+startTime: iyyy, im, id, ih, imin = 1980  1  1  0  0
+finshTime: iyyy, im, id, ih, imin = 1990  8  1  0  0
+WARNING: deprecated parameter 'upperBoundTheta' found in parameter input file -- ignoring this parameter
+WARNING: deprecated parameter 'lowerBoundTheta' found in parameter input file -- ignoring this parameter
+Skipping over LUTYPE = USGS
+Skipping over SLTYPE = STAS
+Skipping over SLTYPE = STAS-RUC
+satHydCond/WARNING: hydraulic conductivity for macropores [0.100000E-02] is less than the hydraulic conductivity for micropores [0.941684E-02]: resetting macropore conductivity to equal micropore value. Layer = 2
+satHydCond/WARNING: hydraulic conductivity for macropores [0.100000E-02] is less than the hydraulic conductivity for micropores [0.941684E-02]: resetting macropore conductivity to equal micropore value. Layer = 3
+satHydCond/WARNING: hydraulic conductivity for macropores [0.100000E-02] is less than the hydraulic conductivity for micropores [0.941684E-02]: resetting macropore conductivity to equal micropore value. Layer = 4
+ Created output file: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/001_1990_08_01_timestep.nc
+1980  2  1  0  0
+ step --->         1000
+1980  3  1  0  0
+ step --->         2000
+1980  4  1  0  0
+1980  5  1  0  0
+ step --->         3000
+1980  6  1  0  0
+ step --->         4000
+1980  7  1  0  0
+ step --->         5000
+1980  8  1  0  0
+1980  9  1  0  0
+ step --->         6000
+1980 10  1  0  0
+ step --->         7000
+1980 11  1  0  0
+ step --->         8000
+1980 12  1  0  0
+1981  1  1  0  0
+ step --->         9000
+1981  2  1  0  0
+ step --->        10000
+1981  3  1  0  0
+1981  4  1  0  0
+ step --->        11000
+1981  5  1  0  0
+ step --->        12000
+1981  6  1  0  0
+ step --->        13000
+1981  7  1  0  0
+1981  8  1  0  0
+ step --->        14000
+1981  9  1  0  0
+ step --->        15000
+1981 10  1  0  0
+ step --->        16000
+1981 11  1  0  0
+1981 12  1  0  0
+ step --->        17000
+1982  1  1  0  0
+ step --->        18000
+1982  2  1  0  0
+1982  3  1  0  0
+ step --->        19000
+1982  4  1  0  0
+ step --->        20000
+1982  5  1  0  0
+ step --->        21000
+1982  6  1  0  0
+1982  7  1  0  0
+ step --->        22000
+1982  8  1  0  0
+ step --->        23000
+1982  9  1  0  0
+ step --->        24000
+1982 10  1  0  0
+1982 11  1  0  0
+ step --->        25000
+1982 12  1  0  0
+ step --->        26000
+1983  1  1  0  0
+ step --->        27000
+1983  2  1  0  0
+1983  3  1  0  0
+ step --->        28000
+1983  4  1  0  0
+ step --->        29000
+1983  5  1  0  0
+1983  6  1  0  0
+ step --->        30000
+1983  7  1  0  0
+ step --->        31000
+1983  8  1  0  0
+ step --->        32000
+1983  9  1  0  0
+1983 10  1  0  0
+ step --->        33000
+1983 11  1  0  0
+ step --->        34000
+1983 12  1  0  0
+ step --->        35000
+1984  1  1  0  0
+1984  2  1  0  0
+ step --->        36000
+1984  3  1  0  0
+ step --->        37000
+1984  4  1  0  0
+1984  5  1  0  0
+ step --->        38000
+1984  6  1  0  0
+ step --->        39000
+1984  7  1  0  0
+ step --->        40000
+1984  8  1  0  0
+1984  9  1  0  0
+ step --->        41000
+1984 10  1  0  0
+ step --->        42000
+1984 11  1  0  0
+ step --->        43000
+1984 12  1  0  0
+1985  1  1  0  0
+ step --->        44000
+1985  2  1  0  0
+ step --->        45000
+1985  3  1  0  0
+ step --->        46000
+1985  4  1  0  0
+1985  5  1  0  0
+ step --->        47000
+1985  6  1  0  0
+ step --->        48000
+1985  7  1  0  0
+1985  8  1  0  0
+ step --->        49000
+1985  9  1  0  0
+ step --->        50000
+1985 10  1  0  0
+ step --->        51000
+1985 11  1  0  0
+1985 12  1  0  0
+ step --->        52000
+1986  1  1  0  0
+ step --->        53000
+1986  2  1  0  0
+ step --->        54000
+1986  3  1  0  0
+1986  4  1  0  0
+ step --->        55000
+1986  5  1  0  0
+ step --->        56000
+1986  6  1  0  0
+1986  7  1  0  0
+ step --->        57000
+1986  8  1  0  0
+ step --->        58000
+1986  9  1  0  0
+ step --->        59000
+1986 10  1  0  0
+1986 11  1  0  0
+ step --->        60000
+1986 12  1  0  0
+ step --->        61000
+1987  1  1  0  0
+ step --->        62000
+1987  2  1  0  0
+1987  3  1  0  0
+ step --->        63000
+1987  4  1  0  0
+ step --->        64000
+1987  5  1  0  0
+1987  6  1  0  0
+ step --->        65000
+1987  7  1  0  0
+ step --->        66000
+1987  8  1  0  0
+ step --->        67000
+1987  9  1  0  0
+1987 10  1  0  0
+ step --->        68000
+1987 11  1  0  0
+ step --->        69000
+1987 12  1  0  0
+ step --->        70000
+1988  1  1  0  0
+1988  2  1  0  0
+ step --->        71000
+1988  3  1  0  0
+ step --->        72000
+1988  4  1  0  0
+ step --->        73000
+1988  5  1  0  0
+1988  6  1  0  0
+ step --->        74000
+1988  7  1  0  0
+ step --->        75000
+1988  8  1  0  0
+1988  9  1  0  0
+ step --->        76000
+1988 10  1  0  0
+ step --->        77000
+1988 11  1  0  0
+ step --->        78000
+1988 12  1  0  0
+1989  1  1  0  0
+ step --->        79000
+1989  2  1  0  0
+ step --->        80000
+1989  3  1  0  0
+ step --->        81000
+1989  4  1  0  0
+1989  5  1  0  0
+ step --->        82000
+1989  6  1  0  0
+ step --->        83000
+1989  7  1  0  0
+ step --->        84000
+1989  8  1  0  0
+1989  9  1  0  0
+ step --->        85000
+1989 10  1  0  0
+ step --->        86000
+1989 11  1  0  0
+1989 12  1  0  0
+ step --->        87000
+1990  1  1  0  0
+ step --->        88000
+1990  2  1  0  0
+ step --->        89000
+1990  3  1  0  0
+1990  4  1  0  0
+ step --->        90000
+1990  5  1  0  0
+ step --->        91000
+1990  6  1  0  0
+ step --->        92000
+1990  7  1  0  0
+1990  8  1  0  0
+
+initial date/time = 2026-10-29  15:54:04.469
+  final date/time = 2026-10-29  15:55:35.953
+
+     elapsed init =   3.4000000E-02 s
+    fraction init =   3.7164969E-04
+
+    elapsed setup =    1.459000     s
+   fraction setup =   1.5948144E-02
+
+  elapsed restart =   5.0000000E-03 s
+ fraction restart =   5.4654366E-05
+
+     elapsed read =    20.85500     s
+    fraction read =   0.2279634    
+
+    elapsed write =    16.19300     s
+   fraction write =   0.1770036    
+
+  elapsed physics =    52.63000     s
+ fraction physics =   0.5752919    
+
+     elapsed time =    91.48400     s
+       or              1.524733     m
+       or             2.5412222E-02 h
+       or             1.0588426E-03 d
+
+   number threads =          1
+
+ FORTRAN STOP: finished simulation successfully.
+
+2026-10-29 15:55:38 | INFO     | snowda.__main__ | Historic SUMMA run complete; routing each ensemble member.
+2026-10-29 15:55:38 | INFO     | snowda.snowda.workflows.summa_common | mizuRoute segment starting: 50 members, 50 workers, 1980-01-01 00:00:00 to 1990-08-01 00:00:00
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/001/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/010/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/009/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/004/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/008/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/002/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/015/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/007/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/006/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/005/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/003/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/013/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/024/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/012/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/019/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/016/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/029/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/011/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/014/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/022/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/021/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/020/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/030/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/017/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/027/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/018/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/023/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/038/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/026/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/033/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/028/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/037/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/032/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/045/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/036/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/025/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/041/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/043/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/046/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/035/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/049/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/042/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/039/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/048/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/044/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/047/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/050/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/031/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/040/1990080100/mizuroute_segment.control
+2026-10-29 15:55:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/034/1990080100/mizuroute_segment.control
+2026-10-29 15:55:47 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/029/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/029/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/029/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 029_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 029_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 029_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+---- Read river network data --- 
+  Reading area into structure HRU
+
+stderr:
+(empty)
+2026-10-29 15:55:47 | ERROR    | snowda.snowda.workflows.summa_common | mizuRoute member 029 failed
+Traceback (most recent call last):
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/summa_common.py", line 441, in route_ensemble_segment
+    restart = future.result()
+              ^^^^^^^^^^^^^^^
+  File "/apps/anvil/external/apps/conda/2025.02/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/apps/anvil/external/apps/conda/2025.02/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/apps/anvil/external/apps/conda/2025.02/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/summa_common.py", line 499, in _route_summa_member
+    run_mizuroute(mizu_cfg.executable, control_file, log_stdout=mizu_cfg.log_output)
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/adapters/mizuroute.py", line 146, in run_mizuroute
+    raise RuntimeError(detail)
+RuntimeError: mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/029/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/029/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/029/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 029_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 029_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 029_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+---- Read river network data --- 
+  Reading area into structure HRU
+
+stderr:
+(empty)
+2026-10-29 15:55:47 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/011/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/011/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/011/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 011_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 011_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 011_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+---- Read river network data --- 
+
+stderr:
+(empty)
+2026-10-29 15:55:48 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/019/1990080100/mizuroute_segment.control
+stdout:
+(empty)
+stderr:
+(empty)
+2026-10-29 15:55:52 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/010/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/010/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/010/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 010_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 010_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 010_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+stderr:
+(empty)
+2026-10-29 15:55:55 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/034/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/034/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/034/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 034_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 034_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 034_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+stderr:
+(empty)
+2026-10-29 15:55:55 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/020/1990080100/mizuroute_segment.control
+stdout:
+(empty)
+stderr:
+(empty)
+2026-10-29 15:55:58 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/006/1990080100/mizuroute_segment.control
+stdout:
+(empty)
+stderr:
+(empty)
+2026-10-29 15:55:58 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/038/1990080100/mizuroute_segment.control
+stdout:
+(empty)
+stderr:
+(empty)
+2026-10-29 15:56:03 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/014/1990080100/mizuroute_segment.control
+stdout:
+(empty)
+stderr:
+(empty)
+2026-10-29 15:56:03 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/044/1990080100/mizuroute_segment.control
+stdout:
+(empty)
+stderr:
+(empty)
+2026-10-29 15:56:08 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/043/1990080100/mizuroute_segment.control
+stdout:
+(empty)
+stderr:
+(empty)
+2026-10-29 15:56:08 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/049/1990080100/mizuroute_segment.control
+stdout:
+(empty)
+stderr:
+(empty)
+2026-10-29 15:56:08 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/016/1990080100/mizuroute_segment.control
+stdout:
+(empty)
+stderr:
+(empty)
+2026-10-29 15:56:08 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/040/1990080100/mizuroute_segment.control
+stdout:
+(empty)
+stderr:
+(empty)
+2026-10-29 15:56:09 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/045/1990080100/mizuroute_segment.control
+stdout:
+(empty)
+stderr:
+(empty)
+2026-10-29 15:56:09 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/024/1990080100/mizuroute_segment.control
+stdout:
+(empty)
+stderr:
+(empty)
+2026-10-29 15:56:12 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/026/1990080100/mizuroute_segment.control
+stdout:
+(empty)
+stderr:
+(empty)
+2026-10-29 15:56:16 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/021/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/021/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/021/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 021_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 021_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 021_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+stderr:
+(empty)
+2026-10-29 15:56:16 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/047/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/047/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/047/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 047_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 047_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 047_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+stderr:
+(empty)
+2026-10-29 15:56:17 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/002/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/002/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/002/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 002_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 002_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 002_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+stderr:
+(empty)
+2026-10-29 15:56:21 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/028/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/028/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/028/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 028_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 028_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 028_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+stderr:
+(empty)
+2026-10-29 15:56:23 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/012/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/012/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/012/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 012_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 012_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 012_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+---- Read river network data --- 
+  Reading area into structure HRU
+  Reading hruId into structure HRU2SEG
+  Reading hruToSegId into structure HRU2SEG
+  Reading length into structure SEG
+  Reading slope into structure SEG
+  Reading segId into structure NTOPO
+  Reading downSegId into structure NTOPO
+
+stderr:
+(empty)
+2026-10-29 15:56:24 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/005/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/005/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/005/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 005_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 005_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 005_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+---- Read river network data --- 
+  Reading area into structure HRU
+  Reading hruId into structure HRU2SEG
+  Reading hruToSegId into structure HRU2SEG
+  Reading length into structure SEG
+  Reading slope into structure SEG
+  Reading segId into structure NTOPO
+  Reading downSegId into structure NTOPO
+
+stderr:
+(empty)
+2026-10-29 15:56:26 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/046/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/046/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/046/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 046_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 046_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 046_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+---- Read river network data --- 
+  Reading area into structure HRU
+  Reading hruId into structure HRU2SEG
+  Reading hruToSegId into structure HRU2SEG
+  Reading length into structure SEG
+  Reading slope into structure SEG
+  Reading segId into structure NTOPO
+  Reading downSegId into structure NTOPO
+
+stderr:
+(empty)
+2026-10-29 15:56:27 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/042/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/042/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/042/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 042_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 042_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 042_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+---- Read river network data --- 
+  Reading area into structure HRU
+  Reading hruId into structure HRU2SEG
+  Reading hruToSegId into structure HRU2SEG
+  Reading length into structure SEG
+  Reading slope into structure SEG
+  Reading segId into structure NTOPO
+  Reading downSegId into structure NTOPO
+
+stderr:
+(empty)
+2026-10-29 15:56:29 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/008/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/008/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/008/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 008_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 008_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 008_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+---- Read river network data --- 
+  Reading area into structure HRU
+  Reading hruId into structure HRU2SEG
+  Reading hruToSegId into structure HRU2SEG
+  Reading length into structure SEG
+  Reading slope into structure SEG
+  Reading segId into structure NTOPO
+  Reading downSegId into structure NTOPO
+
+stderr:
+(empty)
+2026-10-29 15:56:32 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/033/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/033/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/033/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 033_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 033_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 033_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+---- Read river network data --- 
+  Reading area into structure HRU
+  Reading hruId into structure HRU2SEG
+  Reading hruToSegId into structure HRU2SEG
+  Reading length into structure SEG
+  Reading slope into structure SEG
+  Reading segId into structure NTOPO
+  Reading downSegId into structure NTOPO
+
+stderr:
+(empty)
+2026-10-29 15:56:34 | ERROR    | snowda.snowda.adapters.mizuroute | mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/023/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/023/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/023/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 023_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 023_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 023_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+---- Read river network data --- 
+  Reading area into structure HRU
+  Reading hruId into structure HRU2SEG
+  Reading hruToSegId into structure HRU2SEG
+  Reading length into structure SEG
+  Reading slope into structure SEG
+  Reading segId into structure NTOPO
+  Reading downSegId into structure NTOPO
+
+stderr:
+(empty)
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/run_summa_historic.py", line 116, in <module>
+    main()
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/run_summa_historic.py", line 112, in main
+    run_summa_historic(args.config)
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/run_summa_historic.py", line 74, in run_summa_historic
+    route_ensemble_segment(
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/summa_common.py", line 441, in route_ensemble_segment
+    restart = future.result()
+              ^^^^^^^^^^^^^^^
+  File "/apps/anvil/external/apps/conda/2025.02/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/apps/anvil/external/apps/conda/2025.02/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/apps/anvil/external/apps/conda/2025.02/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/summa_common.py", line 499, in _route_summa_member
+    run_mizuroute(mizu_cfg.executable, control_file, log_stdout=mizu_cfg.log_output)
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/adapters/mizuroute.py", line 146, in run_mizuroute
+    raise RuntimeError(detail)
+RuntimeError: mizuRoute failed (exit -9): /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/029/1990080100/mizuroute_segment.control
+stdout:
+ (t_initf) Read in prof_inparm namelist from: dummy_empty_namelist
+ (t_initf) Using profile_disable= F  profile_timer=           4
+ (t_initf)  profile_depth_limit=       99999  profile_detail_limit=           1
+ (t_initf)  profile_barrier= F  profile_outpe_num=           0
+ (t_initf)  profile_outpe_stride=           1  profile_single_file= F
+ (t_initf)  profile_global_stats= T  profile_papi_enable= F
+
+---- read control file --- 
+ <ancil_dir> --> /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+ <input_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/summa/
+ <output_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/segments/029/1990080100/
+ <restart_dir> --> /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T195403Z/mizuroute/restart/029/
+ <param_nml> --> param.nml.default
+ <pio_netcdf_type> --> netcdf
+ <pio_netcdf_format> --> 64bit_offset
+ <case_name> --> Ross
+ <sim_start> --> 1980-01-01 00:00:00
+ <sim_end> --> 1990-07-31 23:00:00
+ <route_opt> --> 1
+ <newFileFrequency> --> single
+ <outputFrequency> --> daily
+ <basRunoff> --> F
+ <IRFroutedRunoff> --> T
+ <IRFvolume> --> F
+ <restart_write> --> never
+ <continue_run> --> F
+ <fname_state_in> --> ross_cold_state.nc
+ <fname_ntopOld> --> topology.nc
+ <dname_sseg> --> seg
+ <dname_nhru> --> hru
+ <seg_outlet> --> -9999
+ <varname_area> --> area
+ <varname_length> --> length
+ <varname_slope> --> slope
+ <varname_HRUid> --> hruId
+ <varname_hruSegId> --> hruToSegId
+ <varname_segId> --> segId
+ <varname_downSegId> --> downSegId
+ <fname_qsim> --> 029_1990_08_01_timestep.nc
+ <vname_qsim> --> averageRoutedRunoff
+ <units_qsim> --> m/s
+ <dt_qsim> --> 3600
+ <dname_time> --> time
+ <vname_time> --> time
+ <dname_hruid> --> hru
+ <vname_hruid> --> hruId
+ <ro_calendar> --> gregorian
+ <input_fillvalue> --> -9999
+ <is_remap> --> F
+ <doesBasinRoute> --> 0
+
+---- calendar --- 
+  calendar used for simulation and history output is the same as runoff input
+  calendar used in runoff input is provided in control file: gregorian
+  However, this will be overwritten the one read from 029_1990_08_01_timestep.nc
+
+---- time units --- 
+  time_unit for history files will be the same as runoff input
+  time_unit used in runoff input will be read from 029_1990_08_01_timestep.nc
+
+---- runoff unit --- 
+  runoff unit is provided as: m/s
+
+---- input time stamp --- 
+  Input time stamp <ro_time_stamp>:  start
+  The same time stamp is used for history output
+
+---- output/simulation time steps --- 
+  simulation time step <dt_qsim>:                 3600.0
+  history file freqeuncy <newFileFrequency>:  single
+  history output freqeuncy <outputFrequency>: daily
+
+---- mis. routing options --- 
+
+---- Read river network data --- 
+  Reading area into structure HRU
+
+stderr:
+(empty)
+[2026-10-29T16:30:47.125] error: Detected 28 oom_kill events in StepId=21757934.batch. Some of the step tasks have been OOM Killed.

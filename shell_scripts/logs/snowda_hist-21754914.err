@@ -1,0 +1,18 @@
+2026-10-29 12:15:27 | INFO     | snowda.__main__ | snowda SUMMA deterministic run starting
+2026-10-29 12:15:27 | INFO     | snowda.__main__ | Config: /home/x-dcasson/GitRepos/snowda/runs/examples/ross_summa_historic_ensemble_mean.yaml
+2026-10-29 12:15:27 | INFO     | snowda.__main__ | Run dir: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_deterministic/20261029T161527Z
+2026-10-29 12:15:27 | INFO     | snowda.__main__ | Wrote config snapshot: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_deterministic/20261029T161527Z/config.resolved.json
+2026-10-29 12:15:27 | INFO     | snowda.snowda.io.summa_ensemble | Creating output directories
+2026-10-29 12:15:27 | INFO     | snowda.snowda.io.summa_ensemble | Deleting forcing lists matching forcingFileList_ross_summa_deterministic_Ens*.txt in //home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA
+/home/x-dcasson/GitRepos/pysumma/pysumma/decisions.py:4: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+2026-10-29 12:15:27 | INFO     | snowda.snowda.io.summa_ensemble | Deleting state files in /home/x-dcasson/GitRepos/snowda/models/ross_lumped/states
+2026-10-29 12:15:27 | INFO     | snowda.snowda.io.summa_ensemble | Writing ensemble file managers to /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_deterministic/20261029T161527Z
+2026-10-29 12:15:27 | INFO     | snowda.snowda.io.summa_ensemble | Single-member run: using forcingListFile from base file manager.
+2026-10-29 12:15:27 | INFO     | snowda.__main__ | Starting SUMMA run 1980-01-01 00:00:00 to 2024-08-01 00:00:00 (freq_restart=e, progress=m)
+2026-10-29 12:15:27 | INFO     | snowda.snowda.workflows.summa_common | Copied SUMMA initial state coldState.nc to /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_deterministic/20261029T161527Z/states/coldState.nc
+2026-10-29 12:15:27 | INFO     | snowda.snowda.workflows.summa_common | SUMMA statePath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_deterministic/20261029T161527Z/states
+2026-10-29 12:15:27 | INFO     | snowda.__main__ | SUMMA outputPath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_deterministic/20261029T161527Z/summa
+2026-10-29 12:15:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble starting: 1 members, 1 workers, suffix 2024_08_01
+2026-10-29 12:15:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 001 running
+[2026-10-29T14:13:08.364] error: *** JOB 21754914 ON a159 CANCELLED AT 2026-10-29T14:13:08 DUE to SIGNAL Terminated ***

@@ -1,0 +1,824 @@
+2026-10-29 12:22:22 | INFO     | snowda.__main__ | snowda SUMMA DA run starting
+2026-10-29 12:22:22 | INFO     | snowda.__main__ | Config: /home/x-dcasson/GitRepos/snowda/runs/examples/ross_summa_esp_da.yaml
+2026-10-29 12:22:22 | INFO     | snowda.__main__ | Run dir: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z
+2026-10-29 12:22:22 | INFO     | snowda.__main__ | Wrote config snapshot: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/config.resolved.json
+2026-10-29 12:22:22 | INFO     | snowda.snowda.io.summa_ensemble | Creating output directories
+2026-10-29 12:22:22 | INFO     | snowda.snowda.io.summa_ensemble | Deleting forcing lists matching forcingFileList_ross_summa_esp_da_Ens*.txt in /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA
+/home/x-dcasson/GitRepos/pysumma/pysumma/decisions.py:4: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+2026-10-29 12:22:23 | INFO     | snowda.snowda.io.summa_ensemble | Deleting state files in /home/x-dcasson/GitRepos/snowda/models/ross_lumped/states
+2026-10-29 12:22:23 | INFO     | snowda.snowda.io.summa_ensemble | Writing ensemble file managers to /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z
+2026-10-29 12:22:23 | INFO     | snowda.snowda.io.summa_ensemble | Writing historic ensemble forcing lists
+2026-10-29 12:22:23 | INFO     | snowda.snowda.workflows.summa_common | Copied SUMMA initial state coldState.nc to /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/states/coldState.nc
+2026-10-29 12:22:23 | INFO     | snowda.snowda.workflows.summa_common | SUMMA statePath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/states
+2026-10-29 12:22:23 | INFO     | snowda.__main__ | SUMMA outputPath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/summa
+2026-10-29 12:22:24 | INFO     | snowda.__main__ | Starting ensemble run 1980-01-01 00:00:00 to 1980-03-01 00:00:00
+2026-10-29 12:22:24 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble starting: 44 members, 10 workers, suffix 1980_03_01
+2026-10-29 12:22:24 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 001 running
+2026-10-29 12:22:24 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 002 running
+2026-10-29 12:22:24 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 003 running
+2026-10-29 12:22:24 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 004 running
+2026-10-29 12:22:24 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 005 running
+2026-10-29 12:22:24 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 006 running
+2026-10-29 12:22:24 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 007 running
+2026-10-29 12:22:24 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 008 running
+2026-10-29 12:22:24 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 009 running
+2026-10-29 12:22:24 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 010 running
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 011 running
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 001 complete (1/44)
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 012 running
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 005 complete (2/44)
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 013 running
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 009 complete (3/44)
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 014 running
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 004 complete (4/44)
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 015 running
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 003 complete (5/44)
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 016 running
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 008 complete (6/44)
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 017 running
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 002 complete (7/44)
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 018 running
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 007 complete (8/44)
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 019 running
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 006 complete (9/44)
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 020 running
+2026-10-29 12:22:27 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 010 complete (10/44)
+2026-10-29 12:22:30 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 021 running
+2026-10-29 12:22:30 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 013 complete (11/44)
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 022 running
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 011 complete (12/44)
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 023 running
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 017 complete (13/44)
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 024 running
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 019 complete (14/44)
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 025 running
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 016 complete (15/44)
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 026 running
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 018 complete (16/44)
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 027 running
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 015 complete (17/44)
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 028 running
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 014 complete (18/44)
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 029 running
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 020 complete (19/44)
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 030 running
+2026-10-29 12:22:31 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 012 complete (20/44)
+2026-10-29 12:22:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 031 running
+2026-10-29 12:22:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 021 complete (21/44)
+2026-10-29 12:22:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 032 running
+2026-10-29 12:22:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 023 complete (22/44)
+2026-10-29 12:22:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 033 running
+2026-10-29 12:22:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 022 complete (23/44)
+2026-10-29 12:22:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 034 running
+2026-10-29 12:22:34 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 024 complete (24/44)
+2026-10-29 12:22:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 035 running
+2026-10-29 12:22:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 026 complete (25/44)
+2026-10-29 12:22:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 036 running
+2026-10-29 12:22:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 028 complete (26/44)
+2026-10-29 12:22:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 037 running
+2026-10-29 12:22:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 025 complete (27/44)
+2026-10-29 12:22:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 038 running
+2026-10-29 12:22:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 030 complete (28/44)
+2026-10-29 12:22:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 039 running
+2026-10-29 12:22:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 027 complete (29/44)
+2026-10-29 12:22:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 040 running
+2026-10-29 12:22:35 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 029 complete (30/44)
+2026-10-29 12:22:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 041 running
+2026-10-29 12:22:37 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 031 complete (31/44)
+2026-10-29 12:22:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 042 running
+2026-10-29 12:22:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 033 complete (32/44)
+2026-10-29 12:22:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 043 running
+2026-10-29 12:22:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 032 complete (33/44)
+2026-10-29 12:22:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 044 running
+2026-10-29 12:22:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 035 complete (34/44)
+2026-10-29 12:22:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 037 complete (35/44)
+2026-10-29 12:22:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 038 complete (36/44)
+2026-10-29 12:22:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 034 complete (37/44)
+2026-10-29 12:22:38 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 036 complete (38/44)
+2026-10-29 12:22:39 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 040 complete (39/44)
+2026-10-29 12:22:39 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 039 complete (40/44)
+2026-10-29 12:22:41 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 043 complete (41/44)
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 041 complete (42/44)
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 044 complete (43/44)
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 042 complete (44/44)
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble finished: 44/44 successful
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble summary: {'Success': ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025', '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041', '042', '043', '044'], 'Error': [], 'Other': []}
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.pysumma | SUMMA stdout (001): file_suffix is '1980_03_01'.
+file_master is '/home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/fileManagerEns001.txt'.
+   1 controlVersion: SUMMA_FILE_MANAGER_V3.0.0
+   2 simStartTime: 1980-01-01 00:00
+   3 simEndTime: 1980-03-01 00:00
+   4 tmZoneInfo: utcTime
+   5 outFilePrefix: 001
+   6 settingsPath: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
+   7 forcingPath: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/forcing/001/
+   8 outputPath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/summa/
+   9 statePath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/states/
+  10 initConditionFile: coldState.nc
+  11 attributeFile: attributes.nc
+  12 trialParamFile: trialParams.nc
+  13 forcingListFile: forcingFileList_ross_summa_esp_da_Ens001.txt
+  14 decisionsFile: modelDecisions.txt
+  15 outputControlFile: outputControl.txt
+  16 globalHruParamFile: localParamInfo.txt
+  17 globalGruParamFile: basinParamInfo.txt
+  18 vegTableFile: TBL_VEGPARM.TBL
+  19 soilTableFile: TBL_SOILPARM.TBL
+  20 generalTableFile: TBL_GENPARM.TBL
+  21 noahmpTableFile: TBL_MPTABLE.TBL
+ WARNING: statistics at timestep level are meaningless, outputting instantaneous variable scalarRainfall in timestep output file 
+ WARNING: statistics at timestep level are meaningless, outputting instantaneous variable scalarSnowfall in timestep output file 
+decisions file =  /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/modelDecisions.txt
+   1 soilCatTbl: ROSETTA
+   2 vegeParTbl: MODIFIED_IGBP_MODIS_NOAH
+   3 soilStress: NoahType
+   4 stomResist: BallBerry
+   5 num_method: itertive
+   6 fDerivMeth: analytic
+   7 LAI_method: monTable
+   8 f_Richards: mixdform
+   9 groundwatr: bigBuckt
+  10 hc_profile: constant
+  11 bcUpprTdyn: nrg_flux
+  12 bcLowrTdyn: zeroFlux
+  13 bcUpprSoiH: liq_flux
+  14 bcLowrSoiH: drainage
+  15 veg_traits: Raupach_BLM1994
+  16 canopyEmis: difTrans
+  17 snowIncept: lightSnow
+  18 windPrfile: logBelowCanopy
+  19 astability: louisinv
+  20 canopySrad: CLM_2stream
+  21 alb_method: varDecay
+  22 compaction: consettl
+  23 snowLayers: CLM_2010
+  24 thCondSnow: jrdn1991
+  25 thCondSoil: funcSoilWet
+  26 spatial_gw: localColumn
+  27 subRouting: timeDlay
+  28 infRateMax: GreenAmpt
+  29 nrgConserv: enthalpyForm
+startTime: iyyy, im, id, ih, imin = 1980  1  1  0  0
+finshTime: iyyy, im, id, ih, imin = 1980  3  1  0  0
+WARNING: deprecated parameter 'upperBoundTheta' found in parameter input file -- ignoring this parameter
+WARNING: deprecated parameter 'lowerBoundTheta' found in parameter input file -- ignoring this parameter
+Skipping over LUTYPE = USGS
+Skipping over SLTYPE = STAS
+Skipping over SLTYPE = STAS-RUC
+satHydCond/WARNING: hydraulic conductivity for macropores [0.100000E-02] is less than the hydraulic conductivity for micropores [0.941684E-02]: resetting macropore conductivity to equal micropore value. Layer = 2
+satHydCond/WARNING: hydraulic conductivity for macropores [0.100000E-02] is less than the hydraulic conductivity for micropores [0.941684E-02]: resetting macropore conductivity to equal micropore value. Layer = 3
+satHydCond/WARNING: hydraulic conductivity for macropores [0.100000E-02] is less than the hydraulic conductivity for micropores [0.941684E-02]: resetting macropore conductivity to equal micropore value. Layer = 4
+ Created output file: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/summa/001_1980_03_01_timestep.nc
+1980  1  2  0  0
+1980  1  3  0  0
+1980  1  4  0  0
+1980  1  5  0  0
+1980  1  6  0  0
+1980  1  7  0  0
+1980  1  8  0  0
+1980  1  9  0  0
+1980  1 10  0  0
+1980  1 11  0  0
+1980  1 12  0  0
+1980  1 13  0  0
+1980  1 14  0  0
+1980  1 15  0  0
+1980  1 16  0  0
+1980  1 17  0  0
+1980  1 18  0  0
+1980  1 19  0  0
+1980  1 20  0  0
+1980  1 21  0  0
+1980  1 22  0  0
+1980  1 23  0  0
+1980  1 24  0  0
+1980  1 25  0  0
+1980  1 26  0  0
+1980  1 27  0  0
+1980  1 28  0  0
+1980  1 29  0  0
+1980  1 30  0  0
+1980  1 31  0  0
+1980  2  1  0  0
+1980  2  2  0  0
+1980  2  3  0  0
+1980  2  4  0  0
+1980  2  5  0  0
+1980  2  6  0  0
+1980  2  7  0  0
+1980  2  8  0  0
+1980  2  9  0  0
+1980  2 10  0  0
+1980  2 11  0  0
+ step --->         1000
+1980  2 12  0  0
+1980  2 13  0  0
+1980  2 14  0  0
+1980  2 15  0  0
+1980  2 16  0  0
+1980  2 17  0  0
+1980  2 18  0  0
+1980  2 19  0  0
+1980  2 20  0  0
+1980  2 21  0  0
+1980  2 22  0  0
+1980  2 23  0  0
+1980  2 24  0  0
+1980  2 25  0  0
+1980  2 26  0  0
+1980  2 27  0  0
+1980  2 28  0  0
+1980  2 29  0  0
+1980  3  1  0  0
+
+initial date/time = 2026-10-29  12:22:24.306
+  final date/time = 2026-10-29  12:22:27.442
+
+     elapsed init =   1.5000000E-02 s
+    fraction init =   4.7831633E-03
+
+    elapsed setup =    1.302000     s
+   fraction setup =   0.4151786    
+
+  elapsed restart =   7.0000000E-03 s
+ fraction restart =   2.2321429E-03
+
+     elapsed read =   0.3960000     s
+    fraction read =   0.1262755    
+
+    elapsed write =   0.3070000     s
+   fraction write =   9.7895408E-02
+
+  elapsed physics =    1.101000     s
+ fraction physics =   0.3510842    
+
+     elapsed time =    3.136000     s
+       or             5.2266667E-02 m
+       or             8.7111111E-04 h
+       or             3.6296296E-05 d
+
+   number threads =          1
+
+ FORTRAN STOP: finished simulation successfully.
+
+2026-10-29 12:22:42 | INFO     | snowda.snowda.workflows.summa_common | mizuRoute segment starting: 44 members, 10 workers, 1980-01-01 00:00:00 to 1980-03-01 00:00:00
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/004/1980030100/mizuroute_segment.control
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/002/1980030100/mizuroute_segment.control
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/005/1980030100/mizuroute_segment.control
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/001/1980030100/mizuroute_segment.control
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/003/1980030100/mizuroute_segment.control
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/009/1980030100/mizuroute_segment.control
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/006/1980030100/mizuroute_segment.control
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/007/1980030100/mizuroute_segment.control
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/010/1980030100/mizuroute_segment.control
+2026-10-29 12:22:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/008/1980030100/mizuroute_segment.control
+2026-10-29 12:22:55 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/011/1980030100/mizuroute_segment.control
+2026-10-29 12:22:55 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/012/1980030100/mizuroute_segment.control
+2026-10-29 12:22:55 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/013/1980030100/mizuroute_segment.control
+2026-10-29 12:22:55 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/014/1980030100/mizuroute_segment.control
+2026-10-29 12:22:55 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/015/1980030100/mizuroute_segment.control
+2026-10-29 12:22:55 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/016/1980030100/mizuroute_segment.control
+2026-10-29 12:22:55 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/017/1980030100/mizuroute_segment.control
+2026-10-29 12:22:55 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/018/1980030100/mizuroute_segment.control
+2026-10-29 12:22:55 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/019/1980030100/mizuroute_segment.control
+2026-10-29 12:22:55 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/020/1980030100/mizuroute_segment.control
+2026-10-29 12:23:07 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/021/1980030100/mizuroute_segment.control
+2026-10-29 12:23:08 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/022/1980030100/mizuroute_segment.control
+2026-10-29 12:23:08 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/023/1980030100/mizuroute_segment.control
+2026-10-29 12:23:09 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/024/1980030100/mizuroute_segment.control
+2026-10-29 12:23:09 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/025/1980030100/mizuroute_segment.control
+2026-10-29 12:23:09 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/026/1980030100/mizuroute_segment.control
+2026-10-29 12:23:09 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/027/1980030100/mizuroute_segment.control
+2026-10-29 12:23:09 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/028/1980030100/mizuroute_segment.control
+2026-10-29 12:23:09 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/029/1980030100/mizuroute_segment.control
+2026-10-29 12:23:09 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/030/1980030100/mizuroute_segment.control
+2026-10-29 12:23:19 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/031/1980030100/mizuroute_segment.control
+2026-10-29 12:23:21 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/032/1980030100/mizuroute_segment.control
+2026-10-29 12:23:21 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/033/1980030100/mizuroute_segment.control
+2026-10-29 12:23:21 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/034/1980030100/mizuroute_segment.control
+2026-10-29 12:23:22 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/035/1980030100/mizuroute_segment.control
+2026-10-29 12:23:22 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/036/1980030100/mizuroute_segment.control
+2026-10-29 12:23:22 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/037/1980030100/mizuroute_segment.control
+2026-10-29 12:23:22 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/038/1980030100/mizuroute_segment.control
+2026-10-29 12:23:22 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/039/1980030100/mizuroute_segment.control
+2026-10-29 12:23:22 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/040/1980030100/mizuroute_segment.control
+2026-10-29 12:23:32 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/041/1980030100/mizuroute_segment.control
+2026-10-29 12:23:33 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/042/1980030100/mizuroute_segment.control
+2026-10-29 12:23:34 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/043/1980030100/mizuroute_segment.control
+2026-10-29 12:23:34 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/044/1980030100/mizuroute_segment.control
+2026-10-29 12:23:40 | INFO     | snowda.snowda.io.swe_obs | Member 001 scalarSWE at 1980-03-01 00:00:00 is {1: 60.23975339413555}
+2026-10-29 12:23:40 | INFO     | snowda.snowda.io.swe_obs | Member 002 scalarSWE at 1980-03-01 00:00:00 is {1: 43.196820922715375}
+2026-10-29 12:23:40 | INFO     | snowda.snowda.io.swe_obs | Member 003 scalarSWE at 1980-03-01 00:00:00 is {1: 179.34795478460467}
+2026-10-29 12:23:41 | INFO     | snowda.snowda.io.swe_obs | Member 004 scalarSWE at 1980-03-01 00:00:00 is {1: 31.561842882208694}
+2026-10-29 12:23:41 | INFO     | snowda.snowda.io.swe_obs | Member 005 scalarSWE at 1980-03-01 00:00:00 is {1: 51.69793708409671}
+2026-10-29 12:23:41 | INFO     | snowda.snowda.io.swe_obs | Member 006 scalarSWE at 1980-03-01 00:00:00 is {1: 53.06712369733755}
+2026-10-29 12:23:41 | INFO     | snowda.snowda.io.swe_obs | Member 007 scalarSWE at 1980-03-01 00:00:00 is {1: 46.79634916699925}
+2026-10-29 12:23:41 | INFO     | snowda.snowda.io.swe_obs | Member 008 scalarSWE at 1980-03-01 00:00:00 is {1: 46.36151369322191}
+2026-10-29 12:23:41 | INFO     | snowda.snowda.io.swe_obs | Member 009 scalarSWE at 1980-03-01 00:00:00 is {1: 87.2861240582916}
+2026-10-29 12:23:42 | INFO     | snowda.snowda.io.swe_obs | Member 010 scalarSWE at 1980-03-01 00:00:00 is {1: 26.87803311038092}
+2026-10-29 12:23:42 | INFO     | snowda.snowda.io.swe_obs | Member 011 scalarSWE at 1980-03-01 00:00:00 is {1: 32.72561280874413}
+2026-10-29 12:23:42 | INFO     | snowda.snowda.io.swe_obs | Member 012 scalarSWE at 1980-03-01 00:00:00 is {1: 89.72235349648571}
+2026-10-29 12:23:42 | INFO     | snowda.snowda.io.swe_obs | Member 013 scalarSWE at 1980-03-01 00:00:00 is {1: 72.07388451608355}
+2026-10-29 12:23:42 | INFO     | snowda.snowda.io.swe_obs | Member 014 scalarSWE at 1980-03-01 00:00:00 is {1: 84.63124544804498}
+2026-10-29 12:23:42 | INFO     | snowda.snowda.io.swe_obs | Member 015 scalarSWE at 1980-03-01 00:00:00 is {1: 41.88901570369116}
+2026-10-29 12:23:43 | INFO     | snowda.snowda.io.swe_obs | Member 016 scalarSWE at 1980-03-01 00:00:00 is {1: 40.99354245330471}
+2026-10-29 12:23:43 | INFO     | snowda.snowda.io.swe_obs | Member 017 scalarSWE at 1980-03-01 00:00:00 is {1: 27.100694361914613}
+2026-10-29 12:23:43 | INFO     | snowda.snowda.io.swe_obs | Member 018 scalarSWE at 1980-03-01 00:00:00 is {1: 45.033143280951286}
+2026-10-29 12:23:43 | INFO     | snowda.snowda.io.swe_obs | Member 019 scalarSWE at 1980-03-01 00:00:00 is {1: 79.85868759980514}
+2026-10-29 12:23:43 | INFO     | snowda.snowda.io.swe_obs | Member 020 scalarSWE at 1980-03-01 00:00:00 is {1: 231.66324495253184}
+2026-10-29 12:23:44 | INFO     | snowda.snowda.io.swe_obs | Member 021 scalarSWE at 1980-03-01 00:00:00 is {1: 118.10179614872374}
+2026-10-29 12:23:44 | INFO     | snowda.snowda.io.swe_obs | Member 022 scalarSWE at 1980-03-01 00:00:00 is {1: 58.321851369866025}
+2026-10-29 12:23:44 | INFO     | snowda.snowda.io.swe_obs | Member 023 scalarSWE at 1980-03-01 00:00:00 is {1: 59.31916288132324}
+2026-10-29 12:23:44 | INFO     | snowda.snowda.io.swe_obs | Member 024 scalarSWE at 1980-03-01 00:00:00 is {1: 113.66346309413113}
+2026-10-29 12:23:44 | INFO     | snowda.snowda.io.swe_obs | Member 025 scalarSWE at 1980-03-01 00:00:00 is {1: 52.64098361406969}
+2026-10-29 12:23:44 | INFO     | snowda.snowda.io.swe_obs | Member 026 scalarSWE at 1980-03-01 00:00:00 is {1: 56.49959050902004}
+2026-10-29 12:23:45 | INFO     | snowda.snowda.io.swe_obs | Member 027 scalarSWE at 1980-03-01 00:00:00 is {1: 39.317474352257086}
+2026-10-29 12:23:45 | INFO     | snowda.snowda.io.swe_obs | Member 028 scalarSWE at 1980-03-01 00:00:00 is {1: 56.9622783122419}
+2026-10-29 12:23:45 | INFO     | snowda.snowda.io.swe_obs | Member 029 scalarSWE at 1980-03-01 00:00:00 is {1: 70.34999929512944}
+2026-10-29 12:23:45 | INFO     | snowda.snowda.io.swe_obs | Member 030 scalarSWE at 1980-03-01 00:00:00 is {1: 70.17407260672383}
+2026-10-29 12:23:45 | INFO     | snowda.snowda.io.swe_obs | Member 031 scalarSWE at 1980-03-01 00:00:00 is {1: 39.82938930405257}
+2026-10-29 12:23:45 | INFO     | snowda.snowda.io.swe_obs | Member 032 scalarSWE at 1980-03-01 00:00:00 is {1: 96.75658084723014}
+2026-10-29 12:23:46 | INFO     | snowda.snowda.io.swe_obs | Member 033 scalarSWE at 1980-03-01 00:00:00 is {1: 83.73824183659028}
+2026-10-29 12:23:46 | INFO     | snowda.snowda.io.swe_obs | Member 034 scalarSWE at 1980-03-01 00:00:00 is {1: 43.75106481157798}
+2026-10-29 12:23:46 | INFO     | snowda.snowda.io.swe_obs | Member 035 scalarSWE at 1980-03-01 00:00:00 is {1: 96.65220485981406}
+2026-10-29 12:23:46 | INFO     | snowda.snowda.io.swe_obs | Member 036 scalarSWE at 1980-03-01 00:00:00 is {1: 103.18760852386636}
+2026-10-29 12:23:46 | INFO     | snowda.snowda.io.swe_obs | Member 037 scalarSWE at 1980-03-01 00:00:00 is {1: 45.72053357904878}
+2026-10-29 12:23:46 | INFO     | snowda.snowda.io.swe_obs | Member 038 scalarSWE at 1980-03-01 00:00:00 is {1: 92.41130961934427}
+2026-10-29 12:23:47 | INFO     | snowda.snowda.io.swe_obs | Member 039 scalarSWE at 1980-03-01 00:00:00 is {1: 31.493760662698694}
+2026-10-29 12:23:47 | INFO     | snowda.snowda.io.swe_obs | Member 040 scalarSWE at 1980-03-01 00:00:00 is {1: 60.36784442221601}
+2026-10-29 12:23:47 | INFO     | snowda.snowda.io.swe_obs | Member 041 scalarSWE at 1980-03-01 00:00:00 is {1: 23.31209536690227}
+2026-10-29 12:23:47 | INFO     | snowda.snowda.io.swe_obs | Member 042 scalarSWE at 1980-03-01 00:00:00 is {1: 48.50372318145672}
+2026-10-29 12:23:47 | INFO     | snowda.snowda.io.swe_obs | Member 043 scalarSWE at 1980-03-01 00:00:00 is {1: 90.35849948579681}
+2026-10-29 12:23:47 | INFO     | snowda.snowda.io.swe_obs | Member 044 scalarSWE at 1980-03-01 00:00:00 is {1: 69.45323527209891}
+2026-10-29 12:23:48 | INFO     | snowda.snowda.core.particle_filter | Particle weights calculated for 1980-03-01 00:00:00
+2026-10-29 12:23:48 | INFO     | snowda.snowda.utils.timing | Function update_particle_weights completed in 0.0287 seconds
+2026-10-29 12:23:48 | INFO     | snowda.__main__ | Wrote SWE weights: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/assimilation/1980_03_01_swe_weights.csv
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 001 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/001/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 002 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/005/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 003 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/007/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 004 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/009/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 005 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/009/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 006 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/012/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 007 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/012/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 008 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/012/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 009 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/013/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 010 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/014/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 011 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/014/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 012 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/018/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 013 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/019/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 014 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/021/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 015 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/021/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 016 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/022/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 017 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/024/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 018 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/024/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 019 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/024/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 020 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/025/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 021 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/028/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 022 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/029/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 023 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/030/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 024 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/032/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 025 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/032/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 026 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/032/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 027 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/033/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 028 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/033/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 029 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/035/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 030 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/035/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 031 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/035/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 032 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/035/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 033 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/036/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 034 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/036/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 035 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/036/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 036 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/036/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 037 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/036/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 038 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/038/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 039 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/038/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 040 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/038/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 041 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/041/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 042 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/043/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 043 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/043/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.summa_common | Assigned 044 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/044/Ross.r.1980-03-01-00000.nc
+2026-10-29 12:23:48 | INFO     | snowda.snowda.workflows.esp | Starting balanced ESP traces for 1980-03-01 00:00:00.
+2026-10-29 12:25:26 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m001/1980030100/2002/mizuroute/mizuroute_2002.control
+2026-10-29 12:27:08 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m002/1980030100/1994/mizuroute/mizuroute_1994.control
+2026-10-29 12:28:51 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m003/1980030100/1987/mizuroute/mizuroute_1987.control
+2026-10-29 12:30:32 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m004/1980030100/2013/mizuroute/mizuroute_2013.control
+2026-10-29 12:32:14 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m005/1980030100/1995/mizuroute/mizuroute_1995.control
+2026-10-29 12:34:00 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m006/1980030100/2019/mizuroute/mizuroute_2019.control
+2026-10-29 12:35:48 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m007/1980030100/2016/mizuroute/mizuroute_2016.control
+2026-10-29 12:37:37 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m008/1980030100/2012/mizuroute/mizuroute_2012.control
+2026-10-29 12:39:26 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m009/1980030100/1998/mizuroute/mizuroute_1998.control
+2026-10-29 12:41:15 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m010/1980030100/1996/mizuroute/mizuroute_1996.control
+2026-10-29 12:43:03 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m011/1980030100/1986/mizuroute/mizuroute_1986.control
+2026-10-29 12:44:49 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m012/1980030100/2014/mizuroute/mizuroute_2014.control
+2026-10-29 12:46:30 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m013/1980030100/1980/mizuroute/mizuroute_1980.control
+2026-10-29 12:48:15 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m014/1980030100/2017/mizuroute/mizuroute_2017.control
+2026-10-29 12:49:58 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m015/1980030100/2005/mizuroute/mizuroute_2005.control
+2026-10-29 12:51:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m016/1980030100/2022/mizuroute/mizuroute_2022.control
+2026-10-29 12:53:26 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m017/1980030100/2007/mizuroute/mizuroute_2007.control
+2026-10-29 12:55:08 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m018/1980030100/1985/mizuroute/mizuroute_1985.control
+2026-10-29 12:56:50 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m019/1980030100/2006/mizuroute/mizuroute_2006.control
+2026-10-29 12:58:34 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m020/1980030100/2023/mizuroute/mizuroute_2023.control
+2026-10-29 13:00:18 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m021/1980030100/1992/mizuroute/mizuroute_1992.control
+2026-10-29 13:02:02 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m022/1980030100/2000/mizuroute/mizuroute_2000.control
+2026-10-29 13:03:50 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m023/1980030100/1997/mizuroute/mizuroute_1997.control
+2026-10-29 13:05:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m024/1980030100/1990/mizuroute/mizuroute_1990.control
+2026-10-29 13:07:25 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m025/1980030100/2018/mizuroute/mizuroute_2018.control
+2026-10-29 13:09:12 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m026/1980030100/1993/mizuroute/mizuroute_1993.control
+2026-10-29 13:11:00 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m027/1980030100/2010/mizuroute/mizuroute_2010.control
+2026-10-29 13:12:49 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m028/1980030100/1981/mizuroute/mizuroute_1981.control
+2026-10-29 13:14:37 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m029/1980030100/1984/mizuroute/mizuroute_1984.control
+2026-10-29 13:16:22 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m030/1980030100/2008/mizuroute/mizuroute_2008.control
+2026-10-29 13:18:08 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m031/1980030100/2003/mizuroute/mizuroute_2003.control
+2026-10-29 13:19:54 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m032/1980030100/1988/mizuroute/mizuroute_1988.control
+2026-10-29 13:21:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m033/1980030100/2011/mizuroute/mizuroute_2011.control
+2026-10-29 13:23:22 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m034/1980030100/1983/mizuroute/mizuroute_1983.control
+2026-10-29 13:25:06 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m035/1980030100/1991/mizuroute/mizuroute_1991.control
+2026-10-29 13:26:52 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m036/1980030100/1989/mizuroute/mizuroute_1989.control
+2026-10-29 13:28:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m037/1980030100/2021/mizuroute/mizuroute_2021.control
+2026-10-29 13:30:23 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m038/1980030100/2009/mizuroute/mizuroute_2009.control
+2026-10-29 13:32:09 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m039/1980030100/1982/mizuroute/mizuroute_1982.control
+2026-10-29 13:33:54 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m040/1980030100/2024/mizuroute/mizuroute_2024.control
+2026-10-29 13:35:40 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m041/1980030100/2015/mizuroute/mizuroute_2015.control
+2026-10-29 13:37:26 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m042/1980030100/2001/mizuroute/mizuroute_2001.control
+2026-10-29 13:39:18 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m043/1980030100/1999/mizuroute/mizuroute_1999.control
+2026-10-29 13:41:06 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m044/1980030100/2020/mizuroute/mizuroute_2020.control
+2026-10-29 13:41:09 | INFO     | snowda.__main__ | Starting ensemble run 1980-03-01 00:00:00 to 1980-04-01 00:00:00
+2026-10-29 13:41:09 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble starting: 44 members, 10 workers, suffix 1980_04_01
+2026-10-29 13:41:09 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 001 running
+2026-10-29 13:41:09 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 002 running
+2026-10-29 13:41:09 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 003 running
+2026-10-29 13:41:09 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 004 running
+2026-10-29 13:41:09 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 005 running
+2026-10-29 13:41:09 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 006 running
+2026-10-29 13:41:09 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 007 running
+2026-10-29 13:41:09 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 008 running
+2026-10-29 13:41:09 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 009 running
+2026-10-29 13:41:09 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 010 running
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 011 running
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 009 complete (1/44)
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 012 running
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 001 complete (2/44)
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 013 running
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 007 complete (3/44)
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 014 running
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 004 complete (4/44)
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 015 running
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 010 complete (5/44)
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 016 running
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 005 complete (6/44)
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 017 running
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 008 complete (7/44)
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 018 running
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 002 complete (8/44)
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 019 running
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 003 complete (9/44)
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 020 running
+2026-10-29 13:41:12 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 006 complete (10/44)
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 021 running
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 019 complete (11/44)
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 022 running
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 011 complete (12/44)
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 023 running
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 014 complete (13/44)
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 024 running
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 015 complete (14/44)
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 025 running
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 020 complete (15/44)
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 026 running
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 017 complete (16/44)
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 027 running
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 013 complete (17/44)
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 028 running
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 018 complete (18/44)
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 029 running
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 012 complete (19/44)
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 030 running
+2026-10-29 13:41:15 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 016 complete (20/44)
+2026-10-29 13:41:17 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 031 running
+2026-10-29 13:41:17 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 025 complete (21/44)
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 032 running
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 022 complete (22/44)
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 033 running
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 024 complete (23/44)
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 034 running
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 023 complete (24/44)
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 035 running
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 030 complete (25/44)
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 036 running
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 029 complete (26/44)
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 037 running
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 021 complete (27/44)
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 038 running
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 026 complete (28/44)
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 039 running
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 028 complete (29/44)
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 040 running
+2026-10-29 13:41:18 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 027 complete (30/44)
+2026-10-29 13:41:20 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 041 running
+2026-10-29 13:41:20 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 034 complete (31/44)
+2026-10-29 13:41:20 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 042 running
+2026-10-29 13:41:20 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 033 complete (32/44)
+2026-10-29 13:41:20 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 043 running
+2026-10-29 13:41:20 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 031 complete (33/44)
+2026-10-29 13:41:20 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 044 running
+2026-10-29 13:41:20 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 035 complete (34/44)
+2026-10-29 13:41:20 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 032 complete (35/44)
+2026-10-29 13:41:20 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 038 complete (36/44)
+2026-10-29 13:41:21 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 036 complete (37/44)
+2026-10-29 13:41:21 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 037 complete (38/44)
+2026-10-29 13:41:21 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 040 complete (39/44)
+2026-10-29 13:41:21 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 039 complete (40/44)
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 044 complete (41/44)
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 041 complete (42/44)
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 043 complete (43/44)
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 042 complete (44/44)
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble finished: 44/44 successful
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble summary: {'Success': ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025', '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041', '042', '043', '044'], 'Error': [], 'Other': []}
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.pysumma | SUMMA stdout (001): file_suffix is '1980_04_01'.
+file_master is '/home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/fileManagerEns001.txt'.
+   1 controlVersion: SUMMA_FILE_MANAGER_V3.0.0
+   2 simStartTime: 1980-03-01 00:00
+   3 simEndTime: 1980-04-01 00:00
+   4 tmZoneInfo: utcTime
+   5 outFilePrefix: 001
+   6 settingsPath: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
+   7 forcingPath: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/forcing/001/
+   8 outputPath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/summa/
+   9 statePath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/states/
+  10 initConditionFile: 001_restart_1980030100_1980_03_01.nc
+  11 attributeFile: attributes.nc
+  12 trialParamFile: trialParams.nc
+  13 forcingListFile: forcingFileList_ross_summa_esp_da_Ens001.txt
+  14 decisionsFile: modelDecisions.txt
+  15 outputControlFile: outputControl.txt
+  16 globalHruParamFile: localParamInfo.txt
+  17 globalGruParamFile: basinParamInfo.txt
+  18 vegTableFile: TBL_VEGPARM.TBL
+  19 soilTableFile: TBL_SOILPARM.TBL
+  20 generalTableFile: TBL_GENPARM.TBL
+  21 noahmpTableFile: TBL_MPTABLE.TBL
+ WARNING: statistics at timestep level are meaningless, outputting instantaneous variable scalarRainfall in timestep output file 
+ WARNING: statistics at timestep level are meaningless, outputting instantaneous variable scalarSnowfall in timestep output file 
+decisions file =  /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/modelDecisions.txt
+   1 soilCatTbl: ROSETTA
+   2 vegeParTbl: MODIFIED_IGBP_MODIS_NOAH
+   3 soilStress: NoahType
+   4 stomResist: BallBerry
+   5 num_method: itertive
+   6 fDerivMeth: analytic
+   7 LAI_method: monTable
+   8 f_Richards: mixdform
+   9 groundwatr: bigBuckt
+  10 hc_profile: constant
+  11 bcUpprTdyn: nrg_flux
+  12 bcLowrTdyn: zeroFlux
+  13 bcUpprSoiH: liq_flux
+  14 bcLowrSoiH: drainage
+  15 veg_traits: Raupach_BLM1994
+  16 canopyEmis: difTrans
+  17 snowIncept: lightSnow
+  18 windPrfile: logBelowCanopy
+  19 astability: louisinv
+  20 canopySrad: CLM_2stream
+  21 alb_method: varDecay
+  22 compaction: consettl
+  23 snowLayers: CLM_2010
+  24 thCondSnow: jrdn1991
+  25 thCondSoil: funcSoilWet
+  26 spatial_gw: localColumn
+  27 subRouting: timeDlay
+  28 infRateMax: GreenAmpt
+  29 nrgConserv: enthalpyForm
+startTime: iyyy, im, id, ih, imin = 1980  3  1  0  0
+finshTime: iyyy, im, id, ih, imin = 1980  4  1  0  0
+WARNING: deprecated parameter 'upperBoundTheta' found in parameter input file -- ignoring this parameter
+WARNING: deprecated parameter 'lowerBoundTheta' found in parameter input file -- ignoring this parameter
+Skipping over LUTYPE = USGS
+Skipping over SLTYPE = STAS
+Skipping over SLTYPE = STAS-RUC
+satHydCond/WARNING: hydraulic conductivity for macropores [0.100000E-02] is less than the hydraulic conductivity for micropores [0.941684E-02]: resetting macropore conductivity to equal micropore value. Layer = 5
+satHydCond/WARNING: hydraulic conductivity for macropores [0.100000E-02] is less than the hydraulic conductivity for micropores [0.941684E-02]: resetting macropore conductivity to equal micropore value. Layer = 6
+satHydCond/WARNING: hydraulic conductivity for macropores [0.100000E-02] is less than the hydraulic conductivity for micropores [0.941684E-02]: resetting macropore conductivity to equal micropore value. Layer = 7
+ Created output file: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/summa/001_1980_04_01_timestep.nc
+1980  3  2  0  0
+1980  3  3  0  0
+1980  3  4  0  0
+1980  3  5  0  0
+1980  3  6  0  0
+1980  3  7  0  0
+1980  3  8  0  0
+1980  3  9  0  0
+1980  3 10  0  0
+1980  3 11  0  0
+1980  3 12  0  0
+1980  3 13  0  0
+1980  3 14  0  0
+1980  3 15  0  0
+1980  3 16  0  0
+1980  3 17  0  0
+1980  3 18  0  0
+1980  3 19  0  0
+1980  3 20  0  0
+1980  3 21  0  0
+1980  3 22  0  0
+1980  3 23  0  0
+1980  3 24  0  0
+1980  3 25  0  0
+1980  3 26  0  0
+1980  3 27  0  0
+1980  3 28  0  0
+1980  3 29  0  0
+1980  3 30  0  0
+1980  3 31  0  0
+1980  4  1  0  0
+
+initial date/time = 2026-10-29  13:41:09.843
+  final date/time = 2026-10-29  13:41:12.334
+
+     elapsed init =   1.4000000E-02 s
+    fraction init =   5.6202328E-03
+
+    elapsed setup =    1.480000     s
+   fraction setup =   0.5941389    
+
+  elapsed restart =   7.0000000E-03 s
+ fraction restart =   2.8101164E-03
+
+     elapsed read =   0.2900000     s
+    fraction read =   0.1164191    
+
+    elapsed write =   0.1830000     s
+   fraction write =   7.3464472E-02
+
+  elapsed physics =   0.5110000     s
+ fraction physics =   0.2051385    
+
+     elapsed time =    2.491000     s
+       or             4.1516667E-02 m
+       or             6.9194444E-04 h
+       or             2.8831019E-05 d
+
+   number threads =          1
+
+ FORTRAN STOP: finished simulation successfully.
+
+2026-10-29 13:41:23 | INFO     | snowda.snowda.workflows.summa_common | mizuRoute segment starting: 44 members, 10 workers, 1980-03-01 00:00:00 to 1980-04-01 00:00:00
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/003/1980040100/mizuroute_segment.control
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/006/1980040100/mizuroute_segment.control
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/002/1980040100/mizuroute_segment.control
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/004/1980040100/mizuroute_segment.control
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/010/1980040100/mizuroute_segment.control
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/005/1980040100/mizuroute_segment.control
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/008/1980040100/mizuroute_segment.control
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/001/1980040100/mizuroute_segment.control
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/007/1980040100/mizuroute_segment.control
+2026-10-29 13:41:23 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/009/1980040100/mizuroute_segment.control
+2026-10-29 13:41:32 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/011/1980040100/mizuroute_segment.control
+2026-10-29 13:41:33 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/012/1980040100/mizuroute_segment.control
+2026-10-29 13:41:33 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/013/1980040100/mizuroute_segment.control
+2026-10-29 13:41:33 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/014/1980040100/mizuroute_segment.control
+2026-10-29 13:41:33 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/015/1980040100/mizuroute_segment.control
+2026-10-29 13:41:33 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/016/1980040100/mizuroute_segment.control
+2026-10-29 13:41:33 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/017/1980040100/mizuroute_segment.control
+2026-10-29 13:41:33 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/018/1980040100/mizuroute_segment.control
+2026-10-29 13:41:33 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/019/1980040100/mizuroute_segment.control
+2026-10-29 13:41:33 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/020/1980040100/mizuroute_segment.control
+2026-10-29 13:41:41 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/021/1980040100/mizuroute_segment.control
+2026-10-29 13:41:41 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/022/1980040100/mizuroute_segment.control
+2026-10-29 13:41:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/023/1980040100/mizuroute_segment.control
+2026-10-29 13:41:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/024/1980040100/mizuroute_segment.control
+2026-10-29 13:41:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/025/1980040100/mizuroute_segment.control
+2026-10-29 13:41:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/026/1980040100/mizuroute_segment.control
+2026-10-29 13:41:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/027/1980040100/mizuroute_segment.control
+2026-10-29 13:41:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/028/1980040100/mizuroute_segment.control
+2026-10-29 13:41:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/029/1980040100/mizuroute_segment.control
+2026-10-29 13:41:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/030/1980040100/mizuroute_segment.control
+2026-10-29 13:41:50 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/031/1980040100/mizuroute_segment.control
+2026-10-29 13:41:50 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/032/1980040100/mizuroute_segment.control
+2026-10-29 13:41:51 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/033/1980040100/mizuroute_segment.control
+2026-10-29 13:41:51 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/034/1980040100/mizuroute_segment.control
+2026-10-29 13:41:52 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/035/1980040100/mizuroute_segment.control
+2026-10-29 13:41:52 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/036/1980040100/mizuroute_segment.control
+2026-10-29 13:41:52 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/037/1980040100/mizuroute_segment.control
+2026-10-29 13:41:52 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/038/1980040100/mizuroute_segment.control
+2026-10-29 13:41:52 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/039/1980040100/mizuroute_segment.control
+2026-10-29 13:41:52 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/040/1980040100/mizuroute_segment.control
+2026-10-29 13:41:59 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/041/1980040100/mizuroute_segment.control
+2026-10-29 13:42:00 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/042/1980040100/mizuroute_segment.control
+2026-10-29 13:42:00 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/043/1980040100/mizuroute_segment.control
+2026-10-29 13:42:00 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/segments/044/1980040100/mizuroute_segment.control
+2026-10-29 13:42:04 | INFO     | snowda.snowda.io.swe_obs | Member 001 scalarSWE at 1980-04-01 00:00:00 is {1: 105.72174444735141}
+2026-10-29 13:42:05 | INFO     | snowda.snowda.io.swe_obs | Member 002 scalarSWE at 1980-04-01 00:00:00 is {1: 65.32140413122235}
+2026-10-29 13:42:05 | INFO     | snowda.snowda.io.swe_obs | Member 003 scalarSWE at 1980-04-01 00:00:00 is {1: 59.034376109891625}
+2026-10-29 13:42:05 | INFO     | snowda.snowda.io.swe_obs | Member 004 scalarSWE at 1980-04-01 00:00:00 is {1: 100.30526744933667}
+2026-10-29 13:42:05 | INFO     | snowda.snowda.io.swe_obs | Member 005 scalarSWE at 1980-04-01 00:00:00 is {1: 134.755970927699}
+2026-10-29 13:42:05 | INFO     | snowda.snowda.io.swe_obs | Member 006 scalarSWE at 1980-04-01 00:00:00 is {1: 107.42933321831765}
+2026-10-29 13:42:05 | INFO     | snowda.snowda.io.swe_obs | Member 007 scalarSWE at 1980-04-01 00:00:00 is {1: 99.28651616562016}
+2026-10-29 13:42:06 | INFO     | snowda.snowda.io.swe_obs | Member 008 scalarSWE at 1980-04-01 00:00:00 is {1: 101.38536619605537}
+2026-10-29 13:42:06 | INFO     | snowda.snowda.io.swe_obs | Member 009 scalarSWE at 1980-04-01 00:00:00 is {1: 83.48815514829846}
+2026-10-29 13:42:06 | INFO     | snowda.snowda.io.swe_obs | Member 010 scalarSWE at 1980-04-01 00:00:00 is {1: 97.7204410747413}
+2026-10-29 13:42:06 | INFO     | snowda.snowda.io.swe_obs | Member 011 scalarSWE at 1980-04-01 00:00:00 is {1: 100.69093749626938}
+2026-10-29 13:42:06 | INFO     | snowda.snowda.io.swe_obs | Member 012 scalarSWE at 1980-04-01 00:00:00 is {1: 60.3593792091793}
+2026-10-29 13:42:07 | INFO     | snowda.snowda.io.swe_obs | Member 013 scalarSWE at 1980-04-01 00:00:00 is {1: 112.42265542808049}
+2026-10-29 13:42:07 | INFO     | snowda.snowda.io.swe_obs | Member 014 scalarSWE at 1980-04-01 00:00:00 is {1: 121.93254359203749}
+2026-10-29 13:42:07 | INFO     | snowda.snowda.io.swe_obs | Member 015 scalarSWE at 1980-04-01 00:00:00 is {1: 139.33546522608106}
+2026-10-29 13:42:07 | INFO     | snowda.snowda.io.swe_obs | Member 016 scalarSWE at 1980-04-01 00:00:00 is {1: 68.18785405215732}
+2026-10-29 13:42:07 | INFO     | snowda.snowda.io.swe_obs | Member 017 scalarSWE at 1980-04-01 00:00:00 is {1: 129.87323279331937}
+2026-10-29 13:42:08 | INFO     | snowda.snowda.io.swe_obs | Member 018 scalarSWE at 1980-04-01 00:00:00 is {1: 135.99671749524197}
+2026-10-29 13:42:08 | INFO     | snowda.snowda.io.swe_obs | Member 019 scalarSWE at 1980-04-01 00:00:00 is {1: 118.79609579883615}
+2026-10-29 13:42:08 | INFO     | snowda.snowda.io.swe_obs | Member 020 scalarSWE at 1980-04-01 00:00:00 is {1: 76.24363566081732}
+2026-10-29 13:42:08 | INFO     | snowda.snowda.io.swe_obs | Member 021 scalarSWE at 1980-04-01 00:00:00 is {1: 64.24931509009866}
+2026-10-29 13:42:08 | INFO     | snowda.snowda.io.swe_obs | Member 022 scalarSWE at 1980-04-01 00:00:00 is {1: 80.44765418583577}
+2026-10-29 13:42:08 | INFO     | snowda.snowda.io.swe_obs | Member 023 scalarSWE at 1980-04-01 00:00:00 is {1: 90.62566615537558}
+2026-10-29 13:42:09 | INFO     | snowda.snowda.io.swe_obs | Member 024 scalarSWE at 1980-04-01 00:00:00 is {1: 112.76610268719668}
+2026-10-29 13:42:09 | INFO     | snowda.snowda.io.swe_obs | Member 025 scalarSWE at 1980-04-01 00:00:00 is {1: 121.16710549368041}
+2026-10-29 13:42:09 | INFO     | snowda.snowda.io.swe_obs | Member 026 scalarSWE at 1980-04-01 00:00:00 is {1: 135.9386454179869}
+2026-10-29 13:42:09 | INFO     | snowda.snowda.io.swe_obs | Member 027 scalarSWE at 1980-04-01 00:00:00 is {1: 97.78868903434385}
+2026-10-29 13:42:09 | INFO     | snowda.snowda.io.swe_obs | Member 028 scalarSWE at 1980-04-01 00:00:00 is {1: 88.83774381838708}
+2026-10-29 13:42:10 | INFO     | snowda.snowda.io.swe_obs | Member 029 scalarSWE at 1980-04-01 00:00:00 is {1: 107.22821494325342}
+2026-10-29 13:42:10 | INFO     | snowda.snowda.io.swe_obs | Member 030 scalarSWE at 1980-04-01 00:00:00 is {1: 160.8646858298099}
+2026-10-29 13:42:10 | INFO     | snowda.snowda.io.swe_obs | Member 031 scalarSWE at 1980-04-01 00:00:00 is {1: 107.81956583775802}
+2026-10-29 13:42:10 | INFO     | snowda.snowda.io.swe_obs | Member 032 scalarSWE at 1980-04-01 00:00:00 is {1: 130.48368058840117}
+2026-10-29 13:42:10 | INFO     | snowda.snowda.io.swe_obs | Member 033 scalarSWE at 1980-04-01 00:00:00 is {1: 128.9106710259936}
+2026-10-29 13:42:11 | INFO     | snowda.snowda.io.swe_obs | Member 034 scalarSWE at 1980-04-01 00:00:00 is {1: 113.51838348574857}
+2026-10-29 13:42:11 | INFO     | snowda.snowda.io.swe_obs | Member 035 scalarSWE at 1980-04-01 00:00:00 is {1: 120.1814299933801}
+2026-10-29 13:42:11 | INFO     | snowda.snowda.io.swe_obs | Member 036 scalarSWE at 1980-04-01 00:00:00 is {1: 119.63772133912911}
+2026-10-29 13:42:11 | INFO     | snowda.snowda.io.swe_obs | Member 037 scalarSWE at 1980-04-01 00:00:00 is {1: 108.71995355170765}
+2026-10-29 13:42:11 | INFO     | snowda.snowda.io.swe_obs | Member 038 scalarSWE at 1980-04-01 00:00:00 is {1: 96.56603518721889}
+2026-10-29 13:42:12 | INFO     | snowda.snowda.io.swe_obs | Member 039 scalarSWE at 1980-04-01 00:00:00 is {1: 105.11379865033592}
+2026-10-29 13:42:12 | INFO     | snowda.snowda.io.swe_obs | Member 040 scalarSWE at 1980-04-01 00:00:00 is {1: 114.31920280498244}
+2026-10-29 13:42:12 | INFO     | snowda.snowda.io.swe_obs | Member 041 scalarSWE at 1980-04-01 00:00:00 is {1: 56.14722130536526}
+2026-10-29 13:42:12 | INFO     | snowda.snowda.io.swe_obs | Member 042 scalarSWE at 1980-04-01 00:00:00 is {1: 108.25936597238277}
+2026-10-29 13:42:12 | INFO     | snowda.snowda.io.swe_obs | Member 043 scalarSWE at 1980-04-01 00:00:00 is {1: 102.95149666216794}
+2026-10-29 13:42:13 | INFO     | snowda.snowda.io.swe_obs | Member 044 scalarSWE at 1980-04-01 00:00:00 is {1: 99.1581723329881}
+2026-10-29 13:42:13 | INFO     | snowda.snowda.core.particle_filter | Particle weights calculated for 1980-04-01 00:00:00
+2026-10-29 13:42:13 | INFO     | snowda.snowda.utils.timing | Function update_particle_weights completed in 0.0295 seconds
+2026-10-29 13:42:13 | INFO     | snowda.__main__ | Wrote SWE weights: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/assimilation/1980_04_01_swe_weights.csv
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 001 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/001/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 002 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/004/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 003 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/005/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 004 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/006/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 005 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/007/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 006 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/008/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 007 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/010/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 008 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/011/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 009 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/013/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 010 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/014/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 011 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/014/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 012 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/014/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 013 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/016/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 014 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/017/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 015 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/018/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 016 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/019/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 017 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/019/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 018 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/021/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 019 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/024/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 020 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/024/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 021 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/025/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 022 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/025/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 023 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/026/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 024 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/027/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 025 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/029/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 026 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/029/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 027 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/031/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 028 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/032/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 029 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/033/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 030 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/033/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 031 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/034/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 032 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/034/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 033 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/035/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 034 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/035/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 035 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/036/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 036 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/036/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 037 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/037/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 038 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/038/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 039 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/039/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 040 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/040/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 041 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/040/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 042 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/042/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 043 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/043/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.summa_common | Assigned 044 mizuRoute restart from /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/mizuroute/restart/044/Ross.r.1980-04-01-00000.nc
+2026-10-29 13:42:13 | INFO     | snowda.snowda.workflows.esp | Starting balanced ESP traces for 1980-04-01 00:00:00.
+2026-10-29 13:43:37 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m001/1980040100/1990/mizuroute/mizuroute_1990.control
+2026-10-29 13:45:05 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m002/1980040100/2013/mizuroute/mizuroute_2013.control
+2026-10-29 13:46:33 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m003/1980040100/1994/mizuroute/mizuroute_1994.control
+2026-10-29 13:48:03 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m004/1980040100/2019/mizuroute/mizuroute_2019.control
+2026-10-29 13:49:29 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m005/1980040100/1982/mizuroute/mizuroute_1982.control
+2026-10-29 13:50:53 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m006/1980040100/1983/mizuroute/mizuroute_1983.control
+2026-10-29 13:52:17 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m007/1980040100/1988/mizuroute/mizuroute_1988.control
+2026-10-29 13:53:42 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m008/1980040100/2012/mizuroute/mizuroute_2012.control
+2026-10-29 13:55:05 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m009/1980040100/2009/mizuroute/mizuroute_2009.control
+2026-10-29 13:56:26 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m010/1980040100/1993/mizuroute/mizuroute_1993.control
+2026-10-29 13:57:51 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m011/1980040100/2016/mizuroute/mizuroute_2016.control
+2026-10-29 13:59:18 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m012/1980040100/1980/mizuroute/mizuroute_1980.control
+2026-10-29 14:00:45 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m013/1980040100/2020/mizuroute/mizuroute_2020.control
+2026-10-29 14:02:12 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m014/1980040100/2022/mizuroute/mizuroute_2022.control
+2026-10-29 14:03:38 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m015/1980040100/1987/mizuroute/mizuroute_1987.control
+2026-10-29 14:05:05 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m016/1980040100/2007/mizuroute/mizuroute_2007.control
+2026-10-29 14:06:33 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m017/1980040100/1996/mizuroute/mizuroute_1996.control
+2026-10-29 14:08:00 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m018/1980040100/2008/mizuroute/mizuroute_2008.control
+2026-10-29 14:09:22 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m019/1980040100/2018/mizuroute/mizuroute_2018.control
+2026-10-29 14:10:41 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m020/1980040100/2014/mizuroute/mizuroute_2014.control
+2026-10-29 14:12:12 | INFO     | snowda.snowda.adapters.mizuroute | Running mizuRoute: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_esp_da/20261029T162222Z/esp/m021/1980040100/2005/mizuroute/mizuroute_2005.control
+[2026-10-29T14:13:08.364] error: *** JOB 21754919 ON a126 CANCELLED AT 2026-10-29T14:13:08 DUE to SIGNAL Terminated ***

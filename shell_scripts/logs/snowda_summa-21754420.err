@@ -1,0 +1,196 @@
+2026-10-29 11:39:53 | INFO     | snowda.__main__ | snowda SUMMA historic run starting
+2026-10-29 11:39:53 | INFO     | snowda.__main__ | Config: /home/x-dcasson/GitRepos/snowda/runs/examples/ross_summa_historic_ensemble.yaml
+2026-10-29 11:39:53 | INFO     | snowda.__main__ | Run dir: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T153953Z
+2026-10-29 11:39:53 | INFO     | snowda.__main__ | Wrote config snapshot: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T153953Z/config.resolved.json
+2026-10-29 11:39:53 | INFO     | snowda.snowda.io.summa_ensemble | Creating output directories
+2026-10-29 11:39:53 | INFO     | snowda.snowda.io.summa_ensemble | Deleting forcing lists matching forcingFileList_ross_summa_historic_Ens*.txt in /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA
+/home/x-dcasson/GitRepos/pysumma/pysumma/decisions.py:4: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+2026-10-29 11:39:54 | INFO     | snowda.snowda.io.summa_ensemble | Deleting state files in /home/x-dcasson/GitRepos/snowda/models/ross_lumped/states
+2026-10-29 11:39:54 | INFO     | snowda.snowda.io.summa_ensemble | Writing ensemble file managers to /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T153953Z
+2026-10-29 11:39:54 | INFO     | snowda.snowda.io.summa_ensemble | Writing historic ensemble forcing lists
+2026-10-29 11:39:54 | INFO     | snowda.__main__ | Starting historic ensemble 1980-08-01 00:00:00 to 1980-02-01 00:00:00
+2026-10-29 11:39:54 | INFO     | snowda.snowda.workflows.summa_common | Copied SUMMA initial state coldState.nc to /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T153953Z/states/coldState.nc
+2026-10-29 11:39:54 | INFO     | snowda.snowda.workflows.summa_common | SUMMA statePath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T153953Z/states
+2026-10-29 11:39:54 | INFO     | snowda.__main__ | SUMMA outputPath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T153953Z/summa
+2026-10-29 11:39:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble starting: 50 members, 5 workers, suffix 1980_02_01
+2026-10-29 11:39:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 001 running
+2026-10-29 11:39:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 002 running
+2026-10-29 11:39:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 003 running
+2026-10-29 11:39:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 004 running
+2026-10-29 11:39:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 005 running
+2026-10-29 11:39:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 006 running
+2026-10-29 11:39:54 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 004 finished with status Error (1/50)
+2026-10-29 11:39:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 007 running
+2026-10-29 11:39:54 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 002 finished with status Error (2/50)
+2026-10-29 11:39:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 008 running
+2026-10-29 11:39:54 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 001 finished with status Error (3/50)
+2026-10-29 11:39:54 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 009 running
+2026-10-29 11:39:54 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 005 finished with status Error (4/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 010 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 003 finished with status Error (5/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 011 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 008 finished with status Error (6/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 012 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 009 finished with status Error (7/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 013 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 007 finished with status Error (8/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 014 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 006 finished with status Error (9/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 015 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 010 finished with status Error (10/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 016 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 013 finished with status Error (11/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 017 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 012 finished with status Error (12/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 018 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 014 finished with status Error (13/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 019 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 011 finished with status Error (14/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 020 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 015 finished with status Error (15/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 021 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 016 finished with status Error (16/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 022 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 017 finished with status Error (17/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 023 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 019 finished with status Error (18/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 024 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 018 finished with status Error (19/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 025 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 022 finished with status Error (20/50)
+2026-10-29 11:39:55 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 026 running
+2026-10-29 11:39:55 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 020 finished with status Error (21/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 027 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 021 finished with status Error (22/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 028 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 023 finished with status Error (23/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 029 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 024 finished with status Error (24/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 030 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 025 finished with status Error (25/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 031 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 026 finished with status Error (26/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 032 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 027 finished with status Error (27/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 033 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 028 finished with status Error (28/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 034 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 030 finished with status Error (29/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 035 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 031 finished with status Error (30/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 036 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 029 finished with status Error (31/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 037 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 033 finished with status Error (32/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 038 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 036 finished with status Error (33/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 039 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 032 finished with status Error (34/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 040 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 034 finished with status Error (35/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 041 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 035 finished with status Error (36/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 042 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 037 finished with status Error (37/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 043 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 039 finished with status Error (38/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 044 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 041 finished with status Error (39/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 045 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 038 finished with status Error (40/50)
+2026-10-29 11:39:56 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 046 running
+2026-10-29 11:39:56 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 040 finished with status Error (41/50)
+2026-10-29 11:39:57 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 047 running
+2026-10-29 11:39:57 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 044 finished with status Error (42/50)
+2026-10-29 11:39:57 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 048 running
+2026-10-29 11:39:57 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 046 finished with status Error (43/50)
+2026-10-29 11:39:57 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 049 running
+2026-10-29 11:39:57 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 043 finished with status Error (44/50)
+2026-10-29 11:39:57 | INFO     | snowda.snowda.adapters.pysumma | SUMMA member 050 running
+2026-10-29 11:39:57 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 042 finished with status Error (45/50)
+2026-10-29 11:39:57 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 045 finished with status Error (46/50)
+2026-10-29 11:39:57 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 050 finished with status Error (47/50)
+2026-10-29 11:39:57 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 049 finished with status Error (48/50)
+2026-10-29 11:39:57 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 048 finished with status Error (49/50)
+2026-10-29 11:39:57 | WARNING  | snowda.snowda.adapters.pysumma | SUMMA member 047 finished with status Error (50/50)
+2026-10-29 11:39:57 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble finished: 0/50 successful
+2026-10-29 11:39:57 | INFO     | snowda.snowda.adapters.pysumma | SUMMA ensemble summary: {'Success': [], 'Error': ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025', '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041', '042', '043', '044', '045', '046', '047', '048', '049', '050'], 'Other': []}
+2026-10-29 11:39:57 | INFO     | snowda.snowda.adapters.pysumma | SUMMA stdout (001): file_suffix is '1980_02_01'.
+file_master is '/home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T153953Z/fileManagerEns001.txt'.
+   1 controlVersion: SUMMA_FILE_MANAGER_V3.0.0
+   2 simStartTime: 1980-08-01 00:00
+   3 simEndTime: 1980-02-01 00:00
+   4 tmZoneInfo: utcTime
+   5 outFilePrefix: 001
+   6 settingsPath: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
+   7 forcingPath: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/forcing/001/
+   8 outputPath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T153953Z/summa/
+   9 statePath: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T153953Z/states/
+  10 initConditionFile: coldState.nc
+  11 attributeFile: attributes.nc
+  12 trialParamFile: trialParams.nc
+  13 forcingListFile: forcingFileList_ross_summa_historic_Ens001.txt
+  14 decisionsFile: modelDecisions.txt
+  15 outputControlFile: outputControl.txt
+  16 globalHruParamFile: localParamInfo.txt
+  17 globalGruParamFile: basinParamInfo.txt
+  18 vegTableFile: TBL_VEGPARM.TBL
+  19 soilTableFile: TBL_SOILPARM.TBL
+  20 generalTableFile: TBL_GENPARM.TBL
+  21 noahmpTableFile: TBL_MPTABLE.TBL
+ WARNING: statistics at timestep level are meaningless, outputting instantaneous variable scalarRainfall in timestep output file 
+ WARNING: statistics at timestep level are meaningless, outputting instantaneous variable scalarSnowfall in timestep output file 
+decisions file =  /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/modelDecisions.txt
+   1 soilCatTbl: ROSETTA
+   2 vegeParTbl: MODIFIED_IGBP_MODIS_NOAH
+   3 soilStress: NoahType
+   4 stomResist: BallBerry
+   5 num_method: itertive
+   6 fDerivMeth: analytic
+   7 LAI_method: monTable
+   8 f_Richards: mixdform
+   9 groundwatr: bigBuckt
+  10 hc_profile: constant
+  11 bcUpprTdyn: nrg_flux
+  12 bcLowrTdyn: zeroFlux
+  13 bcUpprSoiH: liq_flux
+  14 bcLowrSoiH: drainage
+  15 veg_traits: Raupach_BLM1994
+  16 canopyEmis: difTrans
+  17 snowIncept: lightSnow
+  18 windPrfile: logBelowCanopy
+  19 astability: louisinv
+  20 canopySrad: CLM_2stream
+  21 alb_method: varDecay
+  22 compaction: consettl
+  23 snowLayers: CLM_2010
+  24 thCondSnow: jrdn1991
+  25 thCondSoil: funcSoilWet
+  26 spatial_gw: localColumn
+  27 subRouting: timeDlay
+  28 infRateMax: GreenAmpt
+  29 nrgConserv: enthalpyForm
+startTime: iyyy, im, id, ih, imin = 1980  8  1  0  0
+finshTime: iyyy, im, id, ih, imin = 1980  2  1  0  0
+
+
+FATAL ERROR: summa_paramSetup/mDecisions/end time of simulation occurs before start time
+
+
+2026-10-29 11:39:57 | INFO     | snowda.__main__ | Historic SUMMA run complete; routing each ensemble member.
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/run_summa_historic.py", line 116, in <module>
+    main()
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/run_summa_historic.py", line 112, in main
+    run_summa_historic(args.config)
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/run_summa_historic.py", line 74, in run_summa_historic
+    route_ensemble_segment(
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/summa_common.py", line 411, in route_ensemble_segment
+    member_summa_timestep(summa_output_dir, member, sim_end),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/x-dcasson/GitRepos/snowda/src/snowda/workflows/summa_common.py", line 58, in member_summa_timestep
+    raise FileNotFoundError(
+FileNotFoundError: No SUMMA timestep output for member 001 ending 1980_02_01 in /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_historic/20261029T153953Z/summa.

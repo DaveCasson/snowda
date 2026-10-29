@@ -1,0 +1,8 @@
+Job started: Thu Oct 29 15:54:02 EDT 2026
+Job ID: 21757934
+Node: a164.anvil.rcac.purdue.edu
+CPUs: 50
+Config: /home/x-dcasson/GitRepos/snowda/runs/examples/ross_summa_historic_ensemble.yaml
+/home/x-dcasson/snowda/bin/python
+python: /home/x-dcasson/snowda/bin/python
+prefix: /home/x-dcasson/snowda
