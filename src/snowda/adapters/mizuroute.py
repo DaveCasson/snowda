@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 from typing import Mapping
@@ -81,47 +82,68 @@ def update_control_file(
     return out
 
 
+_OUTPUT_TAIL = 4000
+
+
+def _decode_output(data: bytes | str | None) -> str:
+    if not data:
+        return ""
+    if isinstance(data, bytes):
+        return data.decode("utf-8", errors="replace")
+    return data
+
+
+def _tail(text: str, limit: int = _OUTPUT_TAIL) -> str:
+    if len(text) <= limit:
+        return text
+    omitted = len(text) - limit
+    return f"... ({omitted} characters omitted)\n{text[-limit:]}"
+
+
+def _failure_detail(returncode: int, command: list[str], stdout: str, stderr: str) -> str:
+    stdout_text = _tail(stdout) if stdout.strip() else "(empty)"
+    stderr_text = _tail(stderr) if stderr.strip() else "(empty)"
+    return (
+        f"mizuRoute failed (exit {returncode}): {' '.join(command)}\n"
+        f"stdout:\n{stdout_text}\n"
+        f"stderr:\n{stderr_text}"
+    )
+
+
+def _mizuroute_env() -> dict[str, str]:
+    """Drop the SLURM step id so Open MPI starts one local process.
+
+    Inside a batch job, ``SLURM_NODELIST`` plus ``SLURM_STEP_ID`` makes this
+    Open MPI build treat a direct ``exec`` as ``srun``. That build has no
+    SLURM PMI support, so ``MPI_Init`` aborts. With the step id unset, the
+    same binary starts as a single process, which is how it runs on a login
+    node. ``OMPI_MCA_ess=singleton`` does not help: Open MPI overwrites it
+    when ``SLURM_STEP_ID`` is set.
+    """
+    env = os.environ.copy()
+    env.pop("SLURM_STEP_ID", None)
+    env.pop("SLURM_STEPID", None)
+    return env
+
+
 def run_mizuroute(
     executable: str | Path, control_file: str | Path, *, log_stdout: bool = True
-) -> subprocess.CompletedProcess[str]:
-    """Run mizuRoute and return subprocess metadata."""
+) -> subprocess.CompletedProcess[bytes]:
+    """Run mizuRoute and return subprocess metadata.
+
+    A non-zero exit, or ``FATAL ERROR`` on either stream, is logged and raised
+    with the tail of both streams. mizuRoute writes its message to stdout.
+    """
     command = [str(executable), str(control_file)]
     log.info("Running mizuRoute: %s", " ".join(command))
-    completed = subprocess.run(
-        command,
-        check=True,
-        capture_output=True,
-    )
-    # #region agent log
-    try:
-        import json
-        import time
-
-        payload = {
-            "sessionId": "83d907",
-            "hypothesisId": "A",
-            "location": "mizuroute.py:run_mizuroute",
-            "message": "mizuroute returned",
-            "data": {
-                "control": str(control_file),
-                "returncode": completed.returncode,
-                "stderr_tail": (
-                    completed.stderr.decode("utf-8", errors="replace")[-300:]
-                    if completed.stderr
-                    else ""
-                ),
-            },
-            "timestamp": int(time.time() * 1000),
-        }
-        with open("/Users/dcasson/GitHub/snowda/.cursor/debug-83d907.log", "a") as handle:
-            handle.write(json.dumps(payload) + "\n")
-    except Exception:
-        pass
-    # #endregion
-    stderr = completed.stderr.decode("utf-8", errors="replace") if completed.stderr else ""
-    stdout = completed.stdout.decode("utf-8", errors="replace") if completed.stdout else ""
-    if stderr and "FATAL ERROR" in stderr:
-        raise RuntimeError(f"mizuRoute reported fatal error: {stderr}")
+    completed = subprocess.run(command, capture_output=True, env=_mizuroute_env())
+    stdout = _decode_output(completed.stdout)
+    stderr = _decode_output(completed.stderr)
+    failed = completed.returncode != 0 or "FATAL ERROR" in stdout or "FATAL ERROR" in stderr
+    if failed:
+        detail = _failure_detail(completed.returncode, command, stdout, stderr)
+        log.error("%s", detail)
+        raise RuntimeError(detail)
     if stdout and log_stdout:
         log.info("mizuRoute stdout: %s", stdout)
     return completed

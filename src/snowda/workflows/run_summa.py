@@ -10,7 +10,11 @@ from typing import Any, Dict
 
 from snowda.adapters.pysumma import run_ensemble, run_simulation
 from snowda.config.loader import as_config_dict, config_label
-from snowda.config.pysummada import load_pysummada_config, validate_deterministic_config
+from snowda.config.pysummada import (
+    PysummadaConfig,
+    load_pysummada_config,
+    validate_deterministic_config,
+)
 from snowda.utils.logging import configure_logging, get_logger
 from snowda.workflows.evaluate_streamflow import evaluate_deterministic_run
 from snowda.workflows.summa_common import (
@@ -22,6 +26,14 @@ from snowda.workflows.summa_common import (
     summa_run_output_dir,
     write_provenance,
 )
+
+
+def _freq_restart(cfg: PysummadaConfig) -> str:
+    return cfg.summa_args.get("-r") or cfg.summa_args.get("freq_restart") or "e"
+
+
+def _progress(cfg: PysummadaConfig) -> str:
+    return cfg.summa_args.get("-p") or cfg.summa_args.get("progress") or "m"
 
 
 def run_summa(config: str | Path | Mapping[str, Any]) -> Path:
@@ -43,8 +55,16 @@ def _run_summa_deterministic(config: Mapping[str, Any], label: str) -> Path:
         start_message="snowda SUMMA deterministic run starting",
     )
 
-    file_writer, assimilation = prepare_ensemble(cfg)
-    log.info("Starting SUMMA run %s to %s", cfg.start_time, cfg.end_time)
+    file_writer, assimilation = prepare_ensemble(cfg, run_dir)
+    freq_restart = _freq_restart(cfg)
+    progress = _progress(cfg)
+    log.info(
+        "Starting SUMMA run %s to %s (freq_restart=%s, progress=%s)",
+        cfg.start_time,
+        cfg.end_time,
+        freq_restart,
+        progress,
+    )
     current_run_config = apply_run_time(
         cfg,
         assimilation,
@@ -63,6 +83,8 @@ def _run_summa_deterministic(config: Mapping[str, Any], label: str) -> Path:
         current_run_config,
         num_workers=cfg.num_workers,
         run_suffix=cfg.end_time.strftime("%Y_%m_%d"),
+        freq_restart=freq_restart,
+        progress=progress,
         log_stdout=True,
     )
 

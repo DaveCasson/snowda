@@ -67,7 +67,8 @@ def _naive_datetime_index(index: pd.Index) -> pd.DatetimeIndex:
 
 
 def _mask_nodata_values(values: np.ndarray) -> np.ndarray:
-    out = np.asarray(values, dtype=float)
+    # xarray/netCDF often expose a read-only view; always copy before writing.
+    out = np.array(values, dtype=float, copy=True)
     out[~np.isfinite(out)] = np.nan
     for sentinel in _NODATA_SENTINELS:
         out[np.isclose(out, sentinel, equal_nan=False)] = np.nan

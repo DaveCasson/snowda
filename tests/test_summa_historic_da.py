@@ -310,15 +310,19 @@ def test_historic_forcing_lists_use_member_ids(tmp_path: Path) -> None:
     )
     cfg = load_pysummada_config(config_file)
     assert cfg.ens_label_array == ["001", "016"]
-    writer = EnsembleFileWriter(cfg)
+    run_dir = tmp_path / "run"
+    writer = EnsembleFileWriter(cfg, run_dir=run_dir)
     paths = writer.write_ens_file_managers()
     writer.write_forcing_file_list()
+    assert Path(paths[0]).parent == run_dir
+    assert Path(paths[1]).parent == run_dir
+    assert not (run_dir / "forcingFileList_test_Ens016.txt").exists()
     first = Path(paths[0]).read_text(encoding="utf-8")
     second = Path(paths[1]).read_text(encoding="utf-8")
     assert f"'{forcing / '001'}/'" in first or f"'{(forcing / '001').as_posix()}/'" in first
-    assert "forcingFileListEns016.txt" in second
+    assert "forcingFileList_test_Ens016.txt" in second
     assert "'016'" in second
-    list_016 = (cfg.file_list_dir / "forcingFileListEns016.txt").read_text(encoding="utf-8")
+    list_016 = (cfg.file_list_dir / "forcingFileList_test_Ens016.txt").read_text(encoding="utf-8")
     assert list_016.strip() == "ensMember_016.nc"
 
 
@@ -333,7 +337,7 @@ def test_historic_member_requires_one_netcdf(tmp_path: Path) -> None:
         },
     )
     cfg = load_pysummada_config(config_file)
-    writer = EnsembleFileWriter(cfg)
+    writer = EnsembleFileWriter(cfg, run_dir=tmp_path / "run")
     with pytest.raises(ValueError, match="one forcing netCDF"):
         writer.write_ens_file_managers()
 
@@ -343,9 +347,28 @@ def test_monthly_forcing_list_unchanged(tmp_path: Path) -> None:
     cfg = load_pysummada_config(config_file)
     writer = EnsembleFileWriter(cfg)
     writer.write_forcing_file_list()
-    text = (cfg.file_list_dir / "forcingFileListEns001.txt").read_text(encoding="utf-8")
+    text = (cfg.file_list_dir / "forcingFileList_test_Ens001.txt").read_text(encoding="utf-8")
     assert "/abs/forcing_202001.001.nc" in text
     assert "historic" not in text
+
+
+def test_clear_ensemble_files_leaves_other_cases(tmp_path: Path) -> None:
+    config_file = _build_config(tmp_path, extra={"case_name": "ross_summa_historic"})
+    cfg = load_pysummada_config(config_file)
+    shared = cfg.file_list_dir
+    own = shared / "forcingFileList_ross_summa_historic_Ens050.txt"
+    other = shared / "forcingFileList_ross_summa_esp_da_Ens001.txt"
+    legacy = shared / "forcingFileListEns044.txt"
+    manager = cfg.file_manager_dir / "fileManagerEns001.txt"
+    for path in (own, other, legacy, manager):
+        path.write_text("list\n", encoding="utf-8")
+
+    EnsembleFileWriter(cfg).clear_ensemble_files()
+
+    assert not own.exists()
+    assert other.read_text(encoding="utf-8") == "list\n"
+    assert legacy.read_text(encoding="utf-8") == "list\n"
+    assert manager.read_text(encoding="utf-8") == "list\n"
 
 
 def test_keep_existing_init_does_not_replace_donor(tmp_path: Path) -> None:

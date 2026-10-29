@@ -41,6 +41,40 @@ def _read_file_manager(path: Path) -> pd.DataFrame:
 SUMMA_TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
+def forcing_file_list_name(case_name: str, label: str) -> str:
+    """Bare forcing-list filename SUMMA opens under ``settingsPath``.
+
+    The case name keeps concurrent runs that share a settings directory from
+    deleting or overwriting each other's lists.
+    """
+    return f"forcingFileList_{case_name}_Ens{label}.txt"
+
+
+# SUMMA opens these as directories and appends a bare filename. Relative
+# values are resolved against the base file manager's directory so they stay
+# valid after summa.exe is launched from the run directory.
+_SUMMA_DIRECTORY_KEYS = ("settingsPath", "forcingPath", "outputPath", "statePath")
+
+
+def _absolute_summa_directory(value: str, anchor: Path) -> str:
+    """Return a quoted absolute directory with the trailing slash SUMMA concatenates."""
+    raw = value.strip().strip("'").strip('"')
+    if not raw:
+        return value
+    path = Path(raw)
+    if not path.is_absolute():
+        path = (anchor / path).resolve()
+    text = path.as_posix().rstrip("/") + "/"
+    return f"'{text}'"
+
+
+def _absolutize_summa_directories(frame: pd.DataFrame, anchor: Path) -> None:
+    for key in _SUMMA_DIRECTORY_KEYS:
+        if key not in frame.index:
+            continue
+        frame.loc[key, "value"] = _absolute_summa_directory(str(frame.loc[key, "value"]), anchor)
+
+
 def read_file_manager_option(file_manager_path: str | Path, key: str) -> str:
     """Return a file-manager value with surrounding quotes removed."""
     frame = _read_file_manager(Path(file_manager_path))
@@ -86,6 +120,7 @@ def write_simulation_times(
 @dataclass
 class EnsembleFileWriter:
     config: PysummadaConfig
+    run_dir: Path | None = None
     ens_file_managers: list[str] | None = None
 
     def write_ensemble_files(self) -> None:
@@ -101,6 +136,8 @@ class EnsembleFileWriter:
         self.config.model_result_output_dir.mkdir(parents=True, exist_ok=True)
         self.config.file_manager_dir.mkdir(parents=True, exist_ok=True)
         self.config.file_list_dir.mkdir(parents=True, exist_ok=True)
+        if self.run_dir is not None:
+            self.run_dir.mkdir(parents=True, exist_ok=True)
 
     def _historic_member_netcdf(self, label: str) -> Path:
         if self.config.ensemble_forcing_dir is None:
@@ -118,27 +155,32 @@ class EnsembleFileWriter:
         return nc_files[0]
 
     def write_ens_file_managers(self) -> list[str]:
-        log.info("Writing ensemble file managers")
+        if self.run_dir is None:
+            raise ValueError("EnsembleFileWriter.run_dir is required to write file managers.")
+        log.info("Writing ensemble file managers to %s", self.run_dir)
+        self.run_dir.mkdir(parents=True, exist_ok=True)
         input_fm_df = _read_file_manager(self.config.base_file_manager)
+        path_anchor = self.config.base_file_manager.parent
         fm_list: list[str] = []
         historic = self.config.ensemble_forcing_mode == "historic"
         use_base_forcing = self.config.num_ens == 1 and not historic
 
         for label in self.config.ens_label_array:
             output_fm_name = f"fileManagerEns{label}.txt"
-            output_fm_path = self.config.file_manager_dir / output_fm_name
+            output_fm_path = self.run_dir / output_fm_name
 
             output_fm_df = input_fm_df.copy()
+            _absolutize_summa_directories(output_fm_df, path_anchor)
             if historic:
                 member_file = self._historic_member_netcdf(label)
                 member_dir = member_file.parent.as_posix().rstrip("/") + "/"
                 output_fm_df.loc["forcingPath", "value"] = f"'{member_dir}'"
                 output_fm_df.loc["forcingListFile", "value"] = (
-                    f"'forcingFileListEns{label}.txt'"
+                    f"'{forcing_file_list_name(self.config.case_name, label)}'"
                 )
             elif not use_base_forcing:
                 output_fm_df.loc["forcingListFile", "value"] = (
-                    f"'forcingFileListEns{label}.txt'"
+                    f"'{forcing_file_list_name(self.config.case_name, label)}'"
                 )
             output_fm_df.loc["outFilePrefix", "value"] = f"'{label}'"
             output_fm_df.loc["simStartTime", "value"] = (
@@ -163,8 +205,8 @@ class EnsembleFileWriter:
             log.info("Writing historic ensemble forcing lists")
             for label in self.config.ens_label_array:
                 member_file = self._historic_member_netcdf(label)
-                output_file_list_path = (
-                    self.config.file_list_dir / f"forcingFileListEns{label}.txt"
+                output_file_list_path = self.config.file_list_dir / forcing_file_list_name(
+                    self.config.case_name, label
                 )
                 output_file_list_path.write_text(f"{member_file.name}\n", encoding="utf-8")
             return
@@ -185,25 +227,25 @@ class EnsembleFileWriter:
             ]
             forcing_file_list.sort()
 
-            output_file_list_name = f"forcingFileListEns{label}.txt"
-            output_file_list_path = self.config.file_list_dir / output_file_list_name
+            output_file_list_path = self.config.file_list_dir / forcing_file_list_name(
+                self.config.case_name, label
+            )
             with output_file_list_path.open("w", encoding="utf-8") as fl_file:
                 for line in forcing_file_list:
                     fl_file.write(f"{line}\n")
 
     def clear_ensemble_files(self) -> None:
-        for folder in [self.config.file_manager_dir, self.config.file_list_dir]:
-            if not folder.exists():
-                continue
-            log.info("Deleting ensemble files in %s", folder)
-            for filename in folder.glob("*Ens*"):
-                try:
-                    if filename.is_file() or filename.is_symlink():
-                        filename.unlink()
-                    elif filename.is_dir():
-                        shutil.rmtree(filename)
-                except Exception as exc:
-                    log.warning("Failed to delete %s: %s", filename, exc)
+        folder = self.config.file_list_dir
+        if not folder.exists():
+            return
+        pattern = f"forcingFileList_{self.config.case_name}_Ens*.txt"
+        log.info("Deleting forcing lists matching %s in %s", pattern, folder)
+        for filename in folder.glob(pattern):
+            try:
+                if filename.is_file() or filename.is_symlink():
+                    filename.unlink()
+            except Exception as exc:
+                log.warning("Failed to delete %s: %s", filename, exc)
 
     def clear_state_files(self) -> None:
         state_folder = Path(

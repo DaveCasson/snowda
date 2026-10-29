@@ -81,6 +81,24 @@ def test_too_few_pairs_raises():
         compute_deterministic_metrics(obs, obs)
 
 
+def test_pair_streamflow_masks_read_only_nodata():
+    data = np.array([1.0, -9999.0, np.inf, 4.0], dtype=float)
+    data.setflags(write=False)
+    time = pd.date_range("2000-01-01", periods=4, freq="D")
+    sim = xr.DataArray(
+        data,
+        dims=("time",),
+        coords={"time": time},
+        name="sim",
+        attrs={"units": "m3 s-1"},
+    )
+    obs = _series([1.0, 2.0, 3.0, 4.0])
+    paired_sim, paired_obs = pair_streamflow(sim, obs, resample=None)
+    np.testing.assert_allclose(paired_sim.values, [1.0, 4.0])
+    np.testing.assert_allclose(paired_obs.values, [1.0, 4.0])
+    assert data.flags.writeable is False
+
+
 def test_csv_column_autodetection(tmp_path: Path):
     times = pd.date_range("2000-01-01", periods=4, freq="D")
     csv_path = tmp_path / "obs.csv"

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import threading
+import time
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -10,6 +12,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
+from snowda.adapters.pysumma import netcdf_lock
 from snowda.core.assimilation import DataAssimilationCore, restart_filename
 from snowda.core.esp_sampling import (
     ParticleState,
@@ -381,8 +384,11 @@ def test_balanced_esp_smoke_copies_bound_restarts_without_mutating_sources(
             {"scalarSWE": ("time", [1.0, 2.0])},
             coords={"time": pd.to_datetime(["2015-03-01", "2015-03-02"])},
         )
-        dataset.to_netcdf(output / f"{manager['outFilePrefix']}_timestep.nc")
-        dataset.close()
+        # Workers run together. This stand-in still writes NetCDF, so it
+        # takes the same lock as the time-shift.
+        with netcdf_lock:
+            dataset.to_netcdf(output / f"{manager['outFilePrefix']}_timestep.nc")
+            dataset.close()
         calls.append({"file_manager": file_manager, "manager": manager})
 
     def fake_route(_executable, control_file, log_stdout=False) -> None:
@@ -416,6 +422,12 @@ def test_balanced_esp_smoke_copies_bound_restarts_without_mutating_sources(
     assert "independently balancing" in member_map["description"]
     mapped = member_map["issues"][0]["members"]
     assert len(mapped) == 4
+    assert [record.state_member for record in records] == [
+        member["state_label"] for member in mapped
+    ]
+    assert [record.trace_year for record in records] == [
+        member["trace_year"] for member in mapped
+    ]
     summa_calls = [call for call in calls if "manager" in call]
     route_calls = [call for call in calls if "fname_state_in" in call]
     assert len(summa_calls) == 4
@@ -487,3 +499,130 @@ def test_balanced_esp_smoke_copies_bound_restarts_without_mutating_sources(
     first_route.write_bytes(b"mutated-route")
     assert source_route.read_bytes() == originals[shared_label][1]
     assert second_route.read_bytes() == originals[shared_label][1]
+
+
+def test_balanced_esp_traces_overlap_when_num_workers_exceeds_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    when = datetime(2014, 3, 1)
+    run_dir = tmp_path / "run"
+    state_dir = run_dir / "states"
+    state_dir.mkdir(parents=True)
+    ancil = tmp_path / "ancil"
+    ancil.mkdir()
+    (ancil / "param.nml.default").write_text("&params\n/\n", encoding="utf-8")
+    control = ancil / "mizuroute.control"
+    control.write_text(
+        "<fname_state_in>          cold.nc\n"
+        "<case_name>               Ross\n"
+        "<output_dir>              /\n"
+        "<restart_dir>             /\n",
+        encoding="utf-8",
+    )
+    config_file = _build_config(
+        tmp_path,
+        extra={
+            "num_workers": 2,
+            "num_ens": 2,
+            "start_time": "2014-02-01 00:00",
+            "end_time": "2014-08-01 00:00",
+            "esp": {
+                "initialization": "balanced_independent",
+                "n_members": 2,
+                "seed": 3,
+                "start_year": 2014,
+                "end_year": 2014,
+                "forecast_length_days": 5,
+                "dates": ["2014-03-01 00:00"],
+                "run_mizuroute": True,
+                "mizuroute": {
+                    "executable": str(tmp_path / "route.exe"),
+                    "control_file": str(control),
+                    "ancil_dir": str(ancil),
+                    "case_name": "Ross",
+                    "restart_write": "monthly",
+                },
+            },
+        },
+    )
+    (tmp_path / "fileManager.txt").write_text(
+        "outputPath\t'/tmp/output/'\n"
+        "initConditionFile\t'coldState.nc'\n"
+        "forcingPath\t'/forcing/base/'\n"
+        "forcingListFile\t'base_forcing.txt'\n"
+        "simStartTime\t'2014-02-01 00:00'\n"
+        "simEndTime\t'2014-08-01 00:00'\n",
+        encoding="utf-8",
+    )
+    particles: list[ParticleState] = []
+    for label in ("001", "002"):
+        summa = state_dir / restart_filename(label, when)
+        route = run_dir / "mizuroute" / "restart" / label / "Ross.r.2014-03-01-00000.nc"
+        route.parent.mkdir(parents=True)
+        summa.write_bytes(f"summa-{label}".encode())
+        route.write_bytes(f"route-{label}".encode())
+        manager = tmp_path / f"fileManagerEns{label}.txt"
+        manager.write_text(f"outFilePrefix\t'{label}'\n", encoding="utf-8")
+        particles.append(
+            ParticleState(
+                label=label,
+                donor_label=label,
+                summa_restart=str(summa),
+                mizuroute_restart=str(route),
+                weight=0.5,
+                file_manager=str(manager),
+                resampled=False,
+            )
+        )
+    write_post_da_catalog(run_dir, when, particles)
+
+    inflight = {"current": 0, "peak": 0}
+    counter = threading.Lock()
+
+    def fake_summa(_exe, _file_manager, **kwargs):
+        assert kwargs["open_output"] is False
+        manager = kwargs["sim_config"]["manager"]
+        output = Path(manager["outputPath"])
+        output.mkdir(parents=True, exist_ok=True)
+        dataset = xr.Dataset(
+            {"scalarSWE": ("time", [1.0])},
+            coords={"time": pd.to_datetime(["2014-03-01"])},
+        )
+        with netcdf_lock:
+            dataset.to_netcdf(output / f"{manager['outFilePrefix']}_timestep.nc")
+            dataset.close()
+        with counter:
+            inflight["current"] += 1
+            inflight["peak"] = max(inflight["peak"], inflight["current"])
+        try:
+            time.sleep(0.2)
+        finally:
+            with counter:
+                inflight["current"] -= 1
+
+    def fake_route(_executable, control_file, log_stdout=False) -> None:
+        from snowda.adapters.mizuroute import read_control_value
+
+        output_dir = Path(read_control_value(control_file, "output_dir").rstrip("/"))
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "Ross.h.2014-03-01-00000.nc").write_bytes(b"routed")
+
+    monkeypatch.setattr("snowda.workflows.esp.run_simulation", fake_summa)
+    monkeypatch.setattr("snowda.workflows.esp.run_mizuroute", fake_route)
+
+    from snowda.config.pysummada import load_pysummada_config
+
+    cfg = load_pysummada_config(config_file)
+    assert cfg.esp is not None
+    assert cfg.num_workers == 2
+    records = run_balanced_esp_traces(cfg, cfg.esp, run_dir)
+
+    assert inflight["peak"] >= 2
+    member_map = json.loads((run_dir / "esp" / "member_map.json").read_text(encoding="utf-8"))
+    mapped = member_map["issues"][0]["members"]
+    assert [record.state_member for record in records] == [
+        member["state_label"] for member in mapped
+    ]
+    assert [record.trace_year for record in records] == [
+        member["trace_year"] for member in mapped
+    ]

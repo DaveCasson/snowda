@@ -40,7 +40,7 @@ assimilation:
     - "2014-05-01 00:00"
   obs_window_days: 15
   # Model-equivalent SWE from data/yukon_snow_data.csv. station_id is location_code.
-  swe_nc: /Users/dcasson/GitHub/snowda/outputs/obs_qm/ross_yukon_swe_model_equivalent.nc
+  swe_nc: /Users/dcasson/GitHub/snowda/data/obs_qm/ross_yukon_swe_model_equivalent.nc
   swe_var: swe_model_equivalent
   summa_swe_var: scalarSWE
   # Manual pairing. Ross lumped SUMMA hruId is 1. Stations not listed are ignored.
@@ -52,6 +52,8 @@ assimilation:
       station_id: "09BA-SC02"
   z_var: 0.10
 
+# Settings directory for the base file manager and forcing file lists.
+# Generated fileManagerEns*.txt files are written into the run directory.
 file_manager_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
 file_list_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
 

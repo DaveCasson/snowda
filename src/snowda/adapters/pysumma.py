@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+import os
+import subprocess
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from snowda.utils.logging import get_logger
 
 log = get_logger(__name__)
+
+# HDF5, through netCDF4, is not safe to call from two threads at once.
+# SUMMA setup and the ESP time-shift take this lock. Waiting on summa.exe does not.
+netcdf_lock = threading.Lock()
 
 
 def _require_pysumma() -> Any:
@@ -41,6 +49,15 @@ def _config_rewrites_files(config: Dict[str, Any], *, write_config: bool, write_
     return any(config.get(key) for key in _PYSUMMA_FILE_EDITS)
 
 
+def _close_dataset(dataset: Any) -> None:
+    if dataset is None:
+        return
+    try:
+        dataset.close()
+    except Exception:
+        pass
+
+
 def _release_loaded_datasets(simulation: Any) -> None:
     """Drop datasets pysumma already closed.
 
@@ -53,13 +70,36 @@ def _release_loaded_datasets(simulation: Any) -> None:
         return
     for name in ("_local_attrs", "_trial_params", "_init_cond"):
         dataset = getattr(manager, name, None)
-        if dataset is None:
-            continue
-        try:
-            dataset.close()
-        except Exception:
-            pass
-        setattr(manager, name, None)
+        _close_dataset(dataset)
+        if dataset is not None:
+            setattr(manager, name, None)
+
+
+def _drop_simulation_datasets(simulation: Any) -> None:
+    """Drop the datasets ``start`` used to stage settings.
+
+    The simulation object keeps aliases of the manager datasets, and
+    ``create_backup`` keeps another copy. Those have to be closed before
+    the NetCDF lock is released, or a later garbage collection closes them
+    while another worker is writing.
+    """
+    _release_loaded_datasets(simulation)
+    for name in ("local_attributes", "trial_params", "initial_conditions"):
+        dataset = getattr(simulation, name, None)
+        _close_dataset(dataset)
+        if dataset is not None:
+            setattr(simulation, name, None)
+    backup = getattr(simulation, "backup", None)
+    if not isinstance(backup, dict):
+        return
+    manager = backup.get("manager")
+    if manager is not None:
+        for name in ("_local_attrs", "_trial_params", "_init_cond"):
+            dataset = getattr(manager, name, None)
+            _close_dataset(dataset)
+            if dataset is not None:
+                setattr(manager, name, None)
+    backup.clear()
 
 
 def _prepare_simulation(
@@ -113,10 +153,81 @@ def _finish_simulation(simulation: Any) -> None:
     simulation._output = None
 
 
+def _path_is_within(path: str, parent: str) -> bool:
+    path = path.rstrip("/")
+    parent = parent.rstrip("/")
+    return path == parent or path.startswith(parent + os.sep)
+
+
+def _retarget_staging_manager(simulation: Any) -> None:
+    """Keep pysumma's settings rewrite pointed at the real settings directory.
+
+    ``Simulation._write_configuration`` replaces the file manager's parent
+    directory inside ``settingsPath``. Ensemble file managers live in the
+    run directory, so that parent is not a prefix of ``settingsPath`` and the
+    replace would write decisions, attributes, and forcing lists back into
+    the model settings. The in-memory manager path is moved to
+    ``<settingsPath>/<file name>`` for that replace only. ``config_path``
+    stays ``<run_dir>/.pysumma``, so the staged tree is still written there.
+    """
+    manager = getattr(simulation, "manager", None)
+    manager_path = getattr(simulation, "manager_path", None)
+    if manager is None or manager_path is None:
+        return
+    settings_value = str(manager.get_value("settingsPath"))
+    settings = os.path.abspath(os.path.realpath(settings_value))
+    parent = str(Path(manager_path).parent)
+    if _path_is_within(settings, parent):
+        return
+    simulation.manager_path = Path(settings) / Path(manager_path).name
+
+
+def _bind_summa_cwd(simulation: Any) -> None:
+    """Launch ``summa.exe`` in the directory that contains the ``-m`` file."""
+
+    def _run_local(
+        self: Any,
+        run_suffix: str,
+        processes: int = 1,
+        prerun_cmds: list[str] | None = None,
+        startGRU: Any = None,
+        countGRU: Any = None,
+        iHRU: Any = None,
+        freq_restart: Any = None,
+        progress: Any = None,
+    ) -> None:
+        run_cmd = self._gen_summa_cmd(
+            run_suffix,
+            processes,
+            prerun_cmds,
+            startGRU,
+            countGRU,
+            iHRU,
+            freq_restart,
+            progress,
+        )
+        # Read the path at launch. ``write_config`` may have replaced it
+        # with the staged file manager under ``<run_dir>/.pysumma``.
+        cwd = str(Path(self.manager_path).parent)
+        self.process = subprocess.Popen(
+            run_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
+            cwd=cwd,
+        )
+        self.status = "Running"
+
+    simulation._run_local = _run_local.__get__(simulation, type(simulation))
+
+
 def _run_prepared_simulation(name: str, simulation: Any, run_kwargs: Dict[str, Any]) -> None:
     log.info("SUMMA member %s running", name)
     # ``start`` launches the process. ``run`` would also open the NetCDF
     # output on this worker thread.
+    if run_kwargs.get("write_config"):
+        _retarget_staging_manager(simulation)
+    _bind_summa_cwd(simulation)
     simulation.start(**run_kwargs)
     _finish_simulation(simulation)
 
@@ -143,7 +254,8 @@ def run_ensemble(
     num_workers: int = 5,
     run_option: str = "local",
     run_suffix: Optional[str] = None,
-    freq_restart: str = "d",
+    freq_restart: str = "e",
+    progress: Optional[str] = None,
     write_config: bool = False,
     log_stdout: bool = False,
 ) -> Dict[str, Any]:
@@ -181,6 +293,8 @@ def run_ensemble(
         "write_config": write_config,
         "write_manager": write_manager,
     }
+    if progress is not None:
+        run_kwargs["progress"] = progress
     finished = 0
     errors = 0
     with ThreadPoolExecutor(max_workers=workers) as pool:
@@ -250,6 +364,7 @@ def run_simulation(
     run_option: str | None = None,
     run_suffix: str | None = None,
     freq_restart: str | None = None,
+    progress: str | None = None,
     write_config: bool | None = None,
     update_manager: bool | None = None,
     log_stdout: bool = True,
@@ -257,34 +372,62 @@ def run_simulation(
     sim_end_time: str | None = None,
     sim_config: Dict[str, Any] | None = None,
     write_configuration_name: str | None = None,
+    open_output: bool = True,
 ) -> Any:
-    """Run a single SUMMA simulation via pysumma."""
+    """Run a single SUMMA simulation via pysumma.
+
+    ``open_output`` false launches ``summa.exe`` and waits without opening
+    the NetCDF output. Setup and ``start`` hold ``netcdf_lock`` because they
+    write staged settings. The wait does not. Worker threads use that path.
+    ``Simulation.monitor`` opens every output file, and overlapping opens
+    segfault the process.
+    """
     ps = _require_pysumma()
-    sim = ps.Simulation(summa_exe, file_manager)
-    if sim_config:
-        sim.apply_config(sim_config)
-        _refresh_staged_inputs(sim, sim_config)
-    if write_configuration_name:
-        sim.run_suffix = write_configuration_name
-        sim._write_configuration(name=write_configuration_name)
-    if sim_start_time:
-        sim.manager.set_option("simStartTime", sim_start_time)
-    if sim_end_time:
-        sim.manager.set_option("simEndTime", sim_end_time)
-    if sim_start_time or sim_end_time:
-        sim.manager.write()
-    run_kwargs: Dict[str, Any] = {}
-    if run_option is not None:
-        run_kwargs["run_option"] = run_option
-    if run_suffix is not None:
-        run_kwargs["run_suffix"] = run_suffix
-    if freq_restart is not None:
-        run_kwargs["freq_restart"] = freq_restart
-    if write_config is not None:
-        run_kwargs["write_config"] = write_config
-    if update_manager is not None:
-        run_kwargs["write_manager"] = update_manager
-    sim.run(**run_kwargs)
+
+    def _launch() -> Any:
+        sim = ps.Simulation(summa_exe, file_manager)
+        if sim_config:
+            sim.apply_config(sim_config)
+            _refresh_staged_inputs(sim, sim_config)
+        # pysumma defaults ``write_config`` to true when the argument is omitted.
+        if write_configuration_name is not None or write_config is not False:
+            _retarget_staging_manager(sim)
+        _bind_summa_cwd(sim)
+        if write_configuration_name:
+            sim.run_suffix = write_configuration_name
+            sim._write_configuration(name=write_configuration_name)
+        if sim_start_time:
+            sim.manager.set_option("simStartTime", sim_start_time)
+        if sim_end_time:
+            sim.manager.set_option("simEndTime", sim_end_time)
+        if sim_start_time or sim_end_time:
+            sim.manager.write()
+        run_kwargs: Dict[str, Any] = {}
+        if run_option is not None:
+            run_kwargs["run_option"] = run_option
+        if run_suffix is not None:
+            run_kwargs["run_suffix"] = run_suffix
+        if freq_restart is not None:
+            run_kwargs["freq_restart"] = freq_restart
+        if progress is not None:
+            run_kwargs["progress"] = progress
+        if write_config is not None:
+            run_kwargs["write_config"] = write_config
+        if update_manager is not None:
+            run_kwargs["write_manager"] = update_manager
+        if open_output:
+            sim.run(**run_kwargs)
+        else:
+            sim.start(**run_kwargs)
+            _drop_simulation_datasets(sim)
+        return sim
+
+    if open_output:
+        sim = _launch()
+    else:
+        with netcdf_lock:
+            sim = _launch()
+        _finish_simulation(sim)
     if log_stdout:
         log.info("SUMMA stdout: %s", sim.stdout)
     if getattr(sim, "status", None) != "Success":

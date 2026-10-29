@@ -151,8 +151,10 @@ def write_provenance(run_dir: Path, payload: dict[str, Any], log: logging.Logger
     return prov_out
 
 
-def prepare_ensemble(cfg: PysummadaConfig) -> tuple[EnsembleFileWriter, DataAssimilationCore]:
-    file_writer = EnsembleFileWriter(cfg)
+def prepare_ensemble(
+    cfg: PysummadaConfig, run_dir: Path
+) -> tuple[EnsembleFileWriter, DataAssimilationCore]:
+    file_writer = EnsembleFileWriter(cfg, run_dir=run_dir)
     file_writer.write_ensemble_files()
     if not file_writer.ens_file_managers:
         raise RuntimeError("Failed to generate ensemble file managers.")

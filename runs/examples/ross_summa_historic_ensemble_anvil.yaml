@@ -1,0 +1,46 @@
+case_name: ross_summa_historic
+description: >
+  Historic SUMMA ensemble for Ross River. Each member keeps its own forcing.
+  SUMMA runs once from start to end, then mizuRoute routes that member.
+  No assimilation and no ESP.
+
+#output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_historic
+log_file: logs/ross_summa_historic.log
+
+model_run_id: ross_summa_historic
+base_file_manager: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManager.txt
+#forcing_file_base: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/forcing/Ross_
+ensemble_forcing_mode: historic
+ensemble_forcing_dir: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/forcing/
+num_ens: 50
+num_workers: 50
+
+start_time: "1980-01-01 00:00"
+end_time: "1990-08-01 00:00"
+time_delta_days: 1
+
+summa_exe: /home/x-dcasson/GitRepos/summa/bin/summa_sundials.exe
+summa_log: false
+
+# One continuous run, so a restart is needed only at the end.
+summa_args:
+  "-m": /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManager.txt
+  "-r": e
+  "-p": m
+
+# Settings directory for the base file manager and forcing file lists.
+# Generated fileManagerEns*.txt files are written into the run directory.
+file_manager_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
+file_list_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
+
+# SUMMA writes 001_YYYY_MM_DD_timestep.nc under <run_dir>/summa.
+# mizuRoute writes 001_YYYY_MM_DD_mizuroute.nc under <run_dir>/mizuroute.
+summa_output_suffix: timestep.nc
+
+mizuroute:
+  executable: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe
+  control_file: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/mizuroute.control
+  ancil_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+  case_name: Ross
+  restart_write: never
+  log_output: false

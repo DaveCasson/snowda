@@ -17,6 +17,10 @@
 <sim_end>               2018-12-31 23:00:00    ! Time of simulation end 
 <route_opt>             1    ! Routing scheme. 0 -> accumRunoff, 1 -> IRF-UH, 2 -> IRF-KW, 3 -> KW-IRF, 4 -> MC-IRF 
 <newFileFrequency>      single    ! Output file frequency (single, yearly, monthly, daily) 
+<outputFrequency>       daily    ! Mean of each day's hourly values (daily, monthly, yearly, or a step multiple) 
+<basRunoff>             F    ! HRU runoff depth is not written 
+<IRFroutedRunoff>       T    ! Routed discharge, written as the daily mean 
+<IRFvolume>             F    ! IRF reach volume is not written 
 <restart_write>         end   ! 
 <continue_run>          F !
 <fname_state_in>        ross_cold_state.nc !

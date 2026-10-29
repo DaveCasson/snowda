@@ -72,6 +72,10 @@ def _freq_restart(cfg: PysummadaConfig) -> str:
     return cfg.summa_args.get("-r") or cfg.summa_args.get("freq_restart") or "d"
 
 
+def _progress(cfg: PysummadaConfig) -> str | None:
+    return cfg.summa_args.get("-p") or cfg.summa_args.get("progress") or None
+
+
 def _issue_dates(cfg: PysummadaConfig) -> set[datetime]:
     if cfg.esp is None:
         return set()
@@ -137,7 +141,7 @@ def run_open_loop_historic(
     """
     if cfg.esp is None:
         raise ValueError("ESP workflow requires an `esp` section.")
-    file_writer, assimilation = prepare_ensemble(cfg)
+    file_writer, assimilation = prepare_ensemble(cfg, run_dir)
     ens_file_managers = file_writer.ens_file_managers or []
     summa_output_dir = redirect_summa_output(
         ens_file_managers,
@@ -179,6 +183,7 @@ def run_open_loop_historic(
             num_workers=cfg.num_workers,
             run_suffix=segment_end.strftime("%Y_%m_%d"),
             freq_restart=_freq_restart(cfg),
+            progress=_progress(cfg),
             log_stdout=True,
         )
         if mizu is not None:

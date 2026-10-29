@@ -26,6 +26,10 @@ def _freq_restart(cfg: PysummadaConfig) -> str:
     return cfg.summa_args.get("-r") or cfg.summa_args.get("freq_restart") or "e"
 
 
+def _progress(cfg: PysummadaConfig) -> str | None:
+    return cfg.summa_args.get("-p") or cfg.summa_args.get("progress") or None
+
+
 def run_summa_historic(config: str | Path | Mapping[str, Any]) -> Path:
     """Run the historic ensemble once, without assimilation or ESP."""
     cfg = load_pysummada_config(config)
@@ -39,7 +43,7 @@ def run_summa_historic(config: str | Path | Mapping[str, Any]) -> Path:
         start_message="snowda SUMMA historic run starting",
     )
 
-    file_writer, assimilation = prepare_ensemble(cfg)
+    file_writer, assimilation = prepare_ensemble(cfg, run_dir)
     log.info("Starting historic ensemble %s to %s", cfg.start_time, cfg.end_time)
     current_run_config = apply_run_time(
         cfg,
@@ -60,6 +64,7 @@ def run_summa_historic(config: str | Path | Mapping[str, Any]) -> Path:
         num_workers=cfg.num_workers,
         run_suffix=cfg.end_time.strftime("%Y_%m_%d"),
         freq_restart=_freq_restart(cfg),
+        progress=_progress(cfg),
         log_stdout=True,
     )
 

@@ -307,8 +307,11 @@ def test_ensemble_file_managers_write_yaml_times(tmp_path: Path) -> None:
 
     config_file = _build_config(tmp_path)
     cfg = load_pysummada_config(config_file)
-    writer = EnsembleFileWriter(cfg)
+    run_dir = tmp_path / "run"
+    writer = EnsembleFileWriter(cfg, run_dir=run_dir)
     paths = writer.write_ens_file_managers()
+    assert Path(paths[0]) == run_dir / "fileManagerEns001.txt"
+    assert not (tmp_path / "fileManagerEns001.txt").exists()
     ens_text = Path(paths[0]).read_text(encoding="utf-8")
     base_text = cfg.base_file_manager.read_text(encoding="utf-8")
     for text in (ens_text, base_text):
@@ -316,6 +319,50 @@ def test_ensemble_file_managers_write_yaml_times(tmp_path: Path) -> None:
         assert "2020-01-02 00:00" in text
         assert "2011-01-01 01:00" not in text
         assert "2018-12-31 23:00" not in text
+    assert "'/tmp/output/'" in ens_text
+
+
+def test_relative_summa_directories_are_anchored_to_the_base_file_manager(
+    tmp_path: Path,
+) -> None:
+    from snowda.io.summa_ensemble import EnsembleFileWriter
+
+    config_file = _build_config(tmp_path, extra={"num_ens": 2})
+    fm = tmp_path / "fileManager.txt"
+    fm.write_text(
+        "\n".join(
+            [
+                "settingsPath\tsettings/",
+                "forcingPath\t'../forcing'",
+                "outputPath\t'/abs/output'",
+                "statePath\tstates",
+                "initConditionFile\t'coldState.nc'",
+                "simStartTime\t'2011-01-01 01:00'",
+                "simEndTime\t'2018-12-31 23:00'",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    cfg = load_pysummada_config(config_file)
+    run_dir = tmp_path / "run"
+    writer = EnsembleFileWriter(cfg, run_dir=run_dir)
+    paths = writer.write_ens_file_managers()
+    writer.write_forcing_file_list()
+    text = Path(paths[0]).read_text(encoding="utf-8")
+    anchor = cfg.base_file_manager.parent
+    settings = f"'{(anchor / 'settings').resolve().as_posix()}/'"
+    forcing = f"'{(anchor / '../forcing').resolve().as_posix()}/'"
+    states = f"'{(anchor / 'states').resolve().as_posix()}/'"
+    assert settings in text
+    assert forcing in text
+    assert states in text
+    assert "'/abs/output/'" in text
+    for line in text.splitlines():
+        if line.startswith("settingsPath"):
+            assert str(run_dir) not in line
+    assert (cfg.file_list_dir / "forcingFileList_test_Ens001.txt").is_file()
+    assert not (run_dir / "forcingFileList_test_Ens001.txt").exists()
 
 
 def test_output_dir_defaults_to_outputs_case_name(tmp_path: Path) -> None:
@@ -352,14 +399,14 @@ def test_redirect_summa_output_updates_file_manager(tmp_path: Path) -> None:
 
     config_file = _build_config(tmp_path)
     cfg = load_pysummada_config(config_file)
-    writer = EnsembleFileWriter(cfg)
+    run_dir = tmp_path / "20260101T000000Z"
+    writer = EnsembleFileWriter(cfg, run_dir=run_dir)
     paths = writer.write_ens_file_managers()
     shared_states = tmp_path / "shared_states"
     shared_states.mkdir()
     (shared_states / "coldState.nc").write_bytes(b"cold")
     for path in paths:
         update_file_manager_option(path, "statePath", f"'{shared_states}/'")
-    run_dir = tmp_path / "20260101T000000Z"
     ens_config = {"001": {"file_manager": paths[0], "manager": {}}}
     summa_dir = redirect_summa_output(paths, ens_config, summa_run_output_dir(run_dir))
     state_dir = run_dir / "states"

@@ -84,7 +84,7 @@ def _prepare_ensemble(tmp_path: Path):
     shared_states.mkdir()
     (shared_states / "coldState.nc").write_bytes(b"cold")
 
-    def prepare(cfg):
+    def prepare(cfg, _run_dir=None):
         managers = []
         for label in cfg.ens_label_array:
             path = tmp_path / f"fileManagerEns{label}.txt"

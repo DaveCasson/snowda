@@ -75,6 +75,10 @@ def _freq_restart(cfg: PysummadaConfig) -> str:
     return cfg.summa_args.get("-r") or cfg.summa_args.get("freq_restart") or "d"
 
 
+def _progress(cfg: PysummadaConfig) -> str | None:
+    return cfg.summa_args.get("-p") or cfg.summa_args.get("progress") or None
+
+
 def _write_swe_record(run_dir: Path, observation: DatedHruSwe) -> Path:
     out_dir = run_dir / "assimilation"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -170,6 +174,7 @@ def _run_swe_assimilation(
             num_workers=cfg.num_workers,
             run_suffix=segment_end.strftime("%Y_%m_%d"),
             freq_restart=_freq_restart(cfg),
+            progress=_progress(cfg),
             log_stdout=True,
         )
         if mizu is not None:
@@ -475,6 +480,8 @@ def _run_fsca_assimilation(
             current_run_config,
             num_workers=cfg.num_workers,
             run_suffix=end_time_current_run.strftime("%Y_%m_%d"),
+            freq_restart=_freq_restart(cfg),
+            progress=_progress(cfg),
             log_stdout=True,
         )
         if mizu is not None:
@@ -602,7 +609,7 @@ def run_summa_assimilation(
         start_message=start_message,
     )
 
-    file_writer, assimilation = prepare_ensemble(cfg)
+    file_writer, assimilation = prepare_ensemble(cfg, run_dir)
     if file_writer.ens_file_managers is None:
         raise RuntimeError("Failed to generate ensemble file managers.")
     ens_file_managers = file_writer.ens_file_managers

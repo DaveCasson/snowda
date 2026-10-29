@@ -20,6 +20,8 @@ summa_args:
   "-m": /Users/dcasson/Data/snowda/summa/chena_lumped/settings/SUMMA/fileManager.txt
   "-r": e
 
+# Settings directory for the base file manager and forcing file lists.
+# Generated fileManagerEns*.txt files are written into the run directory.
 file_manager_dir: /Users/dcasson/Data/snowda/summa/chena_lumped/settings/SUMMA
 file_list_dir: /Users/dcasson/Data/snowda/summa/chena_lumped/settings/SUMMA
 
