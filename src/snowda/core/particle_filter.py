@@ -14,6 +14,10 @@ log = get_logger(__name__)
 
 # Resample when N_eff is at or below half the ensemble.
 DEFAULT_N_EFF_THRESHOLD = 0.5
+# Key in ``weights.attrs`` for the likelihood exponent used on that date.
+TEMPERING_BETA = "tempering_beta"
+# Bisection stops when the bracket on the tempering exponent is this narrow.
+_TEMPERING_TOLERANCE = 1e-6
 
 
 def _series_on_hrus(series: pd.Series, hru_ids) -> np.ndarray:
@@ -107,22 +111,61 @@ def _prior_log_weights(
         return np.log(values / values.sum())
 
 
-def _posterior_weights(
-    prior_log_weights: np.ndarray, log_likelihoods: np.ndarray
-) -> np.ndarray:
-    """``w_k ∝ w_{k-1} * L_k``, normalised.
-
-    Sequential importance sampling with the model as the proposal
-    (Arulampalam et al. 2002, Eq. 63; Doucet and Johansen 2011).
-    Computed in log space and shifted by the maximum to avoid underflow.
-    """
-    log_weights = prior_log_weights + log_likelihoods
+def _normalise_log_weights(log_weights: np.ndarray) -> np.ndarray:
     finite = np.isfinite(log_weights)
     if not finite.any():
         raise ValueError("Every particle with a valid prediction has zero prior weight")
     weights = np.zeros_like(log_weights)
     weights[finite] = np.exp(log_weights[finite] - np.max(log_weights[finite]))
     return weights / weights.sum()
+
+
+def _n_eff(weights: np.ndarray) -> float:
+    return float(1.0 / np.sum(np.square(weights)))
+
+
+def _posterior_weights(
+    prior_log_weights: np.ndarray,
+    log_likelihoods: np.ndarray,
+    tempering_target: Optional[float] = None,
+) -> tuple[np.ndarray, float]:
+    """``w_k ∝ w_{k-1} * L_k^beta``, normalised, and ``beta``.
+
+    Sequential importance sampling with the model as the proposal
+    (Arulampalam et al. 2002, Eq. 63; Doucet and Johansen 2011).
+    Computed in log space and shifted by the maximum to avoid underflow.
+
+    Without ``tempering_target``, ``beta = 1``. With it, ``beta`` is the
+    largest value in [0, 1] whose posterior keeps
+    ``N_eff >= tempering_target * N_eff(prior)``, found by bisection.
+    Particles with a non-finite likelihood get zero weight for every
+    ``beta > 0``, so the prior N_eff is taken over valid particles only.
+    ``L^beta`` for a Gaussian is the same as inflating sigma by
+    ``1 / sqrt(beta)``. This is the iterative observation-error inflation
+    of Cluzet et al. (2021), done in one step.
+    """
+    valid = np.isfinite(log_likelihoods)
+
+    def tempered(beta: float) -> np.ndarray:
+        scaled = np.where(valid, beta * np.where(valid, log_likelihoods, 0.0), -np.inf)
+        return _normalise_log_weights(prior_log_weights + scaled)
+
+    full = tempered(1.0)
+    if tempering_target is None:
+        return full, 1.0
+    if not np.isfinite(tempering_target) or not 0.0 < tempering_target <= 1.0:
+        raise ValueError("tempering_target must be a fraction in (0, 1]")
+    floor = tempering_target * _n_eff(tempered(0.0))
+    if _n_eff(full) >= floor:
+        return full, 1.0
+    low, high = 0.0, 1.0
+    while high - low > _TEMPERING_TOLERANCE:
+        mid = 0.5 * (low + high)
+        if _n_eff(tempered(mid)) >= floor:
+            low = mid
+        else:
+            high = mid
+    return tempered(low), low
 
 
 def _swe_observation_sigma(
@@ -160,6 +203,7 @@ class ParticleFilterCore:
         relative_uncertainty: float,
         sigma_floor: float,
         prior_weights: Optional[pd.DataFrame] = None,
+        tempering_target: Optional[float] = None,
     ) -> pd.DataFrame:
         """Weight particles by a relative Gaussian SWE likelihood.
 
@@ -168,7 +212,9 @@ class ParticleFilterCore:
         deviation in the same units as the observations (kg m-2). On each
         observed HRU, ``sigma = max(relative_uncertainty * |SWE|, sigma_floor)``.
         ``prior_weights`` are the weights before this observation; ``None``
-        means equal weights.
+        means equal weights. ``tempering_target`` is described in
+        ``_posterior_weights``; the exponent used is in
+        ``weights.attrs[TEMPERING_BETA]``.
         """
         if not np.isfinite(relative_uncertainty) or relative_uncertainty <= 0:
             raise ValueError(
@@ -191,6 +237,7 @@ class ParticleFilterCore:
             ),
             prior_weights,
             kind="SWE",
+            tempering_target=tempering_target,
         )
 
     @timer
@@ -205,6 +252,7 @@ class ParticleFilterCore:
         obs_column: str,
         *,
         prior_weights: Optional[pd.DataFrame] = None,
+        tempering_target: Optional[float] = None,
     ) -> pd.DataFrame:
         """Weight particles by a Gaussian fSCA likelihood with variance ``z_var``."""
         if not np.isfinite(z_var) or z_var <= 0:
@@ -221,6 +269,7 @@ class ParticleFilterCore:
             lambda observed: np.full(observed.shape, np.sqrt(z_var), dtype=float),
             prior_weights,
             kind="fSCA",
+            tempering_target=tempering_target,
         )
 
     @staticmethod
@@ -248,6 +297,7 @@ class ParticleFilterCore:
         prior_weights: Optional[pd.DataFrame],
         *,
         kind: str,
+        tempering_target: Optional[float],
     ) -> pd.DataFrame:
         if particles.shape[1] == 0:
             raise ValueError("particles must contain at least one ensemble member")
@@ -267,14 +317,21 @@ class ParticleFilterCore:
         log_likelihoods = _gaussian_log_likelihoods(
             particles, observed, hru_ids, sigma_for(observed)
         )
-        weights = _posterior_weights(
+        weights, beta = _posterior_weights(
             _prior_log_weights(prior_weights, list(ens_label_array)),
             log_likelihoods,
+            tempering_target,
         )
-        log.info("Particle weights calculated for %s", end_date_current_run)
-        return pd.DataFrame(
+        log.info(
+            "Particle weights calculated for %s (tempering beta %.4g)",
+            end_date_current_run,
+            beta,
+        )
+        frame = pd.DataFrame(
             [weights], index=[end_date_current_run], columns=ens_label_array
         )
+        frame.attrs[TEMPERING_BETA] = beta
+        return frame
 
     @timer
     def state_estimate(
@@ -363,6 +420,30 @@ def systematic_resample(
     positions = (float(rng.random()) + np.arange(n_draw, dtype=float)) / n_draw
     indices = np.searchsorted(cdf, positions, side="left")
     return np.clip(indices, 0, cdf.size - 1).astype(int)
+
+
+def weighted_ensemble_summary(
+    values: pd.DataFrame,
+    weights: np.ndarray,
+    quantiles: tuple[float, ...] = (0.05, 0.5, 0.95),
+) -> pd.DataFrame:
+    """Weighted mean and quantiles across members, one row per time.
+
+    ``values`` has one column per member, in ``weights`` order. A quantile
+    is the smallest member value whose cumulative weight reaches ``q``.
+    """
+    w = np.asarray(weights, dtype=float)
+    w = w / w.sum()
+    data = values.to_numpy(dtype=float)
+    order = np.argsort(data, axis=1)
+    sorted_values = np.take_along_axis(data, order, axis=1)
+    cdf = np.cumsum(w[order], axis=1)
+    rows = np.arange(data.shape[0])
+    summary = {"mean": data @ w}
+    for q in quantiles:
+        index = np.minimum((cdf < q).sum(axis=1), data.shape[1] - 1)
+        summary[f"q{round(q * 100):02d}"] = sorted_values[rows, index]
+    return pd.DataFrame(summary, index=values.index)
 
 
 def resampling_rng(seed: Optional[int], when: datetime) -> np.random.Generator:

@@ -228,7 +228,8 @@ def test_sir_catalog_binds_summa_and_mizuroute_from_the_same_donor(tmp_path: Pat
         extra={
             "pf_scheme": "sir",
             "num_ens": 2,
-            "n_eff_threshold": 0.5,
+            # Weights [0.8, 0.2] give N_eff ~1.47, under the 0.8 * 2 = 1.6 cutoff.
+            "n_eff_threshold": 0.8,
             "mizuroute": {
                 "executable": str(tmp_path / "route.exe"),
                 "control_file": str(tmp_path / "mizuroute.control"),

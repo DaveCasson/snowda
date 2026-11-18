@@ -171,6 +171,7 @@ class PysummadaConfig:
     num_workers: int = 5
     pf_seed: Optional[int] = None
     fsca_sigma: Optional[float] = None
+    tempering_target: Optional[float] = None
 
     @property
     def model_result_output_dir(self) -> Path:
@@ -263,6 +264,7 @@ def load_pysummada_config(
     # are counts. Zero does not resample.
     n_eff_threshold = float(cfg.get("n_eff_threshold", DEFAULT_N_EFF_THRESHOLD))
     pf_seed = _optional_seed(cfg, "pf_seed")
+    tempering_target = _optional_fraction(cfg, "tempering_target")
 
     summa_args = cfg.get("summa_args", {}) or {}
     summa_args = {str(k): str(v) for k, v in dict(summa_args).items()}
@@ -343,6 +345,7 @@ def load_pysummada_config(
         fsca_cv=float(fsca_cv) if fsca_cv is not None else None,
         fsca_sigma=float(fsca_sigma) if fsca_sigma is not None else None,
         pf_seed=pf_seed,
+        tempering_target=tempering_target,
         helbig_settings=dict(helbig_settings) if helbig_settings else None,
         snow_depth_var=str(snow_depth_var) if snow_depth_var else None,
         assimilation_mode=str(assimilation_mode) if assimilation_mode else None,
@@ -506,6 +509,16 @@ def _optional_seed(cfg: Dict[str, Any], key: str) -> Optional[int]:
     if seed < 0:
         raise ValueError(f"`{key}` must be >= 0.")
     return seed
+
+
+def _optional_fraction(cfg: Dict[str, Any], key: str) -> Optional[float]:
+    raw = cfg.get(key)
+    if raw is None:
+        return None
+    value = float(raw)
+    if not math.isfinite(value) or not 0.0 < value <= 1.0:
+        raise ValueError(f"`{key}` must be a fraction in (0, 1].")
+    return value
 
 
 def _parse_pf_scheme(cfg: Dict[str, Any]) -> str:

@@ -36,7 +36,11 @@ import numpy as np
 import pandas as pd
 
 from laugh_tests._figures import save_figure
-from snowda.core.particle_filter import ParticleFilterCore, resampling_rng
+from snowda.core.particle_filter import (
+    TEMPERING_BETA,
+    ParticleFilterCore,
+    resampling_rng,
+)
 
 WHEN = datetime(2000, 3, 1)
 _GAUSSIAN = (
@@ -57,6 +61,11 @@ _SIS = (
     "w_k ∝ w_{k-1} * p(z_k | x_k) with the model as the proposal"
 )
 LABELS3 = ["001", "002", "003"]
+_TEMPERING = (
+    "Cluzet et al. (2021): inflate observation errors until the ensemble "
+    "keeps enough members. w ∝ w_prior * L^beta, beta largest in [0, 1] "
+    "with N_eff >= target * N_eff(prior)"
+)
 
 
 def observation_sigma(
@@ -90,11 +99,22 @@ def gaussian_weights(error: np.ndarray, sigma: np.ndarray | float) -> np.ndarray
 def particle_weights(
     member_values: np.ndarray,
     observations: np.ndarray,
+    **kwargs,
+) -> np.ndarray:
+    """Normalised weights from ``weights_frame``."""
+    frame = weights_frame(member_values, observations, **kwargs)
+    return frame.iloc[0].to_numpy(dtype=float)
+
+
+def weights_frame(
+    member_values: np.ndarray,
+    observations: np.ndarray,
     *,
     relative_uncertainty: float,
     sigma_floor: float,
     prior_weights: pd.DataFrame | None = None,
-) -> np.ndarray:
+    tempering_target: float | None = None,
+) -> pd.DataFrame:
     """Run ``update_particle_weights`` on one date.
 
     ``member_values`` has shape (n_members,) or (n_members, n_hru).
@@ -126,8 +146,9 @@ def particle_weights(
         relative_uncertainty=relative_uncertainty,
         sigma_floor=sigma_floor,
         prior_weights=prior_weights,
+        tempering_target=tempering_target,
     )
-    return weights.iloc[0].to_numpy(dtype=float)
+    return weights
 
 
 def test_weights_match_the_gaussian_likelihood(laugh) -> None:
@@ -509,6 +530,118 @@ def test_zero_prior_weight_stays_zero(laugh) -> None:
         float(weights[0]),
         exact=True,
         reference=_SIS,
+    )
+
+
+def test_tempering_closed_form(laugh) -> None:
+    """Two equal-prior particles, log L = 0 and -2, target N_eff = 1.8.
+
+    N_eff = 1.8 needs weights 2/3 and 1/3, so exp(-2 beta) = 1/2 and
+    beta = ln(2) / 2. sigma is 10 kg m-2 at an observation of 100, so the
+    second particle at 120 has log L = -0.5 * (20 / 10)^2 = -2.
+    """
+    frame = weights_frame(
+        np.array([100.0, 120.0]),
+        100.0,
+        relative_uncertainty=RELATIVE,
+        sigma_floor=SIGMA_FLOOR,
+        tempering_target=0.9,
+    )
+    laugh.check(
+        "tempering exponent",
+        np.log(2.0) / 2.0,
+        frame.attrs[TEMPERING_BETA],
+        atol=1e-5,
+        reference=_TEMPERING,
+    )
+    laugh.check(
+        "tempered weights",
+        np.array([2.0 / 3.0, 1.0 / 3.0]),
+        frame.iloc[0].to_numpy(dtype=float),
+        atol=1e-5,
+        reference=_TEMPERING,
+    )
+
+
+def test_tempering_inflates_sigma(laugh) -> None:
+    """L^beta for a Gaussian equals the Gaussian with sigma / sqrt(beta)."""
+    swe = np.array([100.0, 108.0, 115.0, 130.0])
+    frame = weights_frame(
+        swe,
+        100.0,
+        relative_uncertainty=RELATIVE,
+        sigma_floor=SIGMA_FLOOR,
+        tempering_target=0.8,
+    )
+    beta = frame.attrs[TEMPERING_BETA]
+    inflated = gaussian_weights(swe - 100.0, 10.0 / np.sqrt(beta))
+    laugh.check(
+        "tempered weights against sigma / sqrt(beta)",
+        inflated,
+        frame.iloc[0].to_numpy(dtype=float),
+        rtol=1e-10,
+        reference="exp(-0.5 r^2 / sigma^2)^beta = exp(-0.5 r^2 / (sigma / sqrt(beta))^2)",
+    )
+    laugh.check(
+        "N_eff after tempering, as a fraction of 4",
+        0.8,
+        ParticleFilterCore.effective_sample_size(frame) / 4.0,
+        atol=1e-5,
+        reference=_TEMPERING,
+    )
+
+
+def test_tempering_leaves_an_easy_update_alone(laugh) -> None:
+    """When the full update already keeps N_eff above the target, beta = 1."""
+    swe = np.array([100.0, 101.0, 102.0])
+    frame = weights_frame(
+        swe,
+        100.0,
+        relative_uncertainty=RELATIVE,
+        sigma_floor=SIGMA_FLOOR,
+        tempering_target=0.5,
+    )
+    laugh.check(
+        "tempering exponent",
+        1.0,
+        frame.attrs[TEMPERING_BETA],
+        exact=True,
+        reference=_TEMPERING,
+    )
+    laugh.check(
+        "weights equal the untempered update",
+        particle_weights(
+            swe, 100.0, relative_uncertainty=RELATIVE, sigma_floor=SIGMA_FLOOR
+        ),
+        frame.iloc[0].to_numpy(dtype=float),
+        rtol=1e-12,
+        reference=_SIS,
+    )
+
+
+def test_tempering_keeps_invalid_particles_at_zero(laugh) -> None:
+    """A particle with no valid prediction stays at zero, even at small beta."""
+    frame = weights_frame(
+        np.array([100.0, 140.0, np.nan]),
+        100.0,
+        relative_uncertainty=RELATIVE,
+        sigma_floor=SIGMA_FLOOR,
+        tempering_target=0.99,
+    )
+    weights = frame.iloc[0].to_numpy(dtype=float)
+    laugh.check(
+        "weight of the invalid particle",
+        0.0,
+        float(weights[2]),
+        exact=True,
+        reference="A non-finite prediction has likelihood 0 for every beta > 0",
+    )
+    laugh.check(
+        "N_eff over the two valid particles",
+        0.99 * 2.0,
+        ParticleFilterCore.effective_sample_size(frame),
+        atol=1e-5,
+        reference=_TEMPERING,
     )
 
 

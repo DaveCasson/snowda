@@ -11,7 +11,7 @@ import pytest
 import xarray as xr
 
 from snowda.core.assimilation import DataAssimilationCore, restart_filename
-from snowda.core.particle_filter import ParticleFilterCore
+from snowda.core.particle_filter import ParticleFilterCore, weighted_ensemble_summary
 from snowda.workflows.run_summa_da import _resample_member_states, _run_swe_assimilation
 from tests.test_pysummada_config import _build_config
 
@@ -112,6 +112,15 @@ def test_swe_assimilation_routes_from_esp_mizuroute(
             route.parent.mkdir(parents=True, exist_ok=True)
             route.write_bytes(f"route-{label}".encode())
             restarts[label] = route
+            times = pd.date_range(start, end, freq="1D", inclusive="left")
+            xr.Dataset(
+                {"IRFroutedRunoff": (("time", "seg"), np.full((times.size, 1), 3.0))},
+                coords={"time": times},
+            ).to_netcdf(
+                Path(_run_dir)
+                / "mizuroute"
+                / f"{label}_{end.strftime('%Y_%m_%d')}_mizuroute.nc"
+            )
 
     monkeypatch.setattr("snowda.workflows.run_summa_da.run_ensemble", fake_run_ensemble)
     monkeypatch.setattr(
@@ -143,6 +152,24 @@ def test_swe_assimilation_routes_from_esp_mizuroute(
     assert particle["label"] == "001"
     assert Path(particle["summa_restart"]).read_bytes() == b"summa-001"
     assert Path(particle["mizuroute_restart"]).read_bytes() == b"route-001"
+    sis_flow = pd.read_csv(
+        run_dir / "assimilation" / "sis_weighted_streamflow.csv", index_col=0
+    )
+    assert list(sis_flow.columns) == ["mean", "q05", "q50", "q95"]
+    assert len(sis_flow) == (datetime(2014, 8, 1) - datetime(2014, 2, 1)).days
+    assert np.allclose(sis_flow.to_numpy(), 3.0)
+
+
+def test_weighted_ensemble_summary_uses_weights() -> None:
+    flows = pd.DataFrame({"a": [1.0, 10.0], "b": [2.0, 20.0], "c": [3.0, 30.0]})
+    summary = weighted_ensemble_summary(flows, np.array([0.7, 0.2, 0.1]))
+    assert np.allclose(summary["mean"], [1.4, 14.0])
+    assert summary["q05"].tolist() == [1.0, 10.0]
+    assert summary["q50"].tolist() == [1.0, 10.0]
+    assert summary["q95"].tolist() == [3.0, 30.0]
+    equal = weighted_ensemble_summary(flows, np.ones(3))
+    assert np.allclose(equal["mean"], [2.0, 20.0])
+    assert equal["q50"].tolist() == [2.0, 20.0]
 
 
 def test_catalog_requires_restart_when_only_esp_mizuroute_is_set(tmp_path: Path) -> None:

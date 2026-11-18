@@ -284,6 +284,19 @@ def test_pf_seed_loads_and_rejects_negative(tmp_path: Path) -> None:
         load_pysummada_config(_build_config(tmp_path, extra={"pf_seed": -1}))
 
 
+def test_tempering_target_loads_and_validates(tmp_path: Path) -> None:
+    assert load_pysummada_config(_build_config(tmp_path)).tempering_target is None
+    cfg = load_pysummada_config(
+        _build_config(tmp_path, extra={"tempering_target": 0.5})
+    )
+    assert cfg.tempering_target == 0.5
+    for bad in (0, 1.5):
+        with pytest.raises(ValueError, match="tempering_target"):
+            load_pysummada_config(
+                _build_config(tmp_path, extra={"tempering_target": bad})
+            )
+
+
 def test_top_level_mizuroute(tmp_path: Path) -> None:
     mizu = {
         "executable": str(tmp_path / "route.exe"),

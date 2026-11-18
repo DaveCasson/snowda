@@ -31,9 +31,15 @@ from snowda.core.esp_sampling import (
     ParticleState,
     write_post_da_catalog,
 )
-from snowda.core.particle_filter import ParticleFilterCore, resampling_rng
+from snowda.core.particle_filter import (
+    TEMPERING_BETA,
+    ParticleFilterCore,
+    resampling_rng,
+    weighted_ensemble_summary,
+)
 from snowda.core.swe_assimilation import DatedHruSwe, mapped_swe_by_date
 from snowda.io.fsca_obs import read_fsca_observations
+from snowda.io.streamflow import read_routed_streamflow
 from snowda.io.summa_ensemble import SummaEnsembleReader, update_file_manager_option
 from snowda.io.summa_fsca import calc_summa_fsca, prepare_summa_fsca_input
 from snowda.io.swe_obs import read_member_hru_swe, read_model_equivalent_swe
@@ -46,6 +52,7 @@ from snowda.workflows.esp import (
 from snowda.workflows.summa_common import (
     apply_run_time,
     apply_segment_initial_conditions,
+    mizuroute_member_output_name,
     prepare_ensemble,
     redirect_summa_output,
     resample_routing_restarts,
@@ -155,6 +162,7 @@ def _run_swe_assimilation(
     prior_weights: pd.DataFrame | None = None
     routing_restarts: dict[str, Path | None] = {}
     mizu = _ensemble_routing(cfg)
+    sis_streamflow: list[pd.DataFrame] = []
     for index, (segment_start, segment_end, do_assimilate) in enumerate(segments):
         run_log.info("Starting ensemble run %s to %s", segment_start, segment_end)
         current_run_config = apply_run_time(
@@ -193,6 +201,10 @@ def _run_swe_assimilation(
                 require_restart=index < len(segments) - 1 or do_assimilate,
                 num_workers=cfg.num_workers,
             )
+            if cfg.pf_scheme == "sis":
+                sis_streamflow.append(
+                    _sis_segment_streamflow(cfg, run_dir, labels, segment_end, prior_weights)
+                )
         previous_resampled = False
         if not do_assimilate:
             continue
@@ -226,10 +238,48 @@ def _run_swe_assimilation(
                 "n_samples": len(observation.samples),
                 "record": str(record_path),
                 "n_eff": particle_filter.effective_sample_size(weights),
+                "tempering_beta": weights.attrs[TEMPERING_BETA],
                 "resampled": resampled,
             }
         )
+    if sis_streamflow:
+        path = run_dir / "assimilation" / "sis_weighted_streamflow.csv"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        pd.concat(sis_streamflow).to_csv(path)
+        run_log.info("Wrote SIS weighted streamflow: %s", path)
     return updates
+
+
+def _sis_segment_streamflow(
+    cfg: PysummadaConfig,
+    run_dir: Path,
+    labels: list[str],
+    segment_end: datetime,
+    weights: pd.DataFrame | None,
+) -> pd.DataFrame:
+    """Filtered SIS streamflow for one segment: weighted mean and 5/50/95 %.
+
+    SIS leaves every member's trace unchanged, so the estimate is the weights
+    known at the segment start (equal before the first update) applied to the
+    members' routed streamflow.
+    """
+    ev = cfg.evaluation
+    flows = pd.DataFrame(
+        {
+            label: read_routed_streamflow(
+                run_dir / "mizuroute" / mizuroute_member_output_name(label, segment_end),
+                variable=ev.variable if ev else "IRFroutedRunoff",
+                seg=ev.seg if ev else 0,
+                reach_id=ev.reach_id if ev else None,
+            ).to_series()
+            for label in labels
+        }
+    )
+    if weights is None:
+        member_weights = [1.0] * len(labels)
+    else:
+        member_weights = weights.iloc[0].reindex(labels).to_numpy(dtype=float)
+    return weighted_ensemble_summary(flows, member_weights)
 
 
 def _update_swe_particles(
@@ -295,6 +345,7 @@ def _update_swe_particles(
         relative_uncertainty=schedule.swe_relative_uncertainty,
         sigma_floor=schedule.swe_sigma_floor,
         prior_weights=prior_weights,
+        tempering_target=cfg.tempering_target,
     )
     weight_dir = run_dir / "assimilation"
     weight_dir.mkdir(parents=True, exist_ok=True)
@@ -362,8 +413,9 @@ def _resample_member_states(
                 donor_indexes,
             )
     log.info(
-        "PF update %s: N_eff %.1f of %d, resampled %s, %d unique donors",
+        "PF update %s: beta %.4g, N_eff %.1f of %d, resampled %s, %d unique donors",
         when.strftime("%Y-%m-%d"),
+        weights.attrs.get(TEMPERING_BETA, 1.0),
         particle_filter.effective_sample_size(weights),
         len(member_labels),
         resampled,
@@ -567,6 +619,7 @@ def _run_fsca_assimilation(
             ens_label_array=list(modeled_cols.keys()),
             obs_column="fsca_obs",
             prior_weights=prior_weights,
+            tempering_target=cfg.tempering_target,
         )
         previous_resampled = _resample_member_states(
             cfg,
@@ -680,6 +733,7 @@ def assimilation_provenance(
         "pf_scheme": cfg.pf_scheme,
         "n_eff_threshold": cfg.n_eff_threshold,
         "pf_seed": cfg.pf_seed,
+        "tempering_target": cfg.tempering_target,
         "assimilation_mode": result.assimilation_mode,
         "assimilation_dates": [item["date"] for item in result.swe_updates],
         "swe_updates": result.swe_updates,

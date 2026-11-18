@@ -18,6 +18,7 @@ from snowda.core.assimilation import DataAssimilationCore
 from snowda.core.fsca_models import FscaState, initialize_model_arrays
 from snowda.core.particle_filter import (
     DEFAULT_N_EFF_THRESHOLD,
+    TEMPERING_BETA,
     ParticleFilterCore,
     resampling_rng,
 )
@@ -166,6 +167,7 @@ class Snow5DAEngine:
         swe_sigma_floor: float | None = None,
         schaake_shuffle_config: SchaakeShuffleConfig | None = None,
         pf_seed: int | None = None,
+        tempering_target: float | None = None,
     ):
         self.particles = particles
         self._forcing_lookup = {p.label: p.forcing_ds for p in particles}
@@ -179,6 +181,7 @@ class Snow5DAEngine:
         self.swe_sigma_floor = swe_sigma_floor
         self.n_eff_threshold = n_eff_threshold
         self.pf_seed = pf_seed
+        self.tempering_target = tempering_target
         self.fsca_model = fsca_model
         self.helbig_params = helbig_params
         self.helbig_settings = helbig_settings
@@ -277,9 +280,11 @@ class Snow5DAEngine:
         elif resample is not None:
             self._apply_resample(resample)
             log.info("Resampled particles at %s -> %s", interval_end, resample.tolist())
+        beta = weights.attrs[TEMPERING_BETA]
         log.info(
-            "PF update %s: N_eff %.1f of %d, resampled %s",
+            "PF update %s: beta %.4g, N_eff %.1f of %d, resampled %s",
             interval_end.strftime("%Y-%m-%d"),
+            beta,
             n_eff,
             len(self.particles),
             resample is not None,
@@ -291,6 +296,7 @@ class Snow5DAEngine:
             "time": interval_end,
             "weights": weights,
             "n_eff": n_eff,
+            "tempering_beta": beta,
             "resample": resample,
             self.state_mean_name: mean_df[self.state_mean_name].to_dict(),
             self.state_var_name: var_df[self.state_var_name].to_dict(),
@@ -342,6 +348,7 @@ class Snow5DAEngine:
                 self.ens_labels,
                 obs_column=self.obs_var_name,
                 prior_weights=self.prior_weights,
+                tempering_target=self.tempering_target,
             )
         if self.swe_relative_uncertainty is None or self.swe_sigma_floor is None:
             raise ValueError(
@@ -357,6 +364,7 @@ class Snow5DAEngine:
             relative_uncertainty=self.swe_relative_uncertainty,
             sigma_floor=self.swe_sigma_floor,
             prior_weights=self.prior_weights,
+            tempering_target=self.tempering_target,
         )
 
     def _apply_resample(self, indices: np.ndarray) -> None:
@@ -691,6 +699,11 @@ def run_snow5_da(config_path: str | Path) -> Path:
     pf_seed = None if cfg.get("pf_seed") is None else int(cfg["pf_seed"])
     if pf_seed is not None and pf_seed < 0:
         raise ValueError("`pf_seed` must be >= 0.")
+    tempering_target = (
+        None if cfg.get("tempering_target") is None else float(cfg["tempering_target"])
+    )
+    if tempering_target is not None and not 0.0 < tempering_target <= 1.0:
+        raise ValueError("`tempering_target` must be a fraction in (0, 1].")
 
     particles = []
     forcing_lookup: dict[str, xr.Dataset] = {}
@@ -752,6 +765,7 @@ def run_snow5_da(config_path: str | Path) -> Path:
         obs_var_name=obs_var_name,
         schaake_shuffle_config=schaake_shuffle_config,
         pf_seed=pf_seed,
+        tempering_target=tempering_target,
     )
 
     records = da_engine.run(params, cv_array, start_time)
@@ -781,6 +795,7 @@ def run_snow5_da(config_path: str | Path) -> Path:
         "pf_resample": pf_resample,
         "n_eff_threshold": n_eff_threshold,
         "pf_seed": pf_seed,
+        "tempering_target": tempering_target,
         "obs_var_name": obs_var_name,
         "modeled_var_name": modeled_var_name,
         "state_mean_name": state_mean_name,
@@ -792,6 +807,7 @@ def run_snow5_da(config_path: str | Path) -> Path:
             {
                 "time": record["time"].isoformat(),
                 "n_eff": record["n_eff"],
+                "tempering_beta": record["tempering_beta"],
                 "resample": record["resample"].tolist()
                 if record["resample"] is not None
                 else None,
