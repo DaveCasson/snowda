@@ -297,6 +297,17 @@ def test_tempering_target_loads_and_validates(tmp_path: Path) -> None:
             )
 
 
+def test_season_start_month_loads_and_validates(tmp_path: Path) -> None:
+    assert load_pysummada_config(_build_config(tmp_path)).season_start_month is None
+    cfg = load_pysummada_config(_build_config(tmp_path, extra={"season_start_month": 10}))
+    assert cfg.season_start_month == 10
+    for bad in (0, 13):
+        with pytest.raises(ValueError, match="season_start_month"):
+            load_pysummada_config(
+                _build_config(tmp_path, extra={"season_start_month": bad})
+            )
+
+
 def test_top_level_mizuroute(tmp_path: Path) -> None:
     mizu = {
         "executable": str(tmp_path / "route.exe"),

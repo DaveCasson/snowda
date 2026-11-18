@@ -25,6 +25,9 @@ summa_log: false
 
 pf_scheme: sir
 n_eff_threshold: 0.5
+# Limit collapse per update: keep N_eff >= 0.5 * prior N_eff. Guards against
+# sigma_o being a lower bound and station error persisting across dates.
+tempering_target: 0.5
 # Seed for SIR resampling. Each assimilation date gets its own stream.
 pf_seed: 42
 assimilation_mode: swe
@@ -40,7 +43,9 @@ assimilation:
     - "2014-03-01 00:00"
     - "2014-04-01 00:00"
     - "2014-05-01 00:00"
-  obs_window_days: 15
+  # Surveys fall on the 24th-31st. +/-7 days keeps 126 of 132 samples and cuts
+  # timing error from 25 to 11 kg m-2 (scripts/swe_error_budget.py).
+  obs_window_days: 7
   # Model-equivalent SWE from data/yukon_snow_data.csv. station_id is location_code.
   swe_nc: /Users/dcasson/GitHub/snowda/data/obs_qm/ross_yukon_swe_model_equivalent.nc
   swe_var: swe_model_equivalent
@@ -53,9 +58,11 @@ assimilation:
     - hru_id: 1
       station_id: "09BA-SC02"
   # One standard deviation is this fraction of |observed SWE|.
-  swe_relative_uncertainty: 0.10
+  swe_relative_uncertainty: 0.15
   # Absolute standard-deviation floor, kg m-2. sigma is never smaller than this.
-  swe_sigma_floor: 5
+  # sqrt(sigma_o^2 + sigma_t^2) = sqrt(35^2 + 11^2) for one station at +/-7 days.
+  # sigma_o = 35 is a lower bound from the spread across stations within a campaign.
+  swe_sigma_floor: 37
 
 # Settings directory for the base file manager and forcing file lists.
 # Generated fileManagerEns*.txt files are written into the run directory.

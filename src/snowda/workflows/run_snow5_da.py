@@ -168,6 +168,7 @@ class Snow5DAEngine:
         schaake_shuffle_config: SchaakeShuffleConfig | None = None,
         pf_seed: int | None = None,
         tempering_target: float | None = None,
+        season_start_month: int | None = None,
     ):
         self.particles = particles
         self._forcing_lookup = {p.label: p.forcing_ds for p in particles}
@@ -182,6 +183,7 @@ class Snow5DAEngine:
         self.n_eff_threshold = n_eff_threshold
         self.pf_seed = pf_seed
         self.tempering_target = tempering_target
+        self.season_start_month = season_start_month
         self.fsca_model = fsca_model
         self.helbig_params = helbig_params
         self.helbig_settings = helbig_settings
@@ -247,6 +249,9 @@ class Snow5DAEngine:
             particle.fsca_states = fsca_states
         particles_df = self._build_particles_df(interval_end)
         obs_df = self._extract_obs(interval_end)
+        self.prior_weights = self.pf.season_prior(
+            self.prior_weights, interval_end, self.season_start_month
+        )
         weights = self._update_weights(particles_df, obs_df, interval_end)
         log.info(
             "Particle weights (%s): %s",
@@ -704,6 +709,11 @@ def run_snow5_da(config_path: str | Path) -> Path:
     )
     if tempering_target is not None and not 0.0 < tempering_target <= 1.0:
         raise ValueError("`tempering_target` must be a fraction in (0, 1].")
+    season_start_month = (
+        None if cfg.get("season_start_month") is None else int(cfg["season_start_month"])
+    )
+    if season_start_month is not None and not 1 <= season_start_month <= 12:
+        raise ValueError("`season_start_month` must be a month between 1 and 12.")
 
     particles = []
     forcing_lookup: dict[str, xr.Dataset] = {}
@@ -766,6 +776,7 @@ def run_snow5_da(config_path: str | Path) -> Path:
         schaake_shuffle_config=schaake_shuffle_config,
         pf_seed=pf_seed,
         tempering_target=tempering_target,
+        season_start_month=season_start_month,
     )
 
     records = da_engine.run(params, cv_array, start_time)
@@ -796,6 +807,7 @@ def run_snow5_da(config_path: str | Path) -> Path:
         "n_eff_threshold": n_eff_threshold,
         "pf_seed": pf_seed,
         "tempering_target": tempering_target,
+        "season_start_month": season_start_month,
         "obs_var_name": obs_var_name,
         "modeled_var_name": modeled_var_name,
         "state_mean_name": state_mean_name,

@@ -40,6 +40,7 @@ from snowda.core.particle_filter import (
     TEMPERING_BETA,
     ParticleFilterCore,
     resampling_rng,
+    season_of,
 )
 
 WHEN = datetime(2000, 3, 1)
@@ -114,6 +115,7 @@ def weights_frame(
     sigma_floor: float,
     prior_weights: pd.DataFrame | None = None,
     tempering_target: float | None = None,
+    when: datetime = WHEN,
 ) -> pd.DataFrame:
     """Run ``update_particle_weights`` on one date.
 
@@ -129,7 +131,7 @@ def weights_frame(
         raise ValueError("observations must have one value per HRU")
     labels = [f"{i + 1:03d}" for i in range(n_members)]
     hru_ids = [i + 1 for i in range(n_hru)]
-    index = pd.MultiIndex.from_product([hru_ids, [WHEN]], names=["hru", "time"])
+    index = pd.MultiIndex.from_product([hru_ids, [when]], names=["hru", "time"])
     particles = pd.DataFrame(
         {label: [values[m, h] for h in range(n_hru)] for m, label in enumerate(labels)},
         index=index,
@@ -139,7 +141,7 @@ def weights_frame(
     weights = ParticleFilterCore().update_particle_weights(
         particles,
         measurements,
-        WHEN,
+        when,
         hru_index,
         labels,
         "swe",
@@ -473,6 +475,84 @@ def test_sequential_weights_match_the_batch_smoother(laugh) -> None:
             "Margulis et al. (2015) particle batch smoother: w ∝ p(y_1:K | x). "
             "Independent errors make this the product of dated likelihoods"
         ),
+    )
+
+
+def test_season_boundaries(laugh) -> None:
+    """A season starts on day 1 of the start month."""
+    cases = [
+        (datetime(2014, 9, 30), 10, 2013),
+        (datetime(2014, 10, 1), 10, 2014),
+        (datetime(2015, 2, 1), 10, 2014),
+        (datetime(2014, 12, 31), 1, 2014),
+        (datetime(2015, 1, 1), 1, 2015),
+    ]
+    laugh.check(
+        "season of each date",
+        np.array([case[2] for case in cases]),
+        np.array([season_of(when, month) for when, month, _ in cases]),
+        exact=True,
+        reference="Season = year of the most recent day 1 of the start month",
+    )
+
+
+def _weights_over_dates(values, obs, dates, season_start_month):
+    """Sequential updates without resampling, with an optional season reset."""
+    prior = None
+    for column, when in enumerate(dates):
+        prior = ParticleFilterCore.season_prior(prior, when, season_start_month)
+        frame = weights_frame(
+            values[:, column],
+            obs[column],
+            relative_uncertainty=RELATIVE,
+            sigma_floor=SIGMA_FLOOR,
+            prior_weights=prior,
+            when=when,
+        )
+        prior = ParticleFilterCore.next_prior(frame, resampled=False)
+    return frame.iloc[0].to_numpy(dtype=float)
+
+
+def test_season_reset_uses_only_this_season(laugh) -> None:
+    """Two dates in winter 2014 and one in winter 2015, season start October.
+
+    With the reset, the 2015 weights come from the 2015 observation alone,
+    the batch smoother over that season. Without it, all three multiply.
+    """
+    dates = [datetime(2014, 2, 1), datetime(2014, 3, 1), datetime(2015, 2, 1)]
+    obs = np.array([80.0, 150.0, 60.0])
+    values = np.array(
+        [
+            [70.0, 140.0, 70.0],
+            [85.0, 160.0, 55.0],
+            [95.0, 150.0, 40.0],
+            [80.0, 120.0, 60.0],
+        ]
+    )
+    sigma = observation_sigma(obs, RELATIVE, SIGMA_FLOOR)
+    laugh.check(
+        "weights in 2015 with season_start_month = 10",
+        gaussian_weights(values[:, 2] - obs[2], sigma[2]),
+        _weights_over_dates(values, obs, dates, 10),
+        rtol=1e-10,
+        reference=(
+            "Margulis et al. (2015): one batch-smoother weighting per snow "
+            "season, w ∝ p(y_season | x)"
+        ),
+    )
+    laugh.check(
+        "weights in 2014 after two dates with the reset on",
+        gaussian_weights(values[:, :2] - obs[:2], sigma[:2]),
+        _weights_over_dates(values[:, :2], obs[:2], dates[:2], 10),
+        rtol=1e-10,
+        reference="Dates inside one season still multiply",
+    )
+    laugh.check(
+        "weights in 2015 without a season reset",
+        gaussian_weights(values - obs, sigma),
+        _weights_over_dates(values, obs, dates, None),
+        rtol=1e-10,
+        reference=_SIS,
     )
 
 

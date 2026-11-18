@@ -213,6 +213,11 @@ def _run_swe_assimilation(
             run_log.info("No usable model-equivalent SWE for %s", segment_end)
             continue
         record_path = _write_swe_record(run_dir, observation)
+        season_prior = particle_filter.season_prior(
+            prior_weights, observation.date, cfg.season_start_month
+        )
+        season_reset = prior_weights is not None and season_prior is None
+        prior_weights = season_prior
         weights, resampled = _update_swe_particles(
             cfg,
             schedule,
@@ -239,6 +244,7 @@ def _run_swe_assimilation(
                 "record": str(record_path),
                 "n_eff": particle_filter.effective_sample_size(weights),
                 "tempering_beta": weights.attrs[TEMPERING_BETA],
+                "season_reset": season_reset,
                 "resampled": resampled,
             }
         )
@@ -610,6 +616,9 @@ def _run_fsca_assimilation(
             continue
 
         modeled_df = pd.concat(modeled_cols, axis=1)
+        prior_weights = particle_filter.season_prior(
+            prior_weights, end_time_current_run, cfg.season_start_month
+        )
         weights_fsca = particle_filter.update_particle_weights_fsca(
             modeled_df,
             obs_df,
@@ -734,6 +743,7 @@ def assimilation_provenance(
         "n_eff_threshold": cfg.n_eff_threshold,
         "pf_seed": cfg.pf_seed,
         "tempering_target": cfg.tempering_target,
+        "season_start_month": cfg.season_start_month,
         "assimilation_mode": result.assimilation_mode,
         "assimilation_dates": [item["date"] for item in result.swe_updates],
         "swe_updates": result.swe_updates,

@@ -273,6 +273,32 @@ class ParticleFilterCore:
         )
 
     @staticmethod
+    def season_prior(
+        prior_weights: Optional[pd.DataFrame],
+        when,
+        season_start_month: Optional[int],
+    ) -> Optional[pd.DataFrame]:
+        """Prior for an update on ``when``, reset at the start of a season.
+
+        ``prior_weights`` carries the date of the update that produced it as
+        its index. When that date and ``when`` fall in different seasons, the
+        prior is reset to equal weights (``None``), so each season's weights
+        use only that season's observations: the particle batch smoother
+        applied within one snow season (Margulis et al. 2015). Particle
+        states are not touched. ``None`` for ``season_start_month`` carries
+        weights across seasons.
+        """
+        if season_start_month is None or prior_weights is None:
+            return prior_weights
+        last_update = prior_weights.index[0]
+        if season_of(last_update, season_start_month) != season_of(
+            when, season_start_month
+        ):
+            log.info("New season at %s: prior weights reset to equal", when)
+            return None
+        return prior_weights
+
+    @staticmethod
     def next_prior(weights: pd.DataFrame, resampled: bool) -> pd.DataFrame:
         """Prior weights for the next update.
 
@@ -402,6 +428,19 @@ class ParticleFilterCore:
         return systematic_resample(
             weights.iloc[0].to_numpy(dtype=float), num_ens, generator
         )
+
+
+def season_of(when, start_month: int) -> int:
+    """Year in which the season containing ``when`` begins.
+
+    A season runs from day 1 of ``start_month`` to the day before that date
+    a year later. With ``start_month = 10``, 2014-09-30 is in season 2013
+    and 2014-10-01 starts season 2014.
+    """
+    if not 1 <= int(start_month) <= 12:
+        raise ValueError("season_start_month must be between 1 and 12")
+    stamp = pd.Timestamp(when)
+    return stamp.year if stamp.month >= int(start_month) else stamp.year - 1
 
 
 def systematic_resample(

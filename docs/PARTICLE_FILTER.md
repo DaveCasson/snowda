@@ -43,9 +43,36 @@ ensemble is equally weighted, so the weights reset to `1/N` before the next date
 `ParticleFilterCore.next_prior(weights, resampled)` applies that rule. A date with no usable
 observation leaves the weights unchanged.
 
-For a single forecast issue date, sequential weighting without resampling gives the same weights
-as weighting each particle once by all observations up to that date. That one-shot weighting is
-the particle batch smoother of Margulis et al. (2015). A laugh test checks this equivalence.
+For a single forecast issue date, sequential weighting without resampling or tempering gives the
+same weights as weighting each particle once by all observations up to that date. That one-shot
+weighting is the particle batch smoother of Margulis et al. (2015), with the same observation
+vector. Laugh tests check this equivalence. Three things define that observation vector:
+
+- **Observation window.** A station sample is used only if it falls within
+  `±obs_window_days` of an assimilation date. It goes to the nearest such date and is used
+  once. Samples outside every window are dropped.
+- **Date-assigned values.** Each date's observation is the HRU mean of its samples, compared
+  with modelled SWE on the assimilation date, not at each sample's own time.
+- **Smoother window.** By default, weights accumulate from the start of the run. With
+  `season_start_month` set, the weights reset to equal before the first update of each new
+  season. Each season's weights then use only that season's observations, which matches
+  Margulis et al., who apply the smoother within one water year.
+
+### Season reset
+
+A season runs from day 1 of `season_start_month` to the day before that date a year later. With
+`season_start_month: 10`, 2014-09-30 is in season 2013 and 2014-10-01 starts season 2014.
+Before each update, `ParticleFilterCore.season_prior` compares the date of the previous update,
+held as the index of the carried weights, with the date of this update. If they fall in
+different seasons, the prior becomes equal weights.
+
+- Only the weights reset. Particle states continue unchanged, so last season's snow, soil
+  moisture and storage still shape this season's trajectories.
+- The reset is applied at the first update of the new season, not on the boundary date. A
+  segment that crosses the boundary keeps the previous weights for its streamflow estimate,
+  because each segment uses the weights known at its start.
+- After a resample, the weights are already equal, so the reset changes nothing.
+- The SWE, fSCA and Snow5 paths all use it.
 
 Weights are computed in log space and shifted by their maximum before exponentiating, so very
 small weights do not underflow to zero.
@@ -153,7 +180,7 @@ A higher target keeps more particles and pulls less toward the observation.
 ## 4. Configuration
 
 Top-level keys in the SUMMA pysummada YAML (Snow5 accepts `n_eff_threshold`, `pf_seed`,
-`tempering_target` and `z_var` at its top level):
+`tempering_target`, `season_start_month` and `z_var` at its top level):
 
 ```yaml
 pf_scheme: sir           # sis: weights only; sir: copy donor restarts when N_eff is low
@@ -161,6 +188,7 @@ n_eff_threshold: 0.5     # fraction of N in (0, 1], or a count above 1; 0 never 
 pf_seed: 42              # optional; reproducible resampling per assimilation date
 tempering_target: 0.3    # optional; fraction of prior N_eff to keep on each date
 fsca_sigma: 0.1          # required for assimilation_mode: fsca_only
+season_start_month: 10   # optional; weights reset to equal at the first update of each season
 
 assimilation:
   swe_relative_uncertainty: 0.10   # one standard deviation, fraction of |observed SWE|
@@ -175,9 +203,9 @@ Each SUMMA update logs one line, for example (illustrative values):
 PF update 2014-03-01: beta 0.504, N_eff 15.0 of 50, resampled True, 21 unique donors
 ```
 
-- `swe_updates` in `provenance.json` records `n_eff`, `tempering_beta` and `resampled` for each
-  SWE date. Run provenance records `pf_scheme`, `n_eff_threshold`, `pf_seed` and
-  `tempering_target`.
+- `swe_updates` in `provenance.json` records `n_eff`, `tempering_beta`, `season_reset` and
+  `resampled` for each SWE date. Run provenance records `pf_scheme`, `n_eff_threshold`,
+  `pf_seed`, `tempering_target` and `season_start_month`. A season reset is also logged.
 - `assimilation/<date>_swe_weights.csv` holds the posterior weights after carry-forward and
   tempering.
 - `assimilation/sis_weighted_streamflow.csv` (`pf_scheme: sis` with ensemble mizuRoute, SWE
@@ -202,6 +230,9 @@ PF update 2014-03-01: beta 0.504, N_eff 15.0 of 50, resampled True, 21 unique do
   `beta = ln 2 / 2` and weights 2/3 and 1/3. Tempered weights equal the Gaussian with
   `sigma / sqrt(beta)` and reach the target `N_eff`. An easy update keeps `beta = 1`, and an
   invalid particle stays at zero.
+- Season reset: season boundaries fall on day 1 of the start month. With two dates in winter
+  2014 and one in winter 2015, the 2015 weights equal the 2015 likelihood alone, and without the
+  reset all three multiply.
 
 Run them with `python -m laugh_tests`.
 
