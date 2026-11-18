@@ -23,6 +23,8 @@ summa_log: false
 
 pf_scheme: sir
 n_eff_threshold: 0.5
+# Seed for SIR resampling. Each assimilation date gets its own stream.
+pf_seed: 42
 assimilation_mode: swe
 
 # Daily restarts so a state file exists at each assimilation date.

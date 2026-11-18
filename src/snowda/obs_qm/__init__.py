@@ -29,6 +29,7 @@ from snowda.obs_qm.diagnostics import (
     plot_station_comparison_timeseries,
     plot_station_cross_validation,
     plot_station_diagnostics,
+    plot_station_hydrograph,
 )
 from snowda.obs_qm.io import (
     attach_mapped_variables,
@@ -101,6 +102,7 @@ __all__ = [
     "attach_mapped_variables",
     "write_mapped_observations",
     "plot_station_diagnostics",
+    "plot_station_hydrograph",
     "plot_station_comparison_timeseries",
     "plot_station_cross_validation",
     "mapping_curve_arrays",

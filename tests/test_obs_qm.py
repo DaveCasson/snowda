@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from snowda.obs_qm.diagnostics import plot_station_diagnostics
+from snowda.obs_qm.diagnostics import plot_station_diagnostics, plot_station_hydrograph
 from snowda.obs_qm.mapping import (
     empirical_cdf_quantile,
     empirical_inverse_cdf,
@@ -460,7 +460,7 @@ def test_combine_stations_mean_on_overlap_keeps_union():
     assert "SC02A" in out.attrs["combined_from"]
 
 
-def test_diagnostic_timeseries_uses_full_model_series():
+def test_hydrograph_uses_full_model_series():
     import matplotlib.pyplot as plt
 
     obs_time = pd.to_datetime(["2000-03-01", "2000-04-01"])
@@ -480,17 +480,20 @@ def test_diagnostic_timeseries_uses_full_model_series():
         coords={"time": model_time},
         name="swe_model",
     )
-    fig = plot_station_diagnostics(mapped, model=model)
+    fig = plot_station_hydrograph(mapped, model=model)
     lines = [
         line
         for ax in fig.axes
         for line in ax.lines
-        if line.get_label() == "model SWE"
+        if line.get_label() == "Model"
     ]
     assert len(lines) == 1
     np.testing.assert_array_equal(lines[0].get_xdata(), model_time.to_numpy())
     np.testing.assert_allclose(lines[0].get_ydata(), model.values)
     plt.close(fig)
+    panels = plot_station_diagnostics(mapped)
+    assert len(panels.axes) == 5
+    plt.close(panels)
 
 
 def test_stations_to_plot_skips_screened_by_default():

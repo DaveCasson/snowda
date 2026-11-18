@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
 
 import numpy as np
@@ -10,6 +11,9 @@ from snowda.utils.logging import get_logger
 from snowda.utils.timing import timer
 
 log = get_logger(__name__)
+
+# Resample when N_eff is at or below half the ensemble.
+DEFAULT_N_EFF_THRESHOLD = 0.5
 
 
 def _series_on_hrus(series: pd.Series, hru_ids) -> np.ndarray:
@@ -48,18 +52,18 @@ def _observations_on_hrus(frame: pd.DataFrame, obs_column: str, hru_ids) -> np.n
     return _series_on_hrus(frame[obs_column], hru_ids)
 
 
-def _gaussian_weights(
+def _gaussian_log_likelihoods(
     particles: pd.DataFrame,
     observed: np.ndarray,
     hru_ids,
     sigma: np.ndarray,
 ) -> np.ndarray:
-    """Normalised independent-Gaussian weights.
+    """Independent-Gaussian log-likelihood of each particle, up to a constant.
 
     ``sigma`` is one standard deviation per HRU, in ``hru_ids`` order.
     ``log L_i = -0.5 * sum(((x_i - z) / sigma)^2)`` over HRUs with a finite
     observation. A particle with a non-finite prediction on one of those HRUs
-    gets weight 0. Arulampalam et al. (2002).
+    gets ``-inf``. Arulampalam et al. (2002).
     """
     valid_obs = np.isfinite(observed)
     if not valid_obs.any():
@@ -74,14 +78,51 @@ def _gaussian_weights(
         if np.all(np.isfinite(residuals)):
             log_likelihoods[i] = -0.5 * np.sum((residuals / sigma[valid_obs]) ** 2)
 
-    finite = np.isfinite(log_likelihoods)
-    if not finite.any():
+    if not np.isfinite(log_likelihoods).any():
         raise ValueError("All particles have invalid predictions for observed HRUs")
+    return log_likelihoods
 
-    # Shift before exponentiating to avoid underflow.
-    shifted = np.zeros_like(log_likelihoods)
-    shifted[finite] = np.exp(log_likelihoods[finite] - np.max(log_likelihoods[finite]))
-    return shifted / shifted.sum()
+
+def _prior_log_weights(
+    prior_weights: Optional[pd.DataFrame], labels: list[str]
+) -> np.ndarray:
+    """Log of the previous normalised weights, in ``labels`` order.
+
+    ``None`` is an equally weighted ensemble. ``prior_weights`` is the
+    one-row frame returned by the previous update, or by
+    ``ParticleFilterCore.next_prior``.
+    """
+    if prior_weights is None:
+        return np.zeros(len(labels), dtype=float)
+    row = prior_weights.iloc[0]
+    missing = [label for label in labels if label not in row.index]
+    if missing:
+        raise ValueError(
+            f"Prior weights have no column for member(s) {', '.join(missing)}"
+        )
+    values = row.reindex(labels).to_numpy(dtype=float)
+    if not np.all(np.isfinite(values)) or np.any(values < 0) or values.sum() <= 0:
+        raise ValueError("Prior weights must be finite, non-negative and not all zero")
+    with np.errstate(divide="ignore"):
+        return np.log(values / values.sum())
+
+
+def _posterior_weights(
+    prior_log_weights: np.ndarray, log_likelihoods: np.ndarray
+) -> np.ndarray:
+    """``w_k ∝ w_{k-1} * L_k``, normalised.
+
+    Sequential importance sampling with the model as the proposal
+    (Arulampalam et al. 2002, Eq. 63; Doucet and Johansen 2011).
+    Computed in log space and shifted by the maximum to avoid underflow.
+    """
+    log_weights = prior_log_weights + log_likelihoods
+    finite = np.isfinite(log_weights)
+    if not finite.any():
+        raise ValueError("Every particle with a valid prediction has zero prior weight")
+    weights = np.zeros_like(log_weights)
+    weights[finite] = np.exp(log_weights[finite] - np.max(log_weights[finite]))
+    return weights / weights.sum()
 
 
 def _swe_observation_sigma(
@@ -99,7 +140,12 @@ def _swe_observation_sigma(
 
 @dataclass
 class ParticleFilterCore:
-    """Core particle filter utilities (no I/O)."""
+    """Core particle filter utilities (no I/O).
+
+    Weights are sequential: ``w_k ∝ w_{k-1} * L_k``. Pass the previous
+    update's weights as ``prior_weights``, after ``next_prior``, which resets
+    them to equal when the ensemble was resampled.
+    """
 
     @timer
     def update_particle_weights(
@@ -113,6 +159,7 @@ class ParticleFilterCore:
         *,
         relative_uncertainty: float,
         sigma_floor: float,
+        prior_weights: Optional[pd.DataFrame] = None,
     ) -> pd.DataFrame:
         """Weight particles by a relative Gaussian SWE likelihood.
 
@@ -120,6 +167,8 @@ class ParticleFilterCore:
         absolute observed SWE. ``sigma_floor`` is the absolute standard
         deviation in the same units as the observations (kg m-2). On each
         observed HRU, ``sigma = max(relative_uncertainty * |SWE|, sigma_floor)``.
+        ``prior_weights`` are the weights before this observation; ``None``
+        means equal weights.
         """
         if not np.isfinite(relative_uncertainty) or relative_uncertainty <= 0:
             raise ValueError(
@@ -130,34 +179,19 @@ class ParticleFilterCore:
             raise ValueError(
                 "sigma_floor must be a finite absolute SWE standard deviation greater than 0"
             )
-
-        if particles.shape[1] == 0:
-            raise ValueError("particles must contain at least one ensemble member")
-
-        if len(ens_label_array) != particles.shape[1]:
-            raise ValueError(
-                "ens_label_array length must match the number of particle columns"
-            )
-
-        z_df = swe_measurements.loc[
-            swe_measurements.index.get_level_values("time") == end_date_current_run
-        ]
-
-        hru_ids = hru_index["hruId"]
-        observed = _observations_on_hrus(z_df, obs_column, hru_ids)
-        if not np.isfinite(observed).any():
-            raise ValueError(f"No valid SWE observations for {end_date_current_run}")
-        sigma = _swe_observation_sigma(observed, relative_uncertainty, sigma_floor)
-        weights = _gaussian_weights(particles, observed, hru_ids, sigma)
-
-        weights_df = pd.DataFrame(
-            [weights],
-            index=[end_date_current_run],
-            columns=ens_label_array,
+        return self._update_weights(
+            particles,
+            swe_measurements,
+            end_date_current_run,
+            hru_index,
+            ens_label_array,
+            obs_column,
+            lambda observed: _swe_observation_sigma(
+                observed, relative_uncertainty, sigma_floor
+            ),
+            prior_weights,
+            kind="SWE",
         )
-
-        log.info("Particle weights calculated for %s", end_date_current_run)
-        return weights_df
 
     @timer
     def update_particle_weights_fsca(
@@ -169,37 +203,78 @@ class ParticleFilterCore:
         hru_index: pd.DataFrame,
         ens_label_array: list[str],
         obs_column: str,
+        *,
+        prior_weights: Optional[pd.DataFrame] = None,
     ) -> pd.DataFrame:
+        """Weight particles by a Gaussian fSCA likelihood with variance ``z_var``."""
         if not np.isfinite(z_var) or z_var <= 0:
-            raise ValueError("z_var must be a finite, positive observation-error variance")
+            raise ValueError(
+                "z_var must be a finite, positive observation-error variance"
+            )
+        return self._update_weights(
+            particles,
+            fsca_measurements,
+            end_date_current_run,
+            hru_index,
+            ens_label_array,
+            obs_column,
+            lambda observed: np.full(observed.shape, np.sqrt(z_var), dtype=float),
+            prior_weights,
+            kind="fSCA",
+        )
 
+    @staticmethod
+    def next_prior(weights: pd.DataFrame, resampled: bool) -> pd.DataFrame:
+        """Prior weights for the next update.
+
+        Resampling leaves an equally weighted ensemble, so the weights reset
+        to 1/N (Arulampalam et al. 2002). Without it, the posterior carries
+        forward.
+        """
+        if not resampled:
+            return weights
+        equal = np.full(weights.shape[1], 1.0 / weights.shape[1])
+        return pd.DataFrame([equal], index=weights.index, columns=weights.columns)
+
+    @staticmethod
+    def _update_weights(
+        particles: pd.DataFrame,
+        measurements: pd.DataFrame,
+        end_date_current_run,
+        hru_index: pd.DataFrame,
+        ens_label_array: list[str],
+        obs_column: str,
+        sigma_for,
+        prior_weights: Optional[pd.DataFrame],
+        *,
+        kind: str,
+    ) -> pd.DataFrame:
         if particles.shape[1] == 0:
             raise ValueError("particles must contain at least one ensemble member")
-
         if len(ens_label_array) != particles.shape[1]:
             raise ValueError(
                 "ens_label_array length must match the number of particle columns"
             )
 
-        z_df = fsca_measurements.loc[
-            fsca_measurements.index.get_level_values("time") == end_date_current_run
+        z_df = measurements.loc[
+            measurements.index.get_level_values("time") == end_date_current_run
         ]
-
         hru_ids = hru_index["hruId"]
         observed = _observations_on_hrus(z_df, obs_column, hru_ids)
         if not np.isfinite(observed).any():
-            raise ValueError(f"No valid fSCA observations for {end_date_current_run}")
-        sigma = np.full(observed.shape, np.sqrt(z_var), dtype=float)
-        weights = _gaussian_weights(particles, observed, hru_ids, sigma)
+            raise ValueError(f"No valid {kind} observations for {end_date_current_run}")
 
-        weights_df = pd.DataFrame(
-            [weights],
-            index=[end_date_current_run],
-            columns=ens_label_array,
+        log_likelihoods = _gaussian_log_likelihoods(
+            particles, observed, hru_ids, sigma_for(observed)
         )
-
+        weights = _posterior_weights(
+            _prior_log_weights(prior_weights, list(ens_label_array)),
+            log_likelihoods,
+        )
         log.info("Particle weights calculated for %s", end_date_current_run)
-        return weights_df
+        return pd.DataFrame(
+            [weights], index=[end_date_current_run], columns=ens_label_array
+        )
 
     @timer
     def state_estimate(
@@ -240,35 +315,64 @@ class ParticleFilterCore:
 
         return mean_df, var_df
 
-    def efficient_weights(self, weights: pd.DataFrame, num_ens: int) -> float:
-        weights_np = weights.iloc[0].to_numpy()
-        return np.around(1.0 / (num_ens * np.mean([w**2 for w in weights_np])))
+    @staticmethod
+    def effective_sample_size(weights: pd.DataFrame) -> float:
+        """``N_eff = 1 / sum(w_i^2)`` for normalised weights (Arulampalam et al. 2002)."""
+        values = weights.iloc[0].to_numpy(dtype=float)
+        return float(1.0 / np.sum(np.square(values / values.sum())))
 
     def resample_indices(
-        self, weights: pd.DataFrame, num_ens: int, n_eff_threshold: float
+        self,
+        weights: pd.DataFrame,
+        num_ens: int,
+        n_eff_threshold: float,
+        rng: Optional[np.random.Generator] = None,
     ) -> Optional[np.ndarray]:
-        weights_np = weights.iloc[0].to_numpy()
-        effweights = self.efficient_weights(weights, num_ens)
-        # Arulampalam et al. (2002): resample when N_eff falls to the threshold
-        # or below. A value in (0, 1] is a fraction of the ensemble, so 0.5
-        # means N/2. A value above 1 is a count. Zero never resamples.
+        """Donor index for each member, or ``None`` when N_eff is above the cutoff.
+
+        Arulampalam et al. (2002): resample when N_eff is at or below the
+        threshold. A value in (0, 1] is a fraction of the ensemble, so 0.5
+        means N/2. A value above 1 is a count. Zero never resamples.
+        ``rng`` drives systematic resampling; see ``resampling_rng``.
+        """
         threshold = float(n_eff_threshold)
         if not np.isfinite(threshold) or threshold <= 0.0:
             return None
         cutoff = threshold * num_ens if threshold <= 1.0 else threshold
-        if effweights > cutoff:
+        if self.effective_sample_size(weights) > cutoff:
             return None
+        generator = rng if rng is not None else np.random.default_rng()
+        return systematic_resample(
+            weights.iloc[0].to_numpy(dtype=float), num_ens, generator
+        )
 
-        resample = np.empty((num_ens), dtype=int)
-        zweightcumul = np.cumsum(weights_np)
-        zrand = np.random.random() / num_ens
 
-        for ires in range(0, num_ens):
-            if zrand <= zweightcumul[0]:
-                resample[ires] = 1
-            for rk in range(1, num_ens):
-                if (zweightcumul[rk - 1] < zrand) and (zrand <= zweightcumul[rk]):
-                    resample[ires] = rk + 1
-            zrand += 1.0 / num_ens
+def systematic_resample(
+    weights: np.ndarray, n_draw: int, rng: np.random.Generator
+) -> np.ndarray:
+    """Kitagawa (1996) systematic resampling: one offset, then strides of 1/n.
 
-        return resample - 1
+    Returns ``n_draw`` donor indices in ascending order, so particle ``i`` is
+    copied ``floor(n * w_i)`` or ``ceil(n * w_i)`` times.
+    """
+    if n_draw < 1:
+        raise ValueError("n_draw must be >= 1")
+    cdf = np.cumsum(np.asarray(weights, dtype=float))
+    cdf /= cdf[-1]
+    cdf[-1] = 1.0
+    positions = (float(rng.random()) + np.arange(n_draw, dtype=float)) / n_draw
+    indices = np.searchsorted(cdf, positions, side="left")
+    return np.clip(indices, 0, cdf.size - 1).astype(int)
+
+
+def resampling_rng(seed: Optional[int], when: datetime) -> np.random.Generator:
+    """Resampling stream for one assimilation date.
+
+    The same ``seed`` and date always give the same donors, independent of
+    which other dates were assimilated. ``None`` draws fresh entropy.
+    """
+    if seed is None:
+        return np.random.default_rng()
+    return np.random.default_rng(
+        np.random.SeedSequence([int(seed), int(when.strftime("%Y%m%d%H"))])
+    )

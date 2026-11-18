@@ -6,7 +6,7 @@ log_file: logs/ross_summa_deterministic.log
 
 model_run_id: ross_summa_deterministic
 base_file_manager: /Users/dcasson/GitHub/snowda/models/ross_lumped/SUMMA/fileManagerEnsMean.txt
-forcing_file_base: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/mean/yrb_rf_prod
+forcing_file_base: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/mean/ross
 num_ens: 1
 
 start_time: "1980-01-01 00:00"

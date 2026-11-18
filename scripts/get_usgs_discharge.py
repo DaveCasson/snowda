@@ -29,7 +29,7 @@ COLUMNS = [
 ]
 
 
-def fetch_usgs_daily_means(site: str) -> list[dict]:
+def fetch_daily_means(site: str) -> list[dict]:
     """Return every published daily mean discharge for ``site``, oldest first."""
     query = urlencode(
         {
@@ -71,7 +71,7 @@ def fetch_usgs_daily_means(site: str) -> list[dict]:
     return rows
 
 
-def write_usgs_csv(rows: list[dict], path: Path) -> None:
+def write_csv(rows: list[dict], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=COLUMNS)
@@ -101,8 +101,8 @@ def main() -> None:
 
     site = args.site.strip()
     output = args.output or Path(f"{site}_daily_discharge.csv")
-    rows = fetch_usgs_daily_means(site)
-    write_usgs_csv(rows, output)
+    rows = fetch_daily_means(site)
+    write_csv(rows, output)
 
     with_discharge = sum(row["discharge_cms"] is not None for row in rows)
     print(

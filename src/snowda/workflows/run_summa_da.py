@@ -31,12 +31,13 @@ from snowda.core.esp_sampling import (
     ParticleState,
     write_post_da_catalog,
 )
-from snowda.core.particle_filter import ParticleFilterCore
+from snowda.core.particle_filter import ParticleFilterCore, resampling_rng
 from snowda.core.swe_assimilation import DatedHruSwe, mapped_swe_by_date
 from snowda.io.fsca_obs import read_fsca_observations
 from snowda.io.summa_ensemble import SummaEnsembleReader, update_file_manager_option
 from snowda.io.summa_fsca import calc_summa_fsca, prepare_summa_fsca_input
 from snowda.io.swe_obs import read_member_hru_swe, read_model_equivalent_swe
+from snowda.utils.logging import get_logger
 from snowda.workflows.esp import (
     balanced_trigger_dates,
     run_balanced_esp_issue,
@@ -53,6 +54,8 @@ from snowda.workflows.summa_common import (
     summa_run_output_dir,
     write_provenance,
 )
+
+log = get_logger(__name__)
 
 SUMMA_TIMESTEP_SUFFIX = "timestep.nc"
 
@@ -149,6 +152,7 @@ def _run_swe_assimilation(
     labels = cfg.ens_label_array
     updates: list[dict[str, Any]] = []
     previous_resampled = False
+    prior_weights: pd.DataFrame | None = None
     routing_restarts: dict[str, Path | None] = {}
     mizu = _ensemble_routing(cfg)
     for index, (segment_start, segment_end, do_assimilate) in enumerate(segments):
@@ -197,30 +201,7 @@ def _run_swe_assimilation(
             run_log.info("No usable model-equivalent SWE for %s", segment_end)
             continue
         record_path = _write_swe_record(run_dir, observation)
-        # #region agent log
-        try:
-            import json
-            import time
-
-            payload = {
-                "sessionId": "83d907",
-                "hypothesisId": "E",
-                "location": "run_summa_da.py:_run_swe_assimilation",
-                "message": "routing finished, reading swe",
-                "data": {
-                    "segment_end": str(segment_end),
-                    "members": list(cfg.ens_label_array),
-                },
-                "timestamp": int(time.time() * 1000),
-            }
-            with open(
-                "/Users/dcasson/GitHub/snowda/.cursor/debug-83d907.log", "a"
-            ) as handle:
-                handle.write(json.dumps(payload) + "\n")
-        except Exception:
-            pass
-        # #endregion
-        resampled = _update_swe_particles(
+        weights, resampled = _update_swe_particles(
             cfg,
             schedule,
             assimilation,
@@ -231,7 +212,9 @@ def _run_swe_assimilation(
             run_dir,
             run_log,
             routing_restarts,
+            prior_weights,
         )
+        prior_weights = particle_filter.next_prior(weights, resampled)
         if on_particle_catalog is not None:
             on_particle_catalog(run_dir, observation.date)
         previous_resampled = resampled
@@ -242,6 +225,7 @@ def _run_swe_assimilation(
                 "hru_swe": {hru.hru_id: hru.value for hru in observation.hrus},
                 "n_samples": len(observation.samples),
                 "record": str(record_path),
+                "n_eff": particle_filter.effective_sample_size(weights),
                 "resampled": resampled,
             }
         )
@@ -259,7 +243,13 @@ def _update_swe_particles(
     run_dir: Path,
     run_log: Any,
     routing_restarts: dict[str, Path | None],
-) -> bool:
+    prior_weights: pd.DataFrame | None,
+) -> tuple[pd.DataFrame, bool]:
+    """Update particle weights with one dated SWE observation.
+
+    ``prior_weights`` are the weights carried from the previous update.
+    Returns the posterior weights and whether the ensemble was resampled.
+    """
     output_dir = summa_output_dir
     suffix = cfg.summa_output_suffix or SUMMA_TIMESTEP_SUFFIX
     hru_ids = [hru.hru_id for hru in observation.hrus]
@@ -304,13 +294,14 @@ def _update_swe_particles(
         obs_column="meas_snw",
         relative_uncertainty=schedule.swe_relative_uncertainty,
         sigma_floor=schedule.swe_sigma_floor,
+        prior_weights=prior_weights,
     )
     weight_dir = run_dir / "assimilation"
     weight_dir.mkdir(parents=True, exist_ok=True)
     weight_path = weight_dir / f"{observation.date.strftime('%Y_%m_%d')}_swe_weights.csv"
     weights.to_csv(weight_path)
     run_log.info("Wrote SWE weights: %s", weight_path)
-    return _resample_member_states(
+    resampled = _resample_member_states(
         cfg,
         assimilation,
         ens_file_managers,
@@ -321,6 +312,7 @@ def _update_swe_particles(
         routing_restarts,
         run_dir=run_dir,
     )
+    return weights, resampled
 
 
 def _resample_member_states(
@@ -349,6 +341,7 @@ def _resample_member_states(
             weights,
             num_ens=len(member_labels),
             n_eff_threshold=cfg.n_eff_threshold,
+            rng=resampling_rng(cfg.pf_seed, when),
         )
         if resample_indices is not None:
             resampled = True
@@ -368,6 +361,14 @@ def _resample_member_states(
                 member_labels,
                 donor_indexes,
             )
+    log.info(
+        "PF update %s: N_eff %.1f of %d, resampled %s, %d unique donors",
+        when.strftime("%Y-%m-%d"),
+        particle_filter.effective_sample_size(weights),
+        len(member_labels),
+        resampled,
+        len(set(donor_labels)),
+    )
     if run_dir is not None:
         _write_bound_particle_catalog(
             cfg,
@@ -453,6 +454,7 @@ def _run_fsca_assimilation(
     snow_depth_var = cfg.snow_depth_var or "scalarSnowDepth"
     labels = cfg.ens_label_array
     previous_resampled = False
+    prior_weights: pd.DataFrame | None = None
     routing_restarts: dict[str, Path | None] = {}
     mizu = _ensemble_routing(cfg)
     may_catalog = bool(fsca_obs_nc and summa_output_dir and fsca_output_dir)
@@ -559,11 +561,12 @@ def _run_fsca_assimilation(
         weights_fsca = particle_filter.update_particle_weights_fsca(
             modeled_df,
             obs_df,
-            z_var=1.0,
+            z_var=cfg.fsca_sigma**2,
             end_date_current_run=end_time_current_run,
             hru_index=hru_index,
             ens_label_array=list(modeled_cols.keys()),
             obs_column="fsca_obs",
+            prior_weights=prior_weights,
         )
         previous_resampled = _resample_member_states(
             cfg,
@@ -576,6 +579,7 @@ def _run_fsca_assimilation(
             routing_restarts,
             run_dir=run_dir,
         )
+        prior_weights = particle_filter.next_prior(weights_fsca, previous_resampled)
         if on_particle_catalog is not None:
             on_particle_catalog(run_dir, end_time_current_run)
         weights_out = fsca_ens_dir / "fsca_weights.csv"
@@ -674,6 +678,8 @@ def assimilation_provenance(
         "model_result_output_dir": str(cfg.model_result_output_dir),
         "variant": variant,
         "pf_scheme": cfg.pf_scheme,
+        "n_eff_threshold": cfg.n_eff_threshold,
+        "pf_seed": cfg.pf_seed,
         "assimilation_mode": result.assimilation_mode,
         "assimilation_dates": [item["date"] for item in result.swe_updates],
         "swe_updates": result.swe_updates,

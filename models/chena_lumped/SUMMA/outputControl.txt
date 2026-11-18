@@ -1,34 +1,10 @@
-! -------------
-!  attributes
-! -------------
-hruId
-latitude
-longitude
-!
-! -----------
-!  forcings
-! -----------
-pptrate            | 1
-airtemp            | 1
-!
-!
-! -------------------
-!  model variables
-! -------------------
-averageRoutedRunoff   | 1
-scalarSWE             | 24
-scalarGroundSnowFraction | 24
-scalarLatHeatTotal | 24
-scalarSenHeatTotal | 24
-scalarNetRadiation | 24
-scalarCanopyTranspiration | 24
-scalarCanopyEvaporation | 24
-scalarGroundEvaporation | 24
-scalarCanopySublimation | 24
-scalarSnowSublimation | 24
-mLayerDepth | 24
-mLayerVolFracLiq | 24
-scalarTotalET | 24
-scalarCanopyWat | 24
-scalarTotalSoilWat | 24
-scalarAquiferStorage | 24
+pptrate                              | 1 
+airtemp                              | 1 
+scalarSWE                            | 1 
+scalarSnowDepth                      | 1 
+SWRadAtm                             | 1 
+LWRadAtm                             | 1 
+scalarCosZenith                      | 1 
+scalarRainfall                       | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0
+scalarSnowfall                       | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0
+averageRoutedRunoff                  | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 0

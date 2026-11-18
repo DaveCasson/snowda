@@ -16,7 +16,11 @@ from snowda.config.loader import load_config
 from snowda.config.pysummada import _parse_esp_horizon
 from snowda.core.assimilation import DataAssimilationCore
 from snowda.core.fsca_models import FscaState, initialize_model_arrays
-from snowda.core.particle_filter import ParticleFilterCore
+from snowda.core.particle_filter import (
+    DEFAULT_N_EFF_THRESHOLD,
+    ParticleFilterCore,
+    resampling_rng,
+)
 from snowda.core.snow5 import Snow5Parameters, run_snow5_simulation
 from snowda.io.snow5 import convert_arrays_to_dataset, read_snow5_forcing, write_results
 from snowda.schaake_shuffle.archive import Snow5ArchiveAdapter
@@ -161,6 +165,7 @@ class Snow5DAEngine:
         swe_relative_uncertainty: float | None = None,
         swe_sigma_floor: float | None = None,
         schaake_shuffle_config: SchaakeShuffleConfig | None = None,
+        pf_seed: int | None = None,
     ):
         self.particles = particles
         self._forcing_lookup = {p.label: p.forcing_ds for p in particles}
@@ -173,6 +178,7 @@ class Snow5DAEngine:
         self.swe_relative_uncertainty = swe_relative_uncertainty
         self.swe_sigma_floor = swe_sigma_floor
         self.n_eff_threshold = n_eff_threshold
+        self.pf_seed = pf_seed
         self.fsca_model = fsca_model
         self.helbig_params = helbig_params
         self.helbig_settings = helbig_settings
@@ -188,6 +194,7 @@ class Snow5DAEngine:
             schaake_shuffle_config.seed if schaake_shuffle_config else None
         )
         self.state_snapshots: dict[datetime, dict[str, Snow5ParticleState]] = {}
+        self.prior_weights: pd.DataFrame | None = None
         first_hrus = particles[0].hru_index
         self.hru_index_df = pd.DataFrame({"hruId": first_hrus})
 
@@ -258,17 +265,32 @@ class Snow5DAEngine:
             float(mean_df[self.state_mean_name].min()),
             float(mean_df[self.state_mean_name].max()),
         )
-        resample = self.pf.resample_indices(weights, len(self.particles), self.n_eff_threshold)
+        n_eff = self.pf.effective_sample_size(weights)
+        resample = self.pf.resample_indices(
+            weights,
+            len(self.particles),
+            self.n_eff_threshold,
+            rng=resampling_rng(self.pf_seed, interval_end),
+        )
         if not self.pf_resample:
             resample = None
         elif resample is not None:
             self._apply_resample(resample)
             log.info("Resampled particles at %s -> %s", interval_end, resample.tolist())
+        log.info(
+            "PF update %s: N_eff %.1f of %d, resampled %s",
+            interval_end.strftime("%Y-%m-%d"),
+            n_eff,
+            len(self.particles),
+            resample is not None,
+        )
+        self.prior_weights = self.pf.next_prior(weights, resample is not None)
         schaake_applied = self._apply_schaake_shuffle(interval_end)
         self._capture_state_snapshot(interval_end)
         return {
             "time": interval_end,
             "weights": weights,
+            "n_eff": n_eff,
             "resample": resample,
             self.state_mean_name: mean_df[self.state_mean_name].to_dict(),
             self.state_var_name: var_df[self.state_var_name].to_dict(),
@@ -319,6 +341,7 @@ class Snow5DAEngine:
                 self.hru_index_df,
                 self.ens_labels,
                 obs_column=self.obs_var_name,
+                prior_weights=self.prior_weights,
             )
         if self.swe_relative_uncertainty is None or self.swe_sigma_floor is None:
             raise ValueError(
@@ -333,6 +356,7 @@ class Snow5DAEngine:
             obs_column=self.obs_var_name,
             relative_uncertainty=self.swe_relative_uncertainty,
             sigma_floor=self.swe_sigma_floor,
+            prior_weights=self.prior_weights,
         )
 
     def _apply_resample(self, indices: np.ndarray) -> None:
@@ -663,6 +687,10 @@ def run_snow5_da(config_path: str | Path) -> Path:
     if fsca_model == "helbig" and not helbig_settings:
         raise ValueError("helbig_settings are required when fsca_model is 'helbig'.")
     pf_resample = bool(cfg.get("pf_resample", True))
+    n_eff_threshold = float(cfg.get("n_eff_threshold", DEFAULT_N_EFF_THRESHOLD))
+    pf_seed = None if cfg.get("pf_seed") is None else int(cfg["pf_seed"])
+    if pf_seed is not None and pf_seed < 0:
+        raise ValueError("`pf_seed` must be >= 0.")
 
     particles = []
     forcing_lookup: dict[str, xr.Dataset] = {}
@@ -711,7 +739,7 @@ def run_snow5_da(config_path: str | Path) -> Path:
         modeled_var=modeled_var,
         observation_da=observation,
         z_var=z_var,
-        n_eff_threshold=float(cfg.get("n_eff_threshold", 0.5)),
+        n_eff_threshold=n_eff_threshold,
         swe_relative_uncertainty=swe_relative_uncertainty,
         swe_sigma_floor=swe_sigma_floor,
         fsca_model=fsca_model,
@@ -723,6 +751,7 @@ def run_snow5_da(config_path: str | Path) -> Path:
         state_var_name=state_var_name,
         obs_var_name=obs_var_name,
         schaake_shuffle_config=schaake_shuffle_config,
+        pf_seed=pf_seed,
     )
 
     records = da_engine.run(params, cv_array, start_time)
@@ -750,6 +779,8 @@ def run_snow5_da(config_path: str | Path) -> Path:
         "assimilation_times": [t.isoformat() for t in assimilation_times],
         "outputs": [str(p) for p in outputs],
         "pf_resample": pf_resample,
+        "n_eff_threshold": n_eff_threshold,
+        "pf_seed": pf_seed,
         "obs_var_name": obs_var_name,
         "modeled_var_name": modeled_var_name,
         "state_mean_name": state_mean_name,
@@ -760,6 +791,7 @@ def run_snow5_da(config_path: str | Path) -> Path:
         "records": [
             {
                 "time": record["time"].isoformat(),
+                "n_eff": record["n_eff"],
                 "resample": record["resample"].tolist()
                 if record["resample"] is not None
                 else None,

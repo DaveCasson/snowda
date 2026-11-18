@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
 from snowda.config.loader import as_config_dict
+from snowda.core.particle_filter import DEFAULT_N_EFF_THRESHOLD
 from snowda.utils.logging import get_logger
 
 log = get_logger(__name__)
@@ -168,6 +169,8 @@ class PysummadaConfig:
     mizuroute: Optional[MizuRouteEspConfig]
     evaluation: Optional[StreamflowEvaluationConfig]
     num_workers: int = 5
+    pf_seed: Optional[int] = None
+    fsca_sigma: Optional[float] = None
 
     @property
     def model_result_output_dir(self) -> Path:
@@ -258,7 +261,8 @@ def load_pysummada_config(
     # Values in (0, 1] are a fraction of the ensemble. resample_indices
     # resamples when N_eff is at or below threshold * num_ens. Values above 1
     # are counts. Zero does not resample.
-    n_eff_threshold = float(cfg.get("n_eff_threshold", 0.0))
+    n_eff_threshold = float(cfg.get("n_eff_threshold", DEFAULT_N_EFF_THRESHOLD))
+    pf_seed = _optional_seed(cfg, "pf_seed")
 
     summa_args = cfg.get("summa_args", {}) or {}
     summa_args = {str(k): str(v) for k, v in dict(summa_args).items()}
@@ -296,6 +300,7 @@ def load_pysummada_config(
     )
     fsca_model = cfg.get("fsca_model")
     fsca_cv = cfg.get("fsca_cv")
+    fsca_sigma = cfg.get("fsca_sigma")
     helbig_settings = cfg.get("helbig_settings")
     snow_depth_var = cfg.get("snow_depth_var")
     assimilation_mode = cfg.get("assimilation_mode")
@@ -336,6 +341,8 @@ def load_pysummada_config(
         fsca_output_dir=Path(fsca_output_dir_path) if fsca_output_dir_path else None,
         fsca_model=str(fsca_model) if fsca_model else None,
         fsca_cv=float(fsca_cv) if fsca_cv is not None else None,
+        fsca_sigma=float(fsca_sigma) if fsca_sigma is not None else None,
+        pf_seed=pf_seed,
         helbig_settings=dict(helbig_settings) if helbig_settings else None,
         snow_depth_var=str(snow_depth_var) if snow_depth_var else None,
         assimilation_mode=str(assimilation_mode) if assimilation_mode else None,
@@ -468,6 +475,15 @@ def _validate_assimilation_config(cfg: PysummadaConfig) -> None:
                 + ", ".join(f"`{name}`" for name in missing)
                 + "."
             )
+        if (
+            cfg.fsca_sigma is None
+            or not math.isfinite(cfg.fsca_sigma)
+            or cfg.fsca_sigma <= 0
+        ):
+            raise ValueError(
+                "SUMMA assimilation in fsca_only mode requires `fsca_sigma`, one "
+                "standard deviation of the fSCA observation error (0-1 units), > 0."
+            )
         return
     if cfg.assimilation is None:
         raise ValueError("SUMMA assimilation in swe mode requires an `assimilation` section.")
@@ -480,6 +496,16 @@ def _validate_assimilation_config(cfg: PysummadaConfig) -> None:
         cfg.assimilation.frequency_days,
         cfg.assimilation.months,
     )
+
+
+def _optional_seed(cfg: Dict[str, Any], key: str) -> Optional[int]:
+    raw = cfg.get(key)
+    if raw is None:
+        return None
+    seed = int(raw)
+    if seed < 0:
+        raise ValueError(f"`{key}` must be >= 0.")
+    return seed
 
 
 def _parse_pf_scheme(cfg: Dict[str, Any]) -> str:

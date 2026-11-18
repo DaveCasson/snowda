@@ -11,6 +11,16 @@ Arulampalam, Maskell, Gordon, and Clapp (2002), IEEE Trans. Signal Process.
     N_eff = 1 / sum(w_i^2). Resample when N_eff falls below a threshold.
     The usual likelihood is Gaussian, exp(-0.5 * (error / sigma)^2).
     For SWE, sigma = max(relative_uncertainty * |observation|, sigma_floor).
+    With the model as the proposal, w_k ∝ w_{k-1} * p(z_k | x_k) (Eq. 63);
+    resampled weights are reset to 1/N.
+
+Doucet and Johansen (2011), A tutorial on particle filtering and smoothing:
+    fifteen years later. In The Oxford Handbook of Nonlinear Filtering.
+    The same recursion for sequential importance sampling.
+
+Margulis, Girotto, Cortés, and Durand (2015), J. Hydrometeorol.
+    16(4):1752-1772. doi:10.1175/JHM-D-14-0177.1
+    Particle batch smoother: one weight per particle from all observations.
 
 Kitagawa (1996), J. Comput. Graph. Stat. 5(1):1-25.
     doi:10.1080/10618600.1996.10474692
@@ -26,7 +36,7 @@ import numpy as np
 import pandas as pd
 
 from laugh_tests._figures import save_figure
-from snowda.core.particle_filter import ParticleFilterCore
+from snowda.core.particle_filter import ParticleFilterCore, resampling_rng
 
 WHEN = datetime(2000, 3, 1)
 _GAUSSIAN = (
@@ -42,6 +52,11 @@ _KITAGAWA = (
     "Kitagawa (1996): systematic resampling copies particle i "
     "floor(N*w_i) or ceil(N*w_i) times"
 )
+_SIS = (
+    "Arulampalam et al. (2002), Eq. 63; Doucet and Johansen (2011): "
+    "w_k ∝ w_{k-1} * p(z_k | x_k) with the model as the proposal"
+)
+LABELS3 = ["001", "002", "003"]
 
 
 def observation_sigma(
@@ -78,6 +93,7 @@ def particle_weights(
     *,
     relative_uncertainty: float,
     sigma_floor: float,
+    prior_weights: pd.DataFrame | None = None,
 ) -> np.ndarray:
     """Run ``update_particle_weights`` on one date.
 
@@ -109,6 +125,7 @@ def particle_weights(
         "swe",
         relative_uncertainty=relative_uncertainty,
         sigma_floor=sigma_floor,
+        prior_weights=prior_weights,
     )
     return weights.iloc[0].to_numpy(dtype=float)
 
@@ -320,7 +337,9 @@ def test_weights_follow_hru_id_not_row_order(laugh) -> None:
             [0.0, 20.0],
         ]
     )
-    expected = gaussian_weights(errors, observation_sigma(observed, RELATIVE, SIGMA_FLOOR))
+    expected = gaussian_weights(
+        errors, observation_sigma(observed, RELATIVE, SIGMA_FLOOR)
+    )
     laugh.check(
         "weights aligned by hruId",
         expected,
@@ -349,6 +368,147 @@ def test_identical_particles_share_weight_equally(laugh) -> None:
         computed,
         atol=1e-12,
         reference="Equal errors produce equal likelihoods",
+    )
+
+
+def test_weights_carry_forward_between_dates(laugh) -> None:
+    """Two dates without resampling: the posterior is proportional to L1 * L2.
+
+    Date 1 at 100 kg m-2 favours member 1. Date 2 at 200 kg m-2 favours
+    member 3. Keeping only the date-2 likelihood would forget date 1.
+    """
+    pf = ParticleFilterCore()
+    first = np.array([100.0, 110.0, 120.0])
+    second = np.array([180.0, 190.0, 200.0])
+    w1 = particle_weights(
+        first, 100.0, relative_uncertainty=RELATIVE, sigma_floor=SIGMA_FLOOR
+    )
+    prior = pf.next_prior(pd.DataFrame([w1], columns=LABELS3), resampled=False)
+    w2 = particle_weights(
+        second,
+        200.0,
+        relative_uncertainty=RELATIVE,
+        sigma_floor=SIGMA_FLOOR,
+        prior_weights=prior,
+    )
+    sigma1 = observation_sigma(100.0, RELATIVE, SIGMA_FLOOR)
+    sigma2 = observation_sigma(200.0, RELATIVE, SIGMA_FLOOR)
+    l1 = np.exp(-0.5 * ((first - 100.0) / sigma1) ** 2)
+    l2 = np.exp(-0.5 * ((second - 200.0) / sigma2) ** 2)
+    expected = l1 * l2 / np.sum(l1 * l2)
+    laugh.check(
+        "weights after two dates",
+        expected,
+        w2,
+        rtol=1e-12,
+        reference=_SIS,
+    )
+    laugh.check(
+        "those weights differ from the date-2 likelihood alone",
+        True,
+        bool(np.max(np.abs(w2 - l2 / l2.sum())) > 0.1),
+        reference=_SIS,
+    )
+
+
+def test_sequential_weights_match_the_batch_smoother(laugh) -> None:
+    """Three dates in sequence equal one weighting by all three observations.
+
+    Margulis et al. (2015) weight each particle once by the joint likelihood
+    of every observation in the window. With independent errors that is the
+    product of the dated likelihoods, which sequential weighting reproduces.
+    """
+    obs = np.array([80.0, 150.0, 60.0])
+    values = np.array(
+        [
+            [70.0, 140.0, 70.0],
+            [85.0, 160.0, 55.0],
+            [95.0, 150.0, 40.0],
+            [80.0, 120.0, 60.0],
+        ]
+    )
+    labels = [f"{i + 1:03d}" for i in range(values.shape[0])]
+    prior = None
+    for date in range(obs.size):
+        weights = particle_weights(
+            values[:, date],
+            obs[date],
+            relative_uncertainty=RELATIVE,
+            sigma_floor=SIGMA_FLOOR,
+            prior_weights=prior,
+        )
+        prior = ParticleFilterCore.next_prior(
+            pd.DataFrame([weights], columns=labels), resampled=False
+        )
+    batch = gaussian_weights(
+        values - obs, observation_sigma(obs, RELATIVE, SIGMA_FLOOR)
+    )
+    laugh.check(
+        "sequential weights after three dates",
+        batch,
+        weights,
+        rtol=1e-10,
+        reference=(
+            "Margulis et al. (2015) particle batch smoother: w ∝ p(y_1:K | x). "
+            "Independent errors make this the product of dated likelihoods"
+        ),
+    )
+
+
+def test_resampling_resets_the_prior(laugh) -> None:
+    """After resampling, every particle starts the next date at 1/N."""
+    weights = pd.DataFrame([[0.7, 0.2, 0.1]], columns=LABELS3)
+    reset = ParticleFilterCore.next_prior(weights, resampled=True)
+    kept = ParticleFilterCore.next_prior(weights, resampled=False)
+    laugh.check(
+        "prior after resampling",
+        np.full(3, 1.0 / 3.0),
+        reset.iloc[0].to_numpy(dtype=float),
+        atol=1e-15,
+        reference="Arulampalam et al. (2002): resampled weights are reset to 1/N",
+    )
+    laugh.check(
+        "prior without resampling",
+        np.array([0.7, 0.2, 0.1]),
+        kept.iloc[0].to_numpy(dtype=float),
+        exact=True,
+        reference=_SIS,
+    )
+    swe = np.array([100.0, 110.0, 120.0])
+    after_reset = particle_weights(
+        swe,
+        100.0,
+        relative_uncertainty=RELATIVE,
+        sigma_floor=SIGMA_FLOOR,
+        prior_weights=reset,
+    )
+    laugh.check(
+        "weights from an equal prior",
+        particle_weights(
+            swe, 100.0, relative_uncertainty=RELATIVE, sigma_floor=SIGMA_FLOOR
+        ),
+        after_reset,
+        rtol=1e-12,
+        reference="An equal prior leaves the normalised likelihood (SIR)",
+    )
+
+
+def test_zero_prior_weight_stays_zero(laugh) -> None:
+    """A particle with no prior weight cannot regain weight."""
+    prior = pd.DataFrame([[0.0, 0.5, 0.5]], columns=LABELS3)
+    weights = particle_weights(
+        np.array([100.0, 110.0, 120.0]),
+        100.0,
+        relative_uncertainty=RELATIVE,
+        sigma_floor=SIGMA_FLOOR,
+        prior_weights=prior,
+    )
+    laugh.check(
+        "weight of the particle with prior 0",
+        0.0,
+        float(weights[0]),
+        exact=True,
+        reference=_SIS,
     )
 
 
@@ -415,7 +575,7 @@ def test_effective_sample_size(laugh) -> None:
         ("two particles share the weight", [0.5, 0.5, 0.0, 0.0], 2.0),
     )
     for label, weights, expected in cases:
-        computed = pf.efficient_weights(pd.DataFrame([weights]), num_ens=4)
+        computed = pf.effective_sample_size(pd.DataFrame([weights]))
         laugh.check(label, expected, float(computed), atol=1e-12, reference=_NEFF)
 
 
@@ -427,11 +587,11 @@ def test_systematic_resample_counts(laugh) -> None:
     mismatches = 0
     last = None
     for seed in range(10):
-        np.random.seed(seed)
         last = pf.resample_indices(
             pd.DataFrame([weights]),
             num_ens=4,
             n_eff_threshold=1.0,
+            rng=np.random.default_rng(seed),
         )
         if last is None or not np.array_equal(np.bincount(last, minlength=3), expected):
             mismatches += 1
@@ -452,11 +612,11 @@ def test_systematic_resample_counts(laugh) -> None:
 
 
 def test_certain_particle_is_copied_everywhere(laugh) -> None:
-    np.random.seed(0)
     indices = ParticleFilterCore().resample_indices(
         pd.DataFrame([[1.0, 0.0, 0.0, 0.0]]),
         num_ens=4,
         n_eff_threshold=1.0,
+        rng=np.random.default_rng(0),
     )
     laugh.check(
         "indices when the first weight is 1",
@@ -506,11 +666,11 @@ def test_relative_uncertainty_flattens_the_weights(laugh) -> None:
 
 
 def test_resample_when_effective_sample_size_is_low(laugh) -> None:
-    np.random.seed(0)
     indices = ParticleFilterCore().resample_indices(
         pd.DataFrame([[1.0, 0.0, 0.0, 0.0]]),
         num_ens=4,
         n_eff_threshold=2.0,
+        rng=np.random.default_rng(0),
     )
     laugh.check(
         "indices when N_eff = 1 and the threshold is 2",
@@ -533,6 +693,56 @@ def test_resample_when_effective_sample_size_is_low(laugh) -> None:
     )
 
 
+def test_effective_sample_size_is_not_rounded(laugh) -> None:
+    """N_eff = 1 / (0.36 + 0.04 + 0.01 + 0.01) = 2.381, above a threshold of 2."""
+    weights = pd.DataFrame([[0.6, 0.2, 0.1, 0.1]])
+    pf = ParticleFilterCore()
+    laugh.check(
+        "N_eff for weights 0.6, 0.2, 0.1, 0.1",
+        1.0 / 0.42,
+        pf.effective_sample_size(weights),
+        rtol=1e-12,
+        reference=_NEFF,
+    )
+    laugh.check(
+        "indices when N_eff = 2.38 and the threshold is 2",
+        None,
+        pf.resample_indices(
+            weights, num_ens=4, n_eff_threshold=2.0, rng=np.random.default_rng(0)
+        ),
+        exact=True,
+        reference="Rounding 2.38 down to 2 would resample; the unrounded value does not",
+    )
+
+
+def test_seeded_resampling_is_reproducible(laugh) -> None:
+    """One stream per seed and date, so a rerun copies the same donors."""
+    weights = pd.DataFrame([[0.4, 0.3, 0.2, 0.05, 0.05]])
+    pf = ParticleFilterCore()
+
+    def donors(seed: int) -> np.ndarray:
+        return pf.resample_indices(
+            weights, num_ens=5, n_eff_threshold=1.0, rng=resampling_rng(seed, WHEN)
+        )
+
+    first = donors(7)
+    np.random.seed(123)  # the global NumPy state must not matter
+    laugh.check(
+        "donors from the same seed and date",
+        first,
+        donors(7),
+        exact=True,
+        reference="numpy.random.SeedSequence([seed, YYYYMMDDHH])",
+    )
+    laugh.check(
+        "donors are sorted",
+        np.sort(first),
+        first,
+        exact=True,
+        reference=_KITAGAWA,
+    )
+
+
 def test_figure_resampling(laugh) -> None:
     """N_eff against a threshold of 2, and Kitagawa copy counts."""
     pf = ParticleFilterCore()
@@ -545,15 +755,13 @@ def test_figure_resampling(laugh) -> None:
     computed_neff = []
     for label, weights, _expected in cases:
         labels.append(label)
-        computed_neff.append(
-            float(pf.efficient_weights(pd.DataFrame([weights]), num_ens=4))
-        )
+        computed_neff.append(float(pf.effective_sample_size(pd.DataFrame([weights]))))
     weights = np.array([0.5, 0.25, 0.25])
-    np.random.seed(0)
     indices = pf.resample_indices(
         pd.DataFrame([weights]),
         num_ens=4,
         n_eff_threshold=1.0,
+        rng=np.random.default_rng(0),
     )
     counts = np.bincount(indices, minlength=3)
 

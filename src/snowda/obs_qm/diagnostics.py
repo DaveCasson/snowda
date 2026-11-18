@@ -8,12 +8,15 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
+from matplotlib.lines import Line2D
+from matplotlib.ticker import MaxNLocator
 
 from snowda.obs_qm.mapping import empirical_quantiles
 from snowda.obs_qm.preprocess import FLAG_MAPPED
@@ -24,6 +27,26 @@ from snowda.obs_qm.seasonal import (
     positive_paired_samples,
     water_year,
 )
+
+_PUB_STYLE = {
+    "font.family": "sans-serif",
+    "font.size": 9,
+    "axes.labelsize": 9,
+    "axes.titlesize": 11,
+    "xtick.labelsize": 8,
+    "ytick.labelsize": 8,
+    "legend.fontsize": 8,
+    "axes.linewidth": 0.6,
+    "xtick.major.width": 0.6,
+    "ytick.major.width": 0.6,
+    "xtick.major.size": 3.0,
+    "ytick.major.size": 3.0,
+    "axes.unicode_minus": False,
+}
+_OBS_COLOR = "#2166ac"
+_MODEL_COLOR = "#4d4d4d"
+_MAPPED_COLOR = "#d6604d"
+_SWE_UNIT = "kg m$^{-2}$"
 
 
 def _station_slice(ds: xr.Dataset, station_id: Any | None, station_dim: str) -> xr.Dataset:
@@ -122,180 +145,370 @@ def _timeseries_model(
     return times, values
 
 
+def _panel_letter(ax, letter: str) -> None:
+    ax.text(
+        0.0,
+        1.02,
+        letter,
+        transform=ax.transAxes,
+        fontweight="bold",
+        fontsize=11,
+        va="bottom",
+        ha="left",
+        clip_on=False,
+    )
+
+
+def _water_year_rows(
+    first: int,
+    last: int,
+    years_per_row: int,
+    start_month: int,
+) -> list[tuple[pd.Timestamp, pd.Timestamp, int]]:
+    """Half-open water-year windows of up to ``years_per_row`` years.
+
+    The last window stops at ``last`` so the axis does not run past the record.
+    """
+    rows = []
+    start_wy = int(first)
+    last_wy = int(last)
+    while start_wy <= last_wy:
+        n_years = min(int(years_per_row), last_wy - start_wy + 1)
+        start = pd.Timestamp(year=start_wy - 1, month=int(start_month), day=1)
+        end = start + pd.DateOffset(years=n_years)
+        rows.append((start, end, n_years))
+        start_wy += n_years
+    return rows
+
+
 def plot_station_diagnostics(
+    ds: xr.Dataset,
+    station_id: Any | None = None,
+    *,
+    station_dim: str = "station_id",
+    water_year_start_month: int = DEFAULT_WATER_YEAR_START_MONTH,
+    bins: int = 30,
+    observation_relative_uncertainty: float = 0.10,
+    observation_sigma_floor: float = 36.0,
+) -> Figure:
+    """Four-panel comparison of one station's observation-to-model mapping.
+
+    Panels are (a) positive SWE distributions, (b) observed versus
+    model-equivalent SWE, (c) same-day midnight model versus model-equivalent
+    SWE, and (d) quantiles of mapped SWE versus the positive model
+    climatology. Scatter colour is the water year. Panel (c) shades
+    ``±max(observation_relative_uncertainty * SWE, observation_sigma_floor)``
+    about the 1:1 line. The time series is drawn by
+    :func:`plot_station_hydrograph`.
+    """
+    if observation_relative_uncertainty < 0.0:
+        raise ValueError("observation_relative_uncertainty must be >= 0.")
+    if observation_sigma_floor < 0.0:
+        raise ValueError("observation_sigma_floor must be >= 0.")
+    station = _station_slice(ds, station_id, station_dim)
+    times, obs, model, y_star = _station_series(station)
+    mapped = _mapped_mask(station)
+    wy = water_year(times, start_month=water_year_start_month)
+
+    paired = np.isfinite(obs) & np.isfinite(model)
+    positive = paired & (obs > 0) & (model > 0)
+    obs_pos = obs[positive]
+    model_pos = model[positive]
+    y_valid = mapped & np.isfinite(y_star)
+    y_star_pos = y_star[y_valid]
+    finite_both = y_valid & np.isfinite(obs)
+    both_model = y_valid & np.isfinite(model)
+
+    with plt.rc_context(_PUB_STYLE):
+        fig = plt.figure(figsize=(7.4, 6.4))
+        gs = GridSpec(
+            2,
+            3,
+            figure=fig,
+            width_ratios=[1.0, 1.0, 0.028],
+            wspace=0.45,
+            hspace=0.48,
+            left=0.10,
+            right=0.90,
+            bottom=0.09,
+            top=0.84,
+        )
+        ax_hist = fig.add_subplot(gs[0, 0])
+        ax_obs = fig.add_subplot(gs[0, 1])
+        ax_same = fig.add_subplot(gs[1, 0])
+        ax_qq = fig.add_subplot(gs[1, 1])
+        cax = fig.add_subplot(gs[:, 2])
+
+        samples = [values for values in (obs_pos, model_pos, y_star_pos) if values.size]
+        edges = None
+        if samples:
+            low = min(np.min(values) for values in samples)
+            high = max(np.max(values) for values in samples)
+            edges = np.linspace(low, high, bins + 1)
+        if obs_pos.size:
+            ax_hist.hist(
+                obs_pos,
+                bins=edges,
+                density=True,
+                alpha=0.55,
+                color=_OBS_COLOR,
+                label="Observed",
+            )
+        if model_pos.size:
+            ax_hist.hist(
+                model_pos,
+                bins=edges,
+                density=True,
+                alpha=0.45,
+                color=_MODEL_COLOR,
+                label="Model",
+            )
+        if y_star_pos.size:
+            ax_hist.hist(
+                y_star_pos,
+                bins=edges,
+                density=True,
+                alpha=0.45,
+                color=_MAPPED_COLOR,
+                label="Model-equivalent",
+            )
+        ax_hist.set_xlabel(f"SWE ({_SWE_UNIT})")
+        ax_hist.set_ylabel("Density")
+        if ax_hist.get_legend_handles_labels()[0]:
+            ax_hist.legend(
+                loc="lower left",
+                bbox_to_anchor=(0.14, 1.12),
+                frameon=False,
+                borderaxespad=0.0,
+                handlelength=1.1,
+                labelspacing=0.15,
+            )
+
+        wy_color = wy[y_valid] if y_valid.any() else wy
+        vmin = float(np.min(wy_color)) if wy_color.size else 0.0
+        vmax = float(np.max(wy_color)) if wy_color.size else 1.0
+        if vmin == vmax:
+            vmax = vmin + 1.0
+        color_artist = None
+        if finite_both.any():
+            color_artist = _scatter_by_water_year(
+                ax_obs,
+                obs[finite_both],
+                y_star[finite_both],
+                wy[finite_both],
+                cmap="viridis",
+                vmin=vmin,
+                vmax=vmax,
+            )
+        ax_obs.set_xlabel(f"Observed SWE ({_SWE_UNIT})")
+        ax_obs.set_ylabel(f"Model-equivalent SWE ({_SWE_UNIT})")
+
+        if both_model.any():
+            color_artist = _scatter_by_water_year(
+                ax_same,
+                model[both_model],
+                y_star[both_model],
+                wy[both_model],
+                cmap="viridis",
+                vmin=vmin,
+                vmax=vmax,
+            )
+            x_lim = ax_same.get_xlim()
+            y_lim = ax_same.get_ylim()
+            upper = max(x_lim[1], y_lim[1])
+            lower = max(min(x_lim[0], y_lim[0]), 0.0)
+            grid = np.linspace(lower, upper, 400)
+            sigma = np.maximum(
+                observation_relative_uncertainty * grid,
+                observation_sigma_floor,
+            )
+            ax_same.fill_between(
+                grid,
+                grid - sigma,
+                grid + sigma,
+                color="0.75",
+                alpha=0.35,
+                linewidth=0,
+                zorder=0,
+            )
+            ax_same.set_xlim(x_lim)
+            ax_same.set_ylim(y_lim)
+        ax_same.set_xlabel(f"Model SWE ({_SWE_UNIT})")
+        ax_same.set_ylabel(f"Model-equivalent SWE ({_SWE_UNIT})")
+
+        if y_star_pos.size and model_pos.size:
+            n = min(y_star_pos.size, model_pos.size)
+            quantiles = np.linspace(0.0, 1.0, n, endpoint=True)
+            qq_y = np.quantile(y_star_pos, quantiles)
+            qq_m = np.quantile(model_pos, quantiles)
+            ax_qq.scatter(qq_m, qq_y, s=16, color="0.15", edgecolors="none", zorder=2)
+            _one_to_one(ax_qq, qq_m, qq_y)
+        ax_qq.set_xlabel(f"Model SWE quantile ({_SWE_UNIT})")
+        ax_qq.set_ylabel(f"Model-equivalent SWE quantile ({_SWE_UNIT})")
+
+        for ax, letter in (
+            (ax_hist, "a"),
+            (ax_obs, "b"),
+            (ax_same, "c"),
+            (ax_qq, "d"),
+        ):
+            _panel_letter(ax, letter)
+
+        if color_artist is not None:
+            position = cax.get_position()
+            height = position.height * 0.48
+            cax.set_position(
+                [
+                    position.x0 + position.width * 0.15,
+                    position.y0 + (position.height - height) / 2.0,
+                    position.width * 0.45,
+                    height,
+                ]
+            )
+            cbar = fig.colorbar(color_artist, cax=cax)
+            cbar.set_label("Water year", fontsize=7, color="0.35", labelpad=3)
+            cbar.ax.yaxis.set_major_locator(MaxNLocator(integer=True, nbins=4))
+            cbar.ax.tick_params(labelsize=6.5, width=0.4, length=2, colors="0.35")
+            cbar.outline.set_linewidth(0.3)
+            cbar.outline.set_edgecolor("0.45")
+        else:
+            cax.set_axis_off()
+    return fig
+
+
+def plot_station_hydrograph(
     ds: xr.Dataset,
     station_id: Any | None = None,
     *,
     model: xr.DataArray | None = None,
     station_dim: str = "station_id",
     water_year_start_month: int = DEFAULT_WATER_YEAR_START_MONTH,
-    bins: int = 30,
+    years_per_row: int = 5,
 ) -> Figure:
-    """One diagnostic figure: four comparison panels plus a timeseries row.
+    """Midnight model SWE, observations, and model-equivalent observations.
 
-    Top row:
-
-    1. Positive SWE distributions (obs, midnight model, transformed obs)
-    2. Observed vs model-equivalent, colored by held-out water year
-    3. Same-day midnight model vs mapped obs, colored by held-out water year
-    4. Q-Q of mapped obs vs model climatology
-
-    Bottom row: midnight model SWE (line), observations (points), and
-    observations in model space (open points). Pass ``model`` to draw every
-    midnight value. Otherwise the line uses ``swe_model``, which is only
-    defined on observation dates.
+    Each row spans ``years_per_row`` water years. Pass ``model`` to draw every
+    midnight value; otherwise the line is ``swe_model`` on the observation dates.
     """
-    full_model = model
+    if years_per_row < 1:
+        raise ValueError("years_per_row must be >= 1.")
     station = _station_slice(ds, station_id, station_dim)
-    times, obs, model, y_star = _station_series(station)
-    mapped = _mapped_mask(station)
-    extra = _station_title_extra(station)
-    title_id = station_id if station_id is not None else station.attrs.get("station_id", "")
-    wy = water_year(times, start_month=water_year_start_month)
-    cv_label = station.attrs.get("cross_validation") or ds.attrs.get(
-        "cross_validation", "leave_one_water_year_out"
+    times, obs, paired_model, y_star = _station_series(station)
+    model_times, model_line = _timeseries_model(model, times, paired_model)
+
+    span = model_times.append(times)
+    span = span[span.notna()]
+    if span.empty:
+        raise ValueError("No timestamps to draw.")
+    wy = water_year(span, start_month=water_year_start_month)
+    rows = _water_year_rows(
+        int(wy.min()),
+        int(wy.max()),
+        years_per_row,
+        water_year_start_month,
     )
-
-    paired = np.isfinite(obs) & np.isfinite(model)
-    obs_pos = obs[paired & (obs > 0) & (model > 0)]
-    model_pos = model[paired & (obs > 0) & (model > 0)]
-    y_valid = mapped & np.isfinite(y_star)
-    y_star_pos = y_star[y_valid]
-    finite_both = y_valid & np.isfinite(obs)
-    both_model = y_valid & np.isfinite(model)
-
-    fig = plt.figure(figsize=(17.5, 9.5))
-    gs = GridSpec(
-        2,
-        1,
-        figure=fig,
-        height_ratios=[1.75, 1.0],
-        hspace=0.18,
-        top=0.90,
-        bottom=0.07,
-        left=0.05,
-        right=0.98,
+    finite_values = np.concatenate(
+        [
+            model_line[np.isfinite(model_line)],
+            obs[np.isfinite(obs)],
+            y_star[np.isfinite(y_star)],
+        ]
     )
-    gs_top = gs[0].subgridspec(1, 5, width_ratios=[1.05, 1.0, 1.0, 1.0, 0.045], wspace=0.28)
-    fig.suptitle(
-        f"Observation → model SWE quantile mapping  {title_id}{extra}\n"
-        f"({cv_label}; scatter colour = held-out water year)",
-        fontsize=12,
-    )
+    ymax = float(np.max(finite_values)) if finite_values.size else 1.0
 
-    ax_hist = fig.add_subplot(gs_top[0, 0])
-    ax_obs = fig.add_subplot(gs_top[0, 1])
-    ax_same = fig.add_subplot(gs_top[0, 2])
-    ax_qq = fig.add_subplot(gs_top[0, 3])
-    cax = fig.add_subplot(gs_top[0, 4])
-    for ax in (ax_hist, ax_obs, ax_same, ax_qq):
-        ax.tick_params(labelsize=8)
-        ax.title.set_fontsize(10)
-
-    if obs_pos.size:
-        ax_hist.hist(obs_pos, bins=bins, density=True, alpha=0.5, label="obs > 0")
-    if model_pos.size:
-        ax_hist.hist(model_pos, bins=bins, density=True, alpha=0.5, label="model > 0")
-    if y_star_pos.size:
-        ax_hist.hist(y_star_pos, bins=bins, density=True, alpha=0.5, label="model-equivalent")
-    ax_hist.set_xlabel("SWE (kg m-2)")
-    ax_hist.set_ylabel("density")
-    ax_hist.set_title("Positive SWE distributions")
-    if ax_hist.get_legend_handles_labels()[0]:
-        ax_hist.legend(fontsize=8, loc="upper right", frameon=False)
-
-    cmap = "viridis"
-    wy_color = wy[y_valid] if y_valid.any() else wy
-    vmin = float(np.min(wy_color)) if wy_color.size else 0.0
-    vmax = float(np.max(wy_color)) if wy_color.size else 1.0
-    if vmin == vmax:
-        vmax = vmin + 1.0
-    color_artist = None
-
-    if finite_both.any():
-        color_artist = _scatter_by_water_year(
-            ax_obs,
-            obs[finite_both],
-            y_star[finite_both],
-            wy[finite_both],
-            cmap=cmap,
-            vmin=vmin,
-            vmax=vmax,
+    with plt.rc_context(_PUB_STYLE):
+        # A short final row spans fewer columns so each year keeps the same width.
+        fig = plt.figure(figsize=(7.4, 0.45 + 1.15 * len(rows)))
+        gs = GridSpec(
+            len(rows),
+            years_per_row,
+            figure=fig,
+            wspace=0.0,
+            hspace=0.55,
+            left=0.12,
+            right=0.98,
+            bottom=0.03,
+            top=0.94,
         )
-    ax_obs.set_xlabel("observed SWE")
-    ax_obs.set_ylabel("model-equivalent SWE")
-    ax_obs.set_title("Observed vs model-equivalent")
-
-    if both_model.any():
-        color_artist = _scatter_by_water_year(
-            ax_same,
-            model[both_model],
-            y_star[both_model],
-            wy[both_model],
-            cmap=cmap,
-            vmin=vmin,
-            vmax=vmax,
+        first_ax = None
+        for row_index, (start, end, n_years) in enumerate(rows):
+            ax = fig.add_subplot(gs[row_index, :n_years], sharey=first_ax)
+            if first_ax is None:
+                first_ax = ax
+            model_mask = (model_times >= start) & (model_times < end) & np.isfinite(model_line)
+            obs_mask = (times >= start) & (times < end) & np.isfinite(obs)
+            mapped_mask = (times >= start) & (times < end) & np.isfinite(y_star)
+            first = row_index == 0
+            if model_mask.any():
+                ax.plot(
+                    model_times[model_mask],
+                    model_line[model_mask],
+                    color=_MODEL_COLOR,
+                    linewidth=0.7,
+                    label="Model" if first else "_nolegend_",
+                    zorder=1,
+                )
+            if obs_mask.any():
+                ax.scatter(
+                    times[obs_mask],
+                    obs[obs_mask],
+                    s=16,
+                    color=_OBS_COLOR,
+                    linewidths=0,
+                    label="Observed" if first else "_nolegend_",
+                    zorder=3,
+                )
+            if mapped_mask.any():
+                ax.scatter(
+                    times[mapped_mask],
+                    y_star[mapped_mask],
+                    s=18,
+                    marker="o",
+                    facecolors="none",
+                    edgecolors=_MAPPED_COLOR,
+                    linewidths=0.9,
+                    label="Model-equivalent" if first else "_nolegend_",
+                    zorder=4,
+                )
+            ax.margins(x=0)
+            ax.set_xlim(start, end)
+            ax.xaxis.set_major_locator(mdates.YearLocator(base=1, month=1, day=1))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+            ax.set_ylabel(f"SWE ({_SWE_UNIT})")
+        if first_ax is not None:
+            first_ax.set_ylim(0.0, ymax * 1.08 if ymax > 0.0 else 1.0)
+        fig.legend(
+            handles=[
+                Line2D([0], [0], color=_MODEL_COLOR, linewidth=0.8, label="Model"),
+                Line2D(
+                    [0],
+                    [0],
+                    marker="o",
+                    color="none",
+                    markerfacecolor=_OBS_COLOR,
+                    markeredgecolor=_OBS_COLOR,
+                    markersize=4.5,
+                    linestyle="none",
+                    label="Observed",
+                ),
+                Line2D(
+                    [0],
+                    [0],
+                    marker="o",
+                    color="none",
+                    markerfacecolor="none",
+                    markeredgecolor=_MAPPED_COLOR,
+                    markeredgewidth=0.9,
+                    markersize=4.5,
+                    linestyle="none",
+                    label="Model-equivalent",
+                ),
+            ],
+            loc="upper center",
+            ncol=3,
+            frameon=False,
+            bbox_to_anchor=(0.55, 0.995),
         )
-    ax_same.set_xlabel("same-day midnight model SWE")
-    ax_same.set_ylabel("model-equivalent SWE")
-    ax_same.set_title("Same-day model vs mapped obs")
-
-    if y_star_pos.size and model_pos.size:
-        n = min(y_star_pos.size, model_pos.size)
-        q = np.linspace(0.0, 1.0, n, endpoint=True)
-        qq_y = np.quantile(y_star_pos, q)
-        qq_m = np.quantile(model_pos, q)
-        ax_qq.scatter(qq_m, qq_y, s=18, alpha=0.75, color="0.35", edgecolors="none")
-        _one_to_one(ax_qq, qq_m, qq_y)
-        ax_qq.set_xlabel("model positive SWE quantiles")
-        ax_qq.set_ylabel("mapped obs quantiles")
-    ax_qq.set_title("Q-Q: mapped obs vs climatology")
-
-    if color_artist is not None:
-        cbar = fig.colorbar(color_artist, cax=cax)
-        cbar.set_label("held-out water year", fontsize=8)
-        cbar.ax.tick_params(labelsize=8)
-    else:
-        cax.set_axis_off()
-
-    ax = fig.add_subplot(gs[1, 0])
-    ax.tick_params(labelsize=8)
-    model_times, model_line = _timeseries_model(full_model, times, model)
-    obs_valid = np.isfinite(obs)
-    if np.isfinite(model_line).any():
-        ax.plot(
-            model_times,
-            model_line,
-            color="0.55",
-            linewidth=0.8,
-            label="model SWE",
-            zorder=1,
-        )
-    if obs_valid.any():
-        ax.scatter(
-            times[obs_valid],
-            obs[obs_valid],
-            s=22,
-            color="C0",
-            label="obs",
-            zorder=3,
-        )
-    if y_valid.any():
-        ax.scatter(
-            times[y_valid],
-            y_star[y_valid],
-            s=22,
-            marker="o",
-            facecolors="none",
-            edgecolors="C1",
-            linewidths=1.1,
-            label="obs in model space",
-            zorder=4,
-        )
-    ax.set_ylabel("SWE (kg m-2)")
-    ax.set_xlabel("time")
-    ax.set_title("Model, observations, and model-equivalent observations", fontsize=10)
-    ax.legend(fontsize=8, loc="upper left", frameon=False)
     return fig
 
 

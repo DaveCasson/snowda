@@ -155,6 +155,7 @@ def test_da_rejects_deterministic_esp_settings(tmp_path: Path) -> None:
             "fsca_obs_nc": "/abs/fsca.nc",
             "summa_output_dir": "/abs/summa_out",
             "fsca_output_dir": str(tmp_path / "fsca"),
+            "fsca_sigma": 0.1,
         },
     )
     cfg = load_pysummada_config(config_file)
@@ -200,6 +201,7 @@ def test_da_balanced_initialization_requires_size_and_seed(tmp_path: Path) -> No
             "fsca_obs_nc": "/abs/fsca.nc",
             "summa_output_dir": "/abs/summa_out",
             "fsca_output_dir": str(tmp_path / "fsca"),
+            "fsca_sigma": 0.1,
         },
     )
     cfg = load_pysummada_config(config_file)
@@ -219,6 +221,7 @@ def test_da_balanced_initialization_loads(tmp_path: Path) -> None:
             "fsca_obs_nc": "/abs/fsca.nc",
             "summa_output_dir": "/abs/summa_out",
             "fsca_output_dir": str(tmp_path / "fsca"),
+            "fsca_sigma": 0.1,
         },
     )
     cfg = load_pysummada_config(config_file)
@@ -246,10 +249,39 @@ def test_da_accepts_complete_config(tmp_path: Path) -> None:
             "fsca_obs_nc": "/abs/fsca.nc",
             "summa_output_dir": "/abs/summa_out",
             "fsca_output_dir": str(tmp_path / "fsca"),
+            "fsca_sigma": 0.1,
         },
     )
     cfg = load_pysummada_config(config_file)
     validate_da_config(cfg)
+
+
+def test_fsca_da_requires_fsca_sigma(tmp_path: Path) -> None:
+    config_file = _build_config(
+        tmp_path,
+        extra={
+            "esp": _esp_block(),
+            "fsca_obs_nc": "/abs/fsca.nc",
+            "summa_output_dir": "/abs/summa_out",
+            "fsca_output_dir": str(tmp_path / "fsca"),
+        },
+    )
+    cfg = load_pysummada_config(config_file)
+    with pytest.raises(ValueError, match="fsca_sigma"):
+        validate_da_config(cfg)
+
+
+def test_particle_filter_defaults(tmp_path: Path) -> None:
+    cfg = load_pysummada_config(_build_config(tmp_path))
+    assert cfg.n_eff_threshold == 0.5
+    assert cfg.pf_seed is None
+
+
+def test_pf_seed_loads_and_rejects_negative(tmp_path: Path) -> None:
+    cfg = load_pysummada_config(_build_config(tmp_path, extra={"pf_seed": 11}))
+    assert cfg.pf_seed == 11
+    with pytest.raises(ValueError, match="pf_seed"):
+        load_pysummada_config(_build_config(tmp_path, extra={"pf_seed": -1}))
 
 
 def test_top_level_mizuroute(tmp_path: Path) -> None:
