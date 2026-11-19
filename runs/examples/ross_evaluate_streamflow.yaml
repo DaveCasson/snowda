@@ -1,7 +1,10 @@
 case_name: ross_streamflow_eval
 description: Deterministic streamflow evaluation for Ross River (mizuRoute vs gauge CSV).
 
+# Outputs go to <output_dir>/<run_name>/. run_name: timestamp (default) makes a new
+# UTC-timestamped folder per run; any other name uses that fixed folder (re-runs overwrite).
 output_dir: /home/x-dcasson/GitRepos/snowda/outputs/ross_streamflow_eval
+run_name: timestamp
 
 sim_nc: /home/x-dcasson/GitRepos/snowda/outputs/ross_summa_deterministic/20260916T181206Z/mizuroute/mizuroute_deterministic.nc
 obs_csv: /home/x-dcasson/GitRepos/snowda/data/ross_daily_discharge.csv

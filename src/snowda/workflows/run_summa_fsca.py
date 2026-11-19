@@ -11,13 +11,10 @@ import xarray as xr
 
 from snowda.adapters.pysumma import run_simulation
 from snowda.config.loader import as_config_dict, config_label
+from snowda.config.run_dir import make_run_dir, run_name_from_config
 from snowda.io.fsca_obs import read_fsca_observations
 from snowda.io.summa_fsca import calc_summa_fsca, prepare_summa_fsca_input
 from snowda.utils.logging import configure_logging, get_logger
-
-
-def _now_utc_tag() -> str:
-    return datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
 
 
 def _ensure_dir(path: str | Path) -> Path:
@@ -117,7 +114,7 @@ def run_summa_fsca(config: str | Path | Mapping[str, Any]) -> Path:
         raise ValueError("Config must define `output_dir`.")
     output_dir = _normalize_path(str(output_dir), base_dir, allow_relative=True)
 
-    run_dir = _ensure_dir(output_dir / _now_utc_tag())
+    run_dir = make_run_dir(output_dir, run_name_from_config(cfg))
 
     log_file_cfg = cfg.get("log_file")
     log_file = None

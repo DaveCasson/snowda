@@ -5,7 +5,10 @@ description: >
   SIS: Sequential Importance Sampling. No resampling; members keep their open-loop trajectories and posterior weights carry forward between updates. Weights reset to equal at the start of each water year (season_start_month).
   Run: python -m snowda.workflows.run_snow5_da <this file>
 
+# Outputs go to <output_dir>/<run_name>/. run_name: timestamp (default) makes a new
+# UTC-timestamped folder per run; any other name uses that fixed folder (re-runs overwrite).
 output_dir: /Users/dcasson/GitHub/snowda/outputs/snow5/ross_synthetic/sis
+run_name: timestamp
 log_file: logs/ross_snow5_sis.log
 
 ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensemble

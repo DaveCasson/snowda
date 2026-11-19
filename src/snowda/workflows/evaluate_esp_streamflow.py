@@ -24,6 +24,7 @@ from snowda.adapters.scores import (
     skill_score,
 )
 from snowda.config.loader import load_config
+from snowda.config.run_dir import make_run_dir, run_name_from_config
 from snowda.io.esp_streamflow import (
     CLIMO_MEMBER_DIM,
     DEFAULT_RETURN_PERIODS,
@@ -46,7 +47,6 @@ from snowda.workflows.evaluate_streamflow import (
     _git_commit_hash,
     _json_safe,
     _normalize_output_dir,
-    _now_utc_tag,
     _require_absolute_input,
     _write_eval_netcdf,
 )
@@ -980,14 +980,14 @@ def evaluate_esp_run(
     date_col: str | None = None,
     flow_col: str | None = None,
     case_name: str = "esp_streamflow_eval",
+    run_name: str | None = None,
     config_path: str | Path | None = None,
     resolved_config: dict[str, Any] | None = None,
 ) -> Path:
-    """Load an ESP run, score it, and write a timestamped evaluation directory."""
+    """Load an ESP run, score it, and write a evaluation directory (named by ``run_name`` or a UTC timestamp)."""
     output_root = Path(output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
-    eval_dir = output_root / _now_utc_tag()
-    eval_dir.mkdir(parents=True, exist_ok=True)
+    eval_dir = make_run_dir(output_root, run_name)
 
     configure_logging(
         level=logging.INFO, log_file=eval_dir / "evaluate_esp_streamflow.log"
@@ -1119,6 +1119,7 @@ def _load_esp_eval_config(config_path: str | Path) -> dict[str, Any]:
     return {
         "case_name": raw.get("case_name", "esp_streamflow_eval"),
         "output_dir": _normalize_output_dir(str(output_dir), base_dir),
+        "run_name": run_name_from_config(raw),
         "run_dir": _require_absolute_input(str(run_dir), "run_dir"),
         "obs_csv": _require_absolute_input(str(obs_csv), "obs_csv"),
         "thresholds_csv": _require_absolute_input(
@@ -1190,6 +1191,7 @@ def evaluate_esp_streamflow(config_path: str | Path) -> Path:
         date_col=cfg["date_col"],
         flow_col=cfg["flow_col"],
         case_name=cfg["case_name"],
+        run_name=cfg["run_name"],
         config_path=cfg["_config_path"],
         resolved_config=snapshot,
     )

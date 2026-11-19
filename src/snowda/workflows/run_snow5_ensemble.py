@@ -10,6 +10,7 @@ import numpy as np
 import xarray as xr
 
 from snowda.config.loader import load_config
+from snowda.config.run_dir import make_run_dir, run_name_from_config
 from snowda.core.snow5 import Snow5Parameters, run_snow5_simulation
 from snowda.io.snow5 import convert_arrays_to_dataset, read_snow5_forcing, write_results
 from snowda.utils.logging import configure_logging, get_logger
@@ -18,7 +19,6 @@ from snowda.workflows.run_snow5 import (
     _ensure_dir,
     _load_cv_array,
     _load_helbig_params,
-    _now_utc_tag,
     _parse_time,
 )
 
@@ -96,7 +96,7 @@ def run_snow5_ensemble(config_path: str | Path) -> Path:
     output_dir = cfg.get("output_dir")
     if not output_dir:
         raise ValueError("Config must define `output_dir`.")
-    output_dir = _ensure_dir(Path(output_dir) / _now_utc_tag())
+    output_dir = make_run_dir(output_dir, run_name_from_config(cfg))
 
     log_file_cfg = cfg.get("log_file")
     log_file = None

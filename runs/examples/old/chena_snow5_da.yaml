@@ -1,7 +1,10 @@
 case_name: chena_snow5_da
 description: Snow5 DA test run with 7-day assimilation intervals.
 
+# Outputs go to <output_dir>/<run_name>/. run_name: timestamp (default) makes a new
+# UTC-timestamped folder per run; any other name uses that fixed folder (re-runs overwrite).
 output_dir: /Users/dcasson/GitHub/snowda/outputs/chena_snow5_da
+run_name: timestamp
 log_file: logs/snow5_da.log
 
 ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/chena/forcing/

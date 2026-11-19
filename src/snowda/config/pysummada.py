@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
 from snowda.config.loader import as_config_dict
+from snowda.config.run_dir import run_name_from_config
 from snowda.core.particle_filter import DEFAULT_N_EFF_THRESHOLD
 from snowda.utils.logging import get_logger
 
@@ -36,7 +37,7 @@ def _require(cfg: Dict[str, Any], key: str) -> Any:
 
 
 def default_output_dir(case_name: str) -> Path:
-    """``<repo>/outputs/<case_name>``; timestamped run folders are created under this."""
+    """``<repo>/outputs/<case_name>``; run folders (``run_name`` or a timestamp) go under this."""
     repo_root = Path(__file__).resolve().parents[3]
     return repo_root / "outputs" / case_name
 
@@ -173,6 +174,7 @@ class PysummadaConfig:
     fsca_sigma: Optional[float] = None
     tempering_target: Optional[float] = None
     season_start_month: Optional[int] = None
+    run_name: Optional[str] = None
 
     @property
     def model_result_output_dir(self) -> Path:
@@ -201,6 +203,7 @@ def load_pysummada_config(
     else:
         output_dir = default_output_dir(case_name)
         log.info("output_dir not set; defaulting to %s", output_dir)
+    run_name = run_name_from_config(cfg)
     model_run_id = str(_require(cfg, "model_run_id"))
     base_file_manager = _normalize_path(
         str(_require(cfg, "base_file_manager")), base_dir, allow_relative=False
@@ -349,6 +352,7 @@ def load_pysummada_config(
         pf_seed=pf_seed,
         tempering_target=tempering_target,
         season_start_month=season_start_month,
+        run_name=run_name,
         helbig_settings=dict(helbig_settings) if helbig_settings else None,
         snow_depth_var=str(snow_depth_var) if snow_depth_var else None,
         assimilation_mode=str(assimilation_mode) if assimilation_mode else None,

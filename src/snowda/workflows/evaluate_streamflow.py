@@ -16,14 +16,11 @@ import xarray as xr
 from snowda.adapters.scores import compute_deterministic_metrics
 from snowda.config.loader import load_config
 from snowda.config.pysummada import StreamflowEvaluationConfig
+from snowda.config.run_dir import make_run_dir, run_name_from_config
 from snowda.io.streamflow import DEFAULT_RESAMPLE, load_paired_streamflow
 from snowda.utils.logging import configure_logging, get_logger
 
 log = get_logger(__name__)
-
-
-def _now_utc_tag() -> str:
-    return datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
 
 
 def _git_commit_hash(repo_root: Path) -> Optional[str]:
@@ -167,6 +164,7 @@ def _load_eval_config(config_path: str | Path) -> dict[str, Any]:
     return {
         "case_name": raw.get("case_name", "streamflow_eval"),
         "output_dir": _normalize_output_dir(str(output_dir), base_dir),
+        "run_name": run_name_from_config(raw),
         "sim_nc": _require_absolute_input(str(sim_nc), "sim_nc"),
         "obs_csv": _require_absolute_input(str(obs_csv), "obs_csv"),
         "variable": raw.get("variable", "IRFroutedRunoff"),
@@ -196,14 +194,14 @@ def run_evaluation(
     start_time: str | None = None,
     end_time: str | None = None,
     case_name: str = "streamflow_eval",
+    run_name: str | None = None,
     config_path: str | Path | None = None,
     resolved_config: dict[str, Any] | None = None,
 ) -> Path:
     """Pair files, score deterministic hydrology metrics, and write a run directory."""
     output_root = Path(output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
-    run_dir = output_root / _now_utc_tag()
-    run_dir.mkdir(parents=True, exist_ok=True)
+    run_dir = make_run_dir(output_root, run_name)
 
     configure_logging(level=logging.INFO, log_file=run_dir / "evaluate_streamflow.log")
     log.info("snowda streamflow evaluation starting")
@@ -287,6 +285,7 @@ def evaluate_streamflow(config_path: str | Path) -> Path:
         start_time=cfg["start_time"],
         end_time=cfg["end_time"],
         case_name=cfg["case_name"],
+        run_name=cfg["run_name"],
         config_path=cfg["_config_path"],
         resolved_config=snapshot,
     )

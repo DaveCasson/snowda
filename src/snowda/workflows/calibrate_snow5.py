@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
@@ -27,6 +26,7 @@ import yaml
 from scipy.optimize import differential_evolution
 
 from snowda.config.loader import load_config
+from snowda.config.run_dir import make_run_dir, run_name_from_config
 from snowda.core.snow5 import (
     Snow5Parameters,
     compute_melt_factor,
@@ -75,8 +75,7 @@ def _wy(index: pd.DatetimeIndex) -> np.ndarray:
 
 def run_calibration(config_path: str | Path) -> Path:
     cfg: Dict[str, Any] = load_config(config_path)
-    out_dir = Path(cfg["output_dir"]) / datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = make_run_dir(cfg["output_dir"], run_name_from_config(cfg))
     configure_logging(level=logging.INFO, log_file=out_dir / "calibration.log")
 
     forcing_hru = read_snow5_forcing(cfg["forcing_file"]).sel(

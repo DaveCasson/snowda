@@ -1,7 +1,10 @@
 case_name: ross_summa_deterministic
 description: Deterministic SUMMA run for ross River (no DA, no ESP).
 
-# Run artifacts and SUMMA outputPath go to <repo>/outputs/<case_name>/<timestamp>/
+# Outputs go to <output_dir>/<run_name>/. run_name: timestamp (default) makes a new
+# UTC-timestamped folder per run; any other name uses that fixed folder (re-runs overwrite).
+output_dir: ../../outputs/ross_summa_deterministic
+run_name: timestamp
 log_file: logs/ross_summa_deterministic.log
 
 model_run_id: ross_summa_deterministic

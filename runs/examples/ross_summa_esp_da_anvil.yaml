@@ -4,7 +4,10 @@ description: >
   Assimilation and ESP both use 1 March, 1 April, and 1 May from 2010
   through 2020. Run with snowda.workflows.run_summa_da.
 
-#output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_esp
+# Outputs go to <output_dir>/<run_name>/. run_name: timestamp (default) makes a new
+# UTC-timestamped folder per run; any other name uses that fixed folder (re-runs overwrite).
+output_dir: ../../outputs/ross_summa_esp_da
+run_name: timestamp
 log_file: logs/ross_summa_esp_da.log
 
 model_run_id: ross_summa_esp_da

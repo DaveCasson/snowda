@@ -4,7 +4,10 @@ description: >
   Forecasts are issued on 1 March, 1 April, and 1 May and are initialised
   from the historic ensemble members. Run with snowda.workflows.run_summa_esp.
 
-#output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_esp
+# Outputs go to <output_dir>/<run_name>/. run_name: timestamp (default) makes a new
+# UTC-timestamped folder per run; any other name uses that fixed folder (re-runs overwrite).
+output_dir: ../../outputs/ross_summa_esp_no_da
+run_name: timestamp
 log_file: logs/ross_summa_esp_no_da.log
 
 model_run_id: ross_summa_esp_no_da

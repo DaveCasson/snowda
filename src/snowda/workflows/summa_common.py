@@ -15,6 +15,7 @@ from snowda.adapters.mizuroute import (
 )
 from snowda.adapters.pysumma import get_file_manager_value
 from snowda.config.pysummada import MizuRouteEspConfig, PysummadaConfig
+from snowda.config.run_dir import make_run_dir
 from snowda.core.assimilation import DataAssimilationCore, restart_filename
 from snowda.io.summa_ensemble import (
     EnsembleFileWriter,
@@ -25,10 +26,6 @@ from snowda.io.summa_ensemble import (
 from snowda.utils.logging import configure_logging, get_logger
 
 log = get_logger(__name__)
-
-
-def now_utc_tag() -> str:
-    return datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
 
 
 def ensure_dir(path: str | Path) -> Path:
@@ -124,7 +121,7 @@ def setup_run_directory(
     logger_name: str,
     start_message: str,
 ) -> tuple[Path, logging.Logger]:
-    run_dir = ensure_dir(cfg.output_dir / now_utc_tag())
+    run_dir = make_run_dir(cfg.output_dir, cfg.run_name)
     copy_param_definition(cfg, run_dir)
     log_file = run_dir / log_filename
     configure_logging(level=logging.INFO, log_file=log_file)

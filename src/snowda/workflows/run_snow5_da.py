@@ -14,6 +14,7 @@ import xarray as xr
 
 from snowda.config.loader import load_config
 from snowda.config.pysummada import _parse_esp_horizon
+from snowda.config.run_dir import make_run_dir, run_name_from_config
 from snowda.core.assimilation import DataAssimilationCore
 from snowda.core.fsca_models import FscaState, initialize_model_arrays
 from snowda.core.particle_filter import (
@@ -722,7 +723,7 @@ def _run_snow5_esp_from_da(
 def run_snow5_da(config_path: str | Path) -> Path:
     cfg = load_config(config_path)
     base_dir = Path(cfg.get("_meta", {}).get("config_dir", Path(config_path).resolve().parent))
-    output_dir = _ensure_dir(Path(cfg.get("output_dir") or ".") / datetime.utcnow().strftime("%Y%m%dT%H%M%SZ"))
+    output_dir = make_run_dir(cfg.get("output_dir") or ".", run_name_from_config(cfg))
 
     log_file = cfg.get("log_file")
     if log_file:

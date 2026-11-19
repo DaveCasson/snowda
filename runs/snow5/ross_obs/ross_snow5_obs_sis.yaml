@@ -5,7 +5,10 @@ description: >
   forcing members. SIS: no resampling; posterior weights carry forward between surveys and reset to equal at the start of each water year.
   Run: python -m snowda.workflows.run_snow5_da <this file>
 
+# Outputs go to <output_dir>/<run_name>/. run_name: timestamp (default) makes a new
+# UTC-timestamped folder per run; any other name uses that fixed folder (re-runs overwrite).
 output_dir: /Users/dcasson/GitHub/snowda/outputs/snow5/ross_obs/sis
+run_name: timestamp
 log_file: logs/ross_snow5_obs_sis.log
 
 ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensemble

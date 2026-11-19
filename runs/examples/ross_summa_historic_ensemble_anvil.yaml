@@ -4,7 +4,10 @@ description: >
   SUMMA runs once from start to end, then mizuRoute routes that member.
   No assimilation and no ESP.
 
-#output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_historic
+# Outputs go to <output_dir>/<run_name>/. run_name: timestamp (default) makes a new
+# UTC-timestamped folder per run; any other name uses that fixed folder (re-runs overwrite).
+output_dir: ../../outputs/ross_summa_historic
+run_name: timestamp
 log_file: logs/ross_summa_historic.log
 
 model_run_id: ross_summa_historic

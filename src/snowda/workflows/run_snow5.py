@@ -11,6 +11,7 @@ import pandas as pd
 import xarray as xr
 
 from snowda.config.loader import load_config
+from snowda.config.run_dir import make_run_dir, run_name_from_config
 from snowda.core.snow5 import Snow5Parameters, run_snow5_simulation
 from snowda.io.snow5 import (
     convert_arrays_to_dataset,
@@ -20,10 +21,6 @@ from snowda.io.snow5 import (
 from snowda.utils.logging import configure_logging, get_logger
 
 log = get_logger(__name__)
-
-
-def _now_utc_tag() -> str:
-    return datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
 
 
 def _ensure_dir(path: Path) -> Path:
@@ -111,7 +108,7 @@ def run_snow5(config_path: str | Path) -> Path:
     if not output_dir:
         raise ValueError("Config must define `output_dir`.")
     output_dir = _normalize_output_dir(str(output_dir), base_dir)
-    run_dir = _ensure_dir(output_dir / _now_utc_tag())
+    run_dir = make_run_dir(output_dir, run_name_from_config(cfg))
 
     log_file_cfg = cfg.get("log_file")
     log_file = None

@@ -42,7 +42,7 @@ When bringing in external code:
 - Shared SUMMA config fields live in pysummada YAML (`base_file_manager`, ensemble size, times, `summa_exe`). Deterministic routing uses optional top-level `mizuroute`. ESP and DA-then-ESP require an `esp` section. The historic open-loop requires `ensemble_forcing_mode: historic`, rejects `esp`, `assimilation`, `assimilation_mode`, and `evaluation`, and treats top-level `mizuroute` as optional. Historic DA rejects an `esp` section and requires top-level `mizuroute`. mizuRoute writes output and restarts under the timestamped run directory (`<run_dir>/mizuroute/` for deterministic and historic segments; ESP traces keep per-trace `mizuroute/` folders). Historic segment discharge is `<run_dir>/mizuroute/<member>_<YYYY_MM_DD>_mizuroute.nc`.
 
 ## Outputs
-Each run writes to a unique run directory (timestamped), containing:
+Each run writes to `<output_dir>/<run_name>/` (`snowda.config.run_dir.make_run_dir`). Both keys are set at the top level of the run YAML. `run_name: timestamp` (or omitted) creates a new UTC-timestamped folder per run; any other value is used as a fixed folder name and re-runs overwrite it. A relative `output_dir` resolves against the config file's folder for SUMMA and evaluation configs. The run directory contains:
 - resolved config snapshot
 - provenance.json (git hash, time, config path)
 - logs and produced artifacts (netCDF, figures)

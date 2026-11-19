@@ -15,6 +15,7 @@ from snowda.config.pysummada import (
     load_pysummada_config,
     validate_deterministic_config,
 )
+from snowda.config.run_dir import make_run_dir, run_name_from_config
 from snowda.utils.logging import configure_logging, get_logger
 from snowda.workflows.evaluate_streamflow import evaluate_deterministic_run
 from snowda.workflows.summa_common import (
@@ -129,10 +130,6 @@ def _run_summa_deterministic(config: Mapping[str, Any], label: str) -> Path:
     return run_dir
 
 
-def _now_utc_tag() -> str:
-    return datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
-
-
 def _ensure_dir(path: str | Path) -> Path:
     p = Path(path)
     p.mkdir(parents=True, exist_ok=True)
@@ -208,7 +205,7 @@ def _run_summa_flat(config: Mapping[str, Any], label: str) -> Path:
     if not output_dir:
         raise ValueError("Config must define `output_dir` (or `paths.output_dir`).")
 
-    run_dir = _ensure_dir(Path(output_dir) / _now_utc_tag())
+    run_dir = make_run_dir(output_dir, run_name_from_config(cfg))
 
     log_file_cfg = paths.get("log_file")
     log_file = None

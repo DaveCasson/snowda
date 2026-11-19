@@ -4,7 +4,10 @@ description: >
   WY1982-WY2024. No DA. Scored against Yukon snow-survey SWE (09BA-SC02, swe_obs).
   Run: python -m snowda.workflows.run_snow5 <this file>
 
+# Outputs go to <output_dir>/<run_name>/. run_name: timestamp (default) makes a new
+# UTC-timestamped folder per run; any other name uses that fixed folder (re-runs overwrite).
 output_dir: /Users/dcasson/GitHub/snowda/outputs/snow5/ross_obs/historic_mean
+run_name: timestamp
 log_file: logs/ross_snow5_obs_historic_mean.log
 
 paths:

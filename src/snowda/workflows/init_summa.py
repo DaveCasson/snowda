@@ -7,11 +7,8 @@ from pathlib import Path
 from typing import Any, Dict
 
 from snowda.config.loader import load_config
+from snowda.config.run_dir import make_run_dir, run_name_from_config
 from snowda.utils.logging import configure_logging, get_logger
-
-
-def _now_utc_tag() -> str:
-    return datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
 
 
 def _ensure_dir(path: str | Path) -> Path:
@@ -120,7 +117,7 @@ def init_summa_run(config_path: str | Path) -> Path:
     if not output_dir:
         raise ValueError("Config must define `paths.output_dir`.")
 
-    run_dir = _ensure_dir(Path(output_dir) / _now_utc_tag())
+    run_dir = make_run_dir(output_dir, run_name_from_config(cfg))
 
     log_file_cfg = paths.get("log_file")
     log_file = None
