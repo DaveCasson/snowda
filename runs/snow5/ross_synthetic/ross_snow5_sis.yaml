@@ -1,0 +1,48 @@
+case_name: ross_snow5_sis
+description: >
+  snow5 historic DA for Ross, synthetic SWE observations from truth member 050.
+  Particles are members 001-049, each with its own SUMMA forcing.
+  SIS: Sequential Importance Sampling. No resampling; members keep their open-loop trajectories and posterior weights carry forward between updates. Weights reset to equal at the start of each water year (season_start_month).
+  Run: python -m snowda.workflows.run_snow5_da <this file>
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/snow5/ross_synthetic/sis
+log_file: logs/ross_snow5_sis.log
+
+ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensemble
+ensemble_forcing_pattern: "0[0-4][0-9]/prod_complete_ensMember_*.nc"
+
+start_time: "2010-10-01"
+end_time: "2016-09-30"
+# Update every 14 days. The synthetic obs file is daily, so every update date has an obs.
+assimilation_interval_days: 14
+
+model_parameters:
+  guc: 0.85
+  src: 2.0
+  f_max: 1.2
+  f_min: 0.1
+  t_mlt: 0.0
+fsca_model: ssnowd
+fsca_cv: 0.5
+snow_density: 300.0
+
+assimilation_nc: /Users/dcasson/GitHub/snowda/data/snow5/ross_synthetic/synthetic_swe_obs.nc
+assimilation_var: swe
+obs_var_name: swe
+modeled_var: swe
+modeled_var_name: swe
+state_mean_name: mean_swe
+state_var_name: var_swe
+# Matches the synthetic observation error (ross_snow5_synthetic_setup.yaml).
+# One standard deviation is this fraction of |observed SWE|.
+swe_relative_uncertainty: 0.10
+# Absolute standard-deviation floor, kg m-2.
+swe_sigma_floor: 5.0
+
+pf_resample: false
+n_eff_threshold: 0.5
+pf_seed: 42
+# Reset prior weights to equal at the first update of each water year.
+season_start_month: 10
+# Optional: cap collapse per update (N_eff >= target * prior N_eff).
+# tempering_target: 0.5

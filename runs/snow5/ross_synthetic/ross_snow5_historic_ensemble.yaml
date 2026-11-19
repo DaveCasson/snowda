@@ -1,0 +1,25 @@
+case_name: ross_snow5_historic_ensemble
+description: >
+  snow5 open-loop ensemble for Ross. Each of members 001-049 runs with its own
+  SUMMA forcing; no DA. Member labels 001-049 match the DA runs.
+  Run: python -m snowda.workflows.run_snow5_ensemble <this file>
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/snow5/ross_synthetic/historic_ensemble
+log_file: logs/ross_snow5_historic_ensemble.log
+
+ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensemble
+ensemble_forcing_pattern: "0[0-4][0-9]/prod_complete_ensMember_*.nc"
+
+start_time: "2010-10-01"
+end_time: "2016-09-30"
+
+model_parameters:
+  guc: 0.85
+  src: 2.0
+  f_max: 1.2
+  f_min: 0.1
+  t_mlt: 0.0
+fsca_model: ssnowd
+fsca_cv: 0.5
+snow_density: 300.0
+

@@ -1,0 +1,29 @@
+case_name: ross_snow5_obs_historic_mean
+description: >
+  Deterministic snow5 run for Ross on the SUMMA 50-member ensemble-mean forcing,
+  WY1982-WY2024. No DA. Scored against Yukon snow-survey SWE (09BA-SC02, swe_obs).
+  Run: python -m snowda.workflows.run_snow5 <this file>
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/snow5/ross_obs/historic_mean
+log_file: logs/ross_snow5_obs_historic_mean.log
+
+paths:
+  forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/mean/ross_forcing_ensemble_mean.nc
+
+start_time: "1981-10-01"
+end_time: "2024-09-30"
+
+# Calibrated to raw station SWE (swe_obs, 09BA-SC02), WY1982-2003; see
+# ross_snow5_calibration.yaml and outputs/snow5/ross_obs/calibration/20261118T224233Z.
+# Validation WY2004-2024: RMSE 65, NSE -0.22 (forcing loses skill vs the station).
+model_parameters:
+  guc: 0.7133
+  src: 2.5055
+  f_max: 3.7963
+  f_min: 0.1
+  t_mlt: -1.1698
+fsca_model: ssnowd
+fsca_cv: 0.5
+snow_density: 300.0
+
+output_file: snow5_output.nc

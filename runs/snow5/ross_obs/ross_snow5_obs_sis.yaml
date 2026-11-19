@@ -1,0 +1,57 @@
+case_name: ross_snow5_obs_sis
+description: >
+  snow5 historic DA for Ross, WY1982-WY2024, assimilating Yukon snow-survey SWE
+  at Twin Creeks (09BA-SC02) on each survey date. Particles are the 50 SUMMA
+  forcing members. SIS: no resampling; posterior weights carry forward between surveys and reset to equal at the start of each water year.
+  Run: python -m snowda.workflows.run_snow5_da <this file>
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/snow5/ross_obs/sis
+log_file: logs/ross_snow5_obs_sis.log
+
+ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensemble
+ensemble_forcing_pattern: "*/prod_complete_ensMember_*.nc"
+
+start_time: "1981-10-01"
+end_time: "2024-09-30"
+# Update on each survey date with a finite observation; run on to end_time.
+assimilation_schedule: observations
+
+# Calibrated to raw station SWE (swe_obs, 09BA-SC02), WY1982-2003; see
+# ross_snow5_calibration.yaml and outputs/snow5/ross_obs/calibration/20261118T224233Z.
+# Validation WY2004-2024: RMSE 65, NSE -0.22 (forcing loses skill vs the station).
+model_parameters:
+  guc: 0.7133
+  src: 2.5055
+  f_max: 3.7963
+  f_min: 0.1
+  t_mlt: -1.1698
+fsca_model: ssnowd
+fsca_cv: 0.5
+snow_density: 300.0
+
+# Raw station SWE (swe_obs) from data/yukon_snow_data.csv. swe_model_equivalent
+# in the same file is quantile-mapped to SUMMA's climatology, so it is not used.
+assimilation_nc: /Users/dcasson/GitHub/snowda/data/obs_qm/ross_yukon_swe_model_equivalent.nc
+assimilation_var: swe
+obs_var_name: swe_obs
+modeled_var: swe
+modeled_var_name: swe
+state_mean_name: mean_swe
+state_var_name: var_swe
+# Ross lumped hruId is 1. Stations not listed are ignored; stations sharing an
+# HRU are averaged on each date.
+hru_stations:
+  - hru_id: 1
+    station_id: "09BA-SC02"
+# One standard deviation is this fraction of |observed SWE|.
+swe_relative_uncertainty: 0.15
+# Absolute floor, kg m-2. sigma_o = 35 from the spread across stations within a
+# campaign (as in ross_summa_historic_da). No timing error term: updates fall
+# on the survey dates themselves.
+swe_sigma_floor: 35
+
+pf_resample: false
+n_eff_threshold: 0.5
+pf_seed: 42
+season_start_month: 10
+# tempering_target: 0.5

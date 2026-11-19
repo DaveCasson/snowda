@@ -27,8 +27,17 @@ log = get_logger(__name__)
 
 def _resolve_forcing_paths(cfg: Dict[str, Any], base_dir: Path) -> List[Path]:
     files = cfg.get("ensemble_forcing_files")
+    if not files and cfg.get("ensemble_forcing_dir"):
+        root = Path(cfg["ensemble_forcing_dir"])
+        if not root.is_absolute():
+            root = (base_dir / root).resolve()
+        files = sorted(root.glob(cfg.get("ensemble_forcing_pattern", "*.nc")))
+        if not files:
+            raise FileNotFoundError(f"No forcing files in {root} match the pattern.")
     if not files:
-        raise ValueError("Config must define `ensemble_forcing_files`.")
+        raise ValueError(
+            "Config must define `ensemble_forcing_files` or `ensemble_forcing_dir`."
+        )
     resolved = []
     for raw in files:
         p = Path(raw)
@@ -124,7 +133,7 @@ def run_snow5_ensemble(config_path: str | Path) -> Path:
 
     ensemble_info = []
     for idx, forcing_path in enumerate(forcing_files, start=1):
-        label = forcing_path.stem or f"forcing_{idx}"
+        label = f"{idx:03d}" if cfg.get("ensemble_forcing_dir") else (forcing_path.stem or f"forcing_{idx}")
         run_dir = _ensure_dir(output_dir / label)
         forcing_ds = read_snow5_forcing(forcing_path)
         if start_time or end_time:

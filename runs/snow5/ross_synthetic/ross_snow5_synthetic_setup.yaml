@@ -1,0 +1,37 @@
+case_name: ross_snow5_synthetic_setup
+description: >
+  Synthetic (twin) experiment setup for snow5 on the Ross lumped basin.
+  Ensemble member 050 of the SUMMA forcing is held out as the truth. snow5
+  driven by it gives the true SWE; synthetic SWE observations are truth plus
+  Gaussian noise. Members 001-049 form the forecast ensemble and their hourly
+  mean drives the historic-mean run. Run this once before the four mode configs.
+
+# Relative to this config directory -> <repo>/data/snow5/ross_synthetic
+data_dir: ../../../data/snow5/ross_synthetic
+
+truth_forcing_file: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensemble/050/prod_complete_ensMember_050.nc
+ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensemble
+# 001-049. The truth member (050) is also excluded explicitly.
+ensemble_forcing_pattern: "0[0-4][0-9]/prod_complete_ensMember_*.nc"
+
+# Six water years
+start_time: "2010-10-01"
+end_time: "2016-09-30"
+
+# Must match the mode configs: the truth uses the same model (perfect-model twin).
+model_parameters:
+  guc: 0.85
+  src: 2.0
+  f_max: 1.2
+  f_min: 0.1
+  t_mlt: 0.0
+fsca_model: ssnowd
+fsca_cv: 0.5
+snow_density: 300.0
+
+synthetic_obs:
+  # Same error model the particle filter uses:
+  # sigma = max(swe_relative_uncertainty * |truth|, swe_sigma_floor), kg m-2
+  swe_relative_uncertainty: 0.10
+  swe_sigma_floor: 5.0
+  seed: 2026

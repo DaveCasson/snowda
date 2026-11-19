@@ -1,0 +1,42 @@
+case_name: ross_snow5_calibration
+description: >
+  Split-sample calibration of snow5 for Ross against raw station SWE (swe_obs)
+  at Twin Creeks (09BA-SC02), not the SUMMA model-equivalent values. Forcing is
+  the SUMMA 50-member ensemble mean. Objective: RMSE on survey dates in the
+  calibration water years, zero-SWE surveys included.
+  Run: python -m snowda.workflows.calibrate_snow5 <this file>
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/snow5/ross_obs/calibration
+
+forcing_file: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/mean/ross_forcing_ensemble_mean.nc
+start_time: "1981-10-01"
+end_time: "2024-09-30"
+
+obs_nc: /Users/dcasson/GitHub/snowda/data/obs_qm/ross_yukon_swe_model_equivalent.nc
+obs_var: swe_obs
+station_id: "09BA-SC02"
+
+# Calibrate WY1982-2003; WY2004-2024 is validation.
+calibration_water_years: [1982, 2003]
+
+# Starting point and the reference for "initial" scores (the Chena set).
+initial_parameters:
+  guc: 0.85
+  src: 2.0
+  f_max: 1.2
+  f_min: 0.1
+  t_mlt: 0.0
+
+# Melt factor depends only on f_max^2 - f_min^2 (multiplicative form), so f_min is fixed.
+fixed:
+  f_min: 0.1
+bounds:
+  guc: [0.3, 2.0]     # precipitation/snowfall multiplier (-)
+  src: [-3.0, 4.0]    # rain/snow threshold (deg C)
+  f_max: [0.2, 6.0]   # max melt-factor bound (mm deg C-1 day-1)
+  t_mlt: [-4.0, 4.0]  # melt threshold (deg C)
+
+optimizer:
+  seed: 1
+  popsize: 20
+  maxiter: 200

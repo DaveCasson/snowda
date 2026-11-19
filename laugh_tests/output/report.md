@@ -1,6 +1,6 @@
 # Laugh test report
 
-88 PASS, 1 KNOWN DEVIATION, 0 FAIL.
+111 PASS, 1 KNOWN DEVIATION, 0 FAIL.
 
 A PASS row matches an analytical result. A KNOWN DEVIATION row is a
 textbook result the current code does not reproduce. The test is marked
@@ -26,6 +26,25 @@ the deviation note is not retired.
 | PASS | test_particle_filter::test_weights_follow_hru_id_not_row_order | weights aligned by hruId | [9.996646e-01, 3.353501e-04] | [9.996646e-01, 3.353501e-04] | Observations and predictions are paired on hruId, not row position |
 | PASS | test_particle_filter::test_weights_follow_hru_id_not_row_order | matching particle has the larger weight | True | True | Member 001 matches both HRUs; member 002 misses HRU 2 by 20 kg m-2 |
 | PASS | test_particle_filter::test_identical_particles_share_weight_equally | equal weights | [0.333333, 0.333333, 0.333333] | [0.333333, 0.333333, 0.333333] | Equal errors produce equal likelihoods |
+| PASS | test_particle_filter::test_weights_carry_forward_between_dates | weights after two dates | [0.474918, 0.419114, 0.105969] | [0.474918, 0.419114, 0.105969] | Arulampalam et al. (2002), Eq. 63; Doucet and Johansen (2011): w_k ∝ w_{k-1} * p(z_k \| x_k) with the model as the proposal |
+| PASS | test_particle_filter::test_weights_carry_forward_between_dates | those weights differ from the date-2 likelihood alone | True | True | Arulampalam et al. (2002), Eq. 63; Doucet and Johansen (2011): w_k ∝ w_{k-1} * p(z_k \| x_k) with the model as the proposal |
+| PASS | test_particle_filter::test_sequential_weights_match_the_batch_smoother | sequential weights after three dates | [0.131936, 0.671774, 0.000962, 0.195328] | [0.131936, 0.671774, 0.000962, 0.195328] | Margulis et al. (2015) particle batch smoother: w ∝ p(y_1:K \| x). Independent errors make this the product of dated likelihoods |
+| PASS | test_particle_filter::test_season_boundaries | season of each date | [2013, 2014, 2014, 2014, 2015] | [2013, 2014, 2014, 2014, 2015] | Season = year of the most recent day 1 of the start month |
+| PASS | test_particle_filter::test_season_reset_uses_only_this_season | weights in 2015 with season_start_month = 10 | [0.127229, 0.360559, 0.001973, 0.510239] | [0.127229, 0.360559, 0.001973, 0.510239] | Margulis et al. (2015): one batch-smoother weighting per snow season, w ∝ p(y_season \| x) |
+| PASS | test_particle_filter::test_season_reset_uses_only_this_season | weights in 2014 after two dates with the reset on | [0.275016, 0.494114, 0.129346, 0.101525] | [0.275016, 0.494114, 0.129346, 0.101525] | Dates inside one season still multiply |
+| PASS | test_particle_filter::test_season_reset_uses_only_this_season | weights in 2015 without a season reset | [0.131936, 0.671774, 0.000962, 0.195328] | [0.131936, 0.671774, 0.000962, 0.195328] | Arulampalam et al. (2002), Eq. 63; Doucet and Johansen (2011): w_k ∝ w_{k-1} * p(z_k \| x_k) with the model as the proposal |
+| PASS | test_particle_filter::test_resampling_resets_the_prior | prior after resampling | [0.333333, 0.333333, 0.333333] | [0.333333, 0.333333, 0.333333] | Arulampalam et al. (2002): resampled weights are reset to 1/N |
+| PASS | test_particle_filter::test_resampling_resets_the_prior | prior without resampling | [0.7, 0.2, 0.1] | [0.7, 0.2, 0.1] | Arulampalam et al. (2002), Eq. 63; Doucet and Johansen (2011): w_k ∝ w_{k-1} * p(z_k \| x_k) with the model as the proposal |
+| PASS | test_particle_filter::test_resampling_resets_the_prior | weights from an equal prior | [0.574097, 0.348207, 0.077696] | [0.574097, 0.348207, 0.077696] | An equal prior leaves the normalised likelihood (SIR) |
+| PASS | test_particle_filter::test_zero_prior_weight_stays_zero | weight of the particle with prior 0 | 0 | 0 | Arulampalam et al. (2002), Eq. 63; Doucet and Johansen (2011): w_k ∝ w_{k-1} * p(z_k \| x_k) with the model as the proposal |
+| PASS | test_particle_filter::test_tempering_closed_form | tempering exponent | 0.346574 | 0.346573 | Cluzet et al. (2021): inflate observation errors until the ensemble keeps enough members. w ∝ w_prior * L^beta, beta largest in [0, 1] with N_eff >= target * N_eff(prior) |
+| PASS | test_particle_filter::test_tempering_closed_form | tempered weights | [0.666667, 0.333333] | [0.666666, 0.333334] | Cluzet et al. (2021): inflate observation errors until the ensemble keeps enough members. w ∝ w_prior * L^beta, beta largest in [0, 1] with N_eff >= target * N_eff(prior) |
+| PASS | test_particle_filter::test_tempering_inflates_sigma | tempered weights against sigma / sqrt(beta) | [0.380936, 0.33149 , 0.233655, 0.053919] | [0.380936, 0.33149 , 0.233655, 0.053919] | exp(-0.5 r^2 / sigma^2)^beta = exp(-0.5 r^2 / (sigma / sqrt(beta))^2) |
+| PASS | test_particle_filter::test_tempering_inflates_sigma | N_eff after tempering, as a fraction of 4 | 0.8 | 0.8 | Cluzet et al. (2021): inflate observation errors until the ensemble keeps enough members. w ∝ w_prior * L^beta, beta largest in [0, 1] with N_eff >= target * N_eff(prior) |
+| PASS | test_particle_filter::test_tempering_leaves_an_easy_update_alone | tempering exponent | 1 | 1 | Cluzet et al. (2021): inflate observation errors until the ensemble keeps enough members. w ∝ w_prior * L^beta, beta largest in [0, 1] with N_eff >= target * N_eff(prior) |
+| PASS | test_particle_filter::test_tempering_leaves_an_easy_update_alone | weights equal the untempered update | [0.336111, 0.334434, 0.329455] | [0.336111, 0.334434, 0.329455] | Arulampalam et al. (2002), Eq. 63; Doucet and Johansen (2011): w_k ∝ w_{k-1} * p(z_k \| x_k) with the model as the proposal |
+| PASS | test_particle_filter::test_tempering_keeps_invalid_particles_at_zero | weight of the invalid particle | 0 | 0 | A non-finite prediction has likelihood 0 for every beta > 0 |
+| PASS | test_particle_filter::test_tempering_keeps_invalid_particles_at_zero | N_eff over the two valid particles | 1.98 | 1.98 | Cluzet et al. (2021): inflate observation errors until the ensemble keeps enough members. w ∝ w_prior * L^beta, beta largest in [0, 1] with N_eff >= target * N_eff(prior) |
 | PASS | test_particle_filter::test_state_estimate_matches_weighted_moments | weighted mean | 1.75 | 1.75 | Hand calculation of sum(w * x) |
 | PASS | test_particle_filter::test_state_estimate_matches_weighted_moments | weighted population variance | 0.6875 | 0.6875 | Hand calculation of sum(w * (x - mean)^2), divisor 1 |
 | PASS | test_particle_filter::test_state_estimate_matches_weighted_moments | equal-weight mean | 2 | 2 | Arithmetic mean of 1, 2, 3 |
@@ -41,6 +60,10 @@ the deviation note is not retired.
 | PASS | test_particle_filter::test_relative_uncertainty_flattens_the_weights | the exact particle keeps more weight when the uncertainty is smaller | True | True | Arulampalam et al. (2002): Gaussian likelihood exp(-0.5 * (error / sigma)^2). SWE sigma is max(relative_uncertainty * \|observation\|, sigma_floor) |
 | PASS | test_particle_filter::test_resample_when_effective_sample_size_is_low | indices when N_eff = 1 and the threshold is 2 | [0, 0, 0, 0] | [0, 0, 0, 0] | Arulampalam et al. (2002): resample when N_eff is at or below N_thr |
 | PASS | test_particle_filter::test_resample_when_effective_sample_size_is_low | indices when N_eff = 4 and the threshold is 2 | None | None | A uniform ensemble is above the threshold, so it is kept |
+| PASS | test_particle_filter::test_effective_sample_size_is_not_rounded | N_eff for weights 0.6, 0.2, 0.1, 0.1 | 2.38095 | 2.38095 | Arulampalam et al. (2002): N_eff = 1 / sum(w_i^2) |
+| PASS | test_particle_filter::test_effective_sample_size_is_not_rounded | indices when N_eff = 2.38 and the threshold is 2 | None | None | Rounding 2.38 down to 2 would resample; the unrounded value does not |
+| PASS | test_particle_filter::test_seeded_resampling_is_reproducible | donors from the same seed and date | [0, 0, 1, 1, 2] | [0, 0, 1, 1, 2] | numpy.random.SeedSequence([seed, YYYYMMDDHH]) |
+| PASS | test_particle_filter::test_seeded_resampling_is_reproducible | donors are sorted | [0, 0, 1, 1, 2] | [0, 0, 1, 1, 2] | Kitagawa (1996): systematic resampling copies particle i floor(N*w_i) or ceil(N*w_i) times |
 | PASS | test_particle_filter::test_figure_resampling | effective sample sizes | [4., 2., 1.] | [4., 2., 1.] | Arulampalam et al. (2002): N_eff = 1 / sum(w_i^2) |
 | PASS | test_particle_filter::test_figure_resampling | copy counts for weights 0.5, 0.25, 0.25 | [2, 1, 1] | [2, 1, 1] | Kitagawa (1996): systematic resampling copies particle i floor(N*w_i) or ceil(N*w_i) times |
 | PASS | test_particle_filter::test_figure_weights_versus_distance | largest gap between the code and exp(-0.5 (error / sigma)^2) | 0 | 1.11022e-16 | Arulampalam et al. (2002): Gaussian likelihood. sigma = max(relative_uncertainty * \|observed SWE\|, 5 kg m-2) |

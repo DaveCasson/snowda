@@ -74,16 +74,71 @@ def _load_helbig_params_nc(path: str | Path) -> dict[str, np.ndarray]:
         return {"mu": ds["mu"].values.astype("float64"), "xi": ds["xi"].values.astype("float64")}
 
 
+def _station_obs_to_hru(obs_da: xr.DataArray, hru_stations: Sequence[dict]) -> xr.DataArray:
+    """Map ``(time, station_id)`` observations onto ``(time, hru)``.
+
+    ``hru_stations`` is a list of ``{hru_id, station_id}`` pairs. Stations that
+    share an HRU are averaged over their finite values on each date. Stations
+    not listed are ignored.
+    """
+    known = {str(s) for s in obs_da["station_id"].values}
+    by_hru: dict[int, list[str]] = {}
+    for item in hru_stations:
+        sid = str(item["station_id"])
+        if sid not in known:
+            raise ValueError(f"hru_stations station_id {sid!r} not in observations")
+        by_hru.setdefault(int(item["hru_id"]), []).append(sid)
+    columns = []
+    for hru_id, stations in sorted(by_hru.items()):
+        values = obs_da.sel(station_id=stations).values
+        with np.errstate(all="ignore"):
+            columns.append(np.nanmean(values, axis=1) if values.ndim == 2 else values)
+    out = xr.DataArray(
+        np.column_stack(columns),
+        dims=("time", "hru"),
+        coords={"time": obs_da["time"].values, "hru": sorted(by_hru)},
+        name=obs_da.name,
+        attrs=obs_da.attrs,
+    )
+    return out
+
+
 def _load_observations(
-    path: str | Path, variable: str, start: datetime, end: datetime
+    path: str | Path,
+    variable: str,
+    start: datetime,
+    end: datetime,
+    hru_stations: Sequence[dict] | None = None,
 ) -> xr.DataArray:
     obs_ds = xr.open_dataset(path)
     if variable not in obs_ds:
         raise ValueError(f"Observation variable {variable} not found in {path}")
     obs_da = obs_ds[variable].sel(time=slice(start, end))
+    if "station_id" in obs_da.dims:
+        if not hru_stations:
+            raise ValueError(
+                "Observations are indexed by station_id; set `hru_stations` "
+                "(list of {hru_id, station_id}) in the config."
+            )
+        obs_da = _station_obs_to_hru(obs_da.transpose("time", "station_id"), hru_stations)
     if obs_da.sizes.get("time", 0) == 0:
         raise ValueError("No observation data falls within the requested time window.")
     return obs_da
+
+
+def _observation_times(obs_da: xr.DataArray, end_time: datetime) -> list[datetime]:
+    """Update on each date with a finite observation, then run on to ``end_time``.
+
+    ``end_time`` is added when it is after the last observation; that segment
+    only propagates the particles (no observation, no update).
+    """
+    finite = np.isfinite(obs_da.values).reshape(obs_da.sizes["time"], -1).any(axis=1)
+    times = sorted(pd.Timestamp(t).to_pydatetime() for t in obs_da["time"].values[finite])
+    if not times:
+        raise ValueError("No finite observations in the requested time window.")
+    if times[-1] < end_time:
+        times.append(end_time)
+    return times
 
 
 def _serialize_indexed_dict(values: dict) -> dict:
@@ -252,6 +307,22 @@ class Snow5DAEngine:
         self.prior_weights = self.pf.season_prior(
             self.prior_weights, interval_end, self.season_start_month
         )
+        prior = self._prior_frame(interval_end)
+        if obs_df is None or not np.isfinite(obs_df[self.obs_var_name].values).any():
+            log.info("No observation at %s: propagate only", interval_end.strftime("%Y-%m-%d"))
+            self._capture_state_snapshot(interval_end)
+            return {
+                "time": interval_end,
+                "weights": prior,
+                "prior_weights": prior,
+                "n_eff": self.pf.effective_sample_size(prior),
+                "tempering_beta": float("nan"),
+                "resample": None,
+                "updated": False,
+                self.state_mean_name: {},
+                self.state_var_name: {},
+                "schaake_shuffle_applied": False,
+            }
         weights = self._update_weights(particles_df, obs_df, interval_end)
         log.info(
             "Particle weights (%s): %s",
@@ -300,6 +371,8 @@ class Snow5DAEngine:
         return {
             "time": interval_end,
             "weights": weights,
+            "prior_weights": prior,
+            "updated": True,
             "n_eff": n_eff,
             "tempering_beta": beta,
             "resample": resample,
@@ -332,7 +405,19 @@ class Snow5DAEngine:
             df[label] = modeled_vals
         return df
 
-    def _extract_obs(self, time: datetime) -> pd.DataFrame:
+    def _prior_frame(self, time: datetime) -> pd.DataFrame:
+        """Prior weights for an update at ``time`` (equal when there is none)."""
+        n = len(self.ens_labels)
+        if self.prior_weights is None:
+            values = np.full(n, 1.0 / n)
+        else:
+            values = self.prior_weights.iloc[0].to_numpy(dtype=float)
+            values = values / values.sum()
+        return pd.DataFrame([values], index=[time], columns=self.ens_labels)
+
+    def _extract_obs(self, time: datetime) -> pd.DataFrame | None:
+        if np.datetime64(time) not in self.observation["time"].values:
+            return None
         obs_slice = self.observation.sel(time=time)
         df = obs_slice.to_dataframe().reset_index()
         if self.obs_var_name not in df.columns:
@@ -664,7 +749,11 @@ def run_snow5_da(config_path: str | Path) -> Path:
     if not start_time or not end_time:
         raise ValueError("start_time and end_time are required.")
     assimilation_interval_days = int(cfg.get("assimilation_interval_days", 7))
-    assimilation_times = _build_assimilation_times(start_time, end_time, assimilation_interval_days)
+    # "interval": update every assimilation_interval_days (obs required on each date).
+    # "observations": update on each date with a finite observation.
+    schedule = str(cfg.get("assimilation_schedule", "interval"))
+    if schedule not in ("interval", "observations"):
+        raise ValueError("`assimilation_schedule` must be 'interval' or 'observations'.")
 
     obs_nc = cfg.get("assimilation_nc")
     if not obs_nc:
@@ -677,11 +766,20 @@ def run_snow5_da(config_path: str | Path) -> Path:
     modeled_var_name = cfg.get("modeled_var_name", modeled_var)
     state_mean_name = cfg.get("state_mean_name", "mean_state")
     state_var_name = cfg.get("state_var_name", "var_state")
-    observation = _load_observations(obs_nc, obs_var_name, start_time, end_time)
-    obs_times = {pd.Timestamp(t).to_pydatetime() for t in observation["time"].values}
-    missing_times = [t for t in assimilation_times if t not in obs_times]
-    if missing_times:
-        raise ValueError(f"Observations missing for assimilation times: {missing_times}")
+    observation = _load_observations(
+        obs_nc, obs_var_name, start_time, end_time, cfg.get("hru_stations")
+    )
+    if schedule == "observations":
+        assimilation_times = _observation_times(observation, end_time)
+        log.info("Assimilation on %d observation dates", len(assimilation_times))
+    else:
+        assimilation_times = _build_assimilation_times(
+            start_time, end_time, assimilation_interval_days
+        )
+        obs_times = {pd.Timestamp(t).to_pydatetime() for t in observation["time"].values}
+        missing_times = [t for t in assimilation_times if t not in obs_times]
+        if missing_times:
+            raise ValueError(f"Observations missing for assimilation times: {missing_times}")
 
     model_params_cfg = cfg.get("model_parameters")
     if not isinstance(model_params_cfg, dict):
@@ -820,6 +918,13 @@ def run_snow5_da(config_path: str | Path) -> Path:
                 "time": record["time"].isoformat(),
                 "n_eff": record["n_eff"],
                 "tempering_beta": record["tempering_beta"],
+                "updated": record.get("updated", True),
+                "weights": {
+                    str(k): float(v) for k, v in record["weights"].iloc[0].items()
+                },
+                "prior_weights": {
+                    str(k): float(v) for k, v in record["prior_weights"].iloc[0].items()
+                },
                 "resample": record["resample"].tolist()
                 if record["resample"] is not None
                 else None,

@@ -1,0 +1,27 @@
+case_name: ross_snow5_historic_mean
+description: >
+  Deterministic snow5 open loop for Ross driven by the hourly mean of ensemble
+  members 001-049 (truth member 050 excluded). No DA.
+  Run: python -m snowda.workflows.run_snow5 <this file>
+
+output_dir: /Users/dcasson/GitHub/snowda/outputs/snow5/ross_synthetic/historic_mean
+log_file: logs/ross_snow5_historic_mean.log
+
+paths:
+  # Written by ross_snow5_synthetic_setup.yaml
+  forcing_dir: /Users/dcasson/GitHub/snowda/data/snow5/ross_synthetic/mean_forcing_excl_truth.nc
+
+start_time: "2010-10-01"
+end_time: "2016-09-30"
+
+model_parameters:
+  guc: 0.85
+  src: 2.0
+  f_max: 1.2
+  f_min: 0.1
+  t_mlt: 0.0
+fsca_model: ssnowd
+fsca_cv: 0.5
+snow_density: 300.0
+
+output_file: snow5_output.nc
