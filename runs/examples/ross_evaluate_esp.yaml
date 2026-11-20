@@ -7,8 +7,8 @@ output_dir: /Users/dcasson/GitHub/snowda/outputs/ross_esp_streamflow_eval
 run_name: timestamp
 
 run_dir: /Users/dcasson/GitHub/snowda/outputs/ross_summa_esp/20261022T225336Z
-obs_csv: /Users/dcasson/Data/snowda/summa/ross_lumped/observations/streamflow.csv
-thresholds_csv: /Users/dcasson/Data/snowda/summa/ross_lumped/thresholds/ross_thresholds.csv
+obs_csv: /home/x-dcasson/GitRepos/snowda/data/ross_daily_discharge.csv
+thresholds_csv: /home/x-dcasson/GitRepos/snowda/data/ross_thresholds.csv
 
 variable: IRFroutedRunoff
 resample: 1D

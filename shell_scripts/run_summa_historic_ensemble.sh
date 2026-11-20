@@ -6,7 +6,7 @@
 #SBATCH -N 1
 #SBATCH --cpus-per-task=50
 #SBATCH --time=0-12:00:00
-#SBATCH --mem=4G
+#SBATCH --mem=50G
 
 # One deterministic SUMMA run (notebooks/run_summa_historic.ipynb).
 # Anvil shared is the default partition: 4-day limit, MaxMemPerCPU=1896M.
@@ -21,7 +21,7 @@
 set -euo pipefail
 
 REPO=/home/x-dcasson/GitRepos/snowda
-CONFIG="${1:-$REPO/runs/examples/ross_summa_historic_ensemble.yaml}"
+CONFIG="${1:-$REPO/runs/examples/ross_summa_historic_ensemble_anvil.yaml}"
 if [[ ! -f "$CONFIG" ]]; then
   echo "Config not found: $CONFIG" >&2
   exit 1

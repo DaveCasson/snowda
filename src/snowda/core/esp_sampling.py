@@ -7,6 +7,9 @@ limiting ensemble size.
 
 A particle is one item. Its SUMMA restart and mizuRoute restart stay bound
 through sampling, copying, and the forecast run.
+
+An unresampled posterior keeps every particle. The likelihood is stored on
+each forecast member instead of copying high-weight states and dropping the rest.
 """
 
 from __future__ import annotations
@@ -32,6 +35,10 @@ ESP_SAMPLING_DESCRIPTION = (
 INITIALIZATION_INCREMENTAL = "incremental"
 INITIALIZATION_BALANCED = "balanced_independent"
 ESP_INITIALIZATIONS = (INITIALIZATION_INCREMENTAL, INITIALIZATION_BALANCED)
+WEIGHTING_EQUAL = "equal"
+WEIGHTING_SYSTEMATIC = "systematic"
+WEIGHTING_LIKELIHOOD = "likelihood"
+ESP_WEIGHTINGS = (WEIGHTING_EQUAL, WEIGHTING_SYSTEMATIC, WEIGHTING_LIKELIHOOD)
 
 _SUMMA_RESTART_DATE_RE = re.compile(r"_(\d{10})")
 _MIZU_RESTART_DATE_RE = re.compile(r"\.r\.(\d{4}-\d{2}-\d{2})-")
@@ -58,6 +65,7 @@ class ForecastAssignment:
     particle: ParticleState
     trace_year: int
     weighting: str
+    weight: float = 1.0
 
 
 def post_da_catalog_path(run_dir: Path, when: datetime) -> Path:
@@ -186,10 +194,11 @@ def validate_particle_binding(
 
 
 def weighting_mode(particles: Sequence[ParticleState]) -> str:
-    """Equal-count balance only when the posterior particles are equally weighted.
+    """How ESP turns a post-DA catalog into forecast states.
 
-    SIR resampling already turned the posterior into an equally weighted
-    multiset. Those saved pre-resample weights are not applied again.
+    A resampled catalog is already an equally weighted multiset, so those
+    saved weights are not applied again. An unresampled catalog with unequal
+    weights keeps every particle and carries the likelihood on the forecast.
     """
     if not particles:
         raise ValueError("Post-DA state pool is empty.")
@@ -198,12 +207,12 @@ def weighting_mode(particles: Sequence[ParticleState]) -> str:
     ):
         raise ValueError("Post-DA catalog mixes resampled and unresampled particles.")
     if all(particle.resampled for particle in particles):
-        return "equal"
+        return WEIGHTING_EQUAL
     weights = np.asarray([particle.weight for particle in particles], dtype=float)
     _validate_weights(weights)
     if np.allclose(weights, weights[0]):
-        return "equal"
-    return "systematic"
+        return WEIGHTING_EQUAL
+    return WEIGHTING_LIKELIHOOD
 
 
 def balanced_indices(n_pool: int, n_draw: int, rng: np.random.Generator) -> np.ndarray:
@@ -254,14 +263,27 @@ def sample_forecast_members(
     if not trace_years:
         raise ValueError("Historical weather pool is empty.")
     mode = weighting or weighting_mode(particles)
-    if mode not in {"equal", "systematic"}:
+    if mode not in ESP_WEIGHTINGS:
         raise ValueError(f"Unsupported ESP weighting mode {mode!r}.")
+    normalized = _validate_weights(
+        np.asarray([particle.weight for particle in particles], dtype=float)
+    )
     state_rng, weather_rng = _issue_streams(seed, issue_key)
-    if mode == "equal":
+    if mode == WEIGHTING_LIKELIHOOD:
+        if n_members % len(particles) != 0:
+            raise ValueError(
+                "Likelihood-weighted ESP requires n_members to be a multiple of "
+                f"the particle count ({len(particles)}), got {n_members}."
+            )
+        repeats = n_members // len(particles)
         state_index = balanced_indices(len(particles), n_members, state_rng)
+        member_weight = normalized[state_index] / repeats
+    elif mode == WEIGHTING_EQUAL:
+        state_index = balanced_indices(len(particles), n_members, state_rng)
+        member_weight = np.full(n_members, 1.0 / n_members)
     else:
-        weights = np.asarray([particle.weight for particle in particles], dtype=float)
-        state_index = systematic_indices(weights, n_members, state_rng)
+        state_index = systematic_indices(normalized, n_members, state_rng)
+        member_weight = np.full(n_members, 1.0 / n_members)
     weather_index = balanced_indices(len(trace_years), n_members, weather_rng)
     years = list(trace_years)
     assignments: list[ForecastAssignment] = []
@@ -273,6 +295,7 @@ def sample_forecast_members(
                 particle=particle,
                 trace_year=int(years[int(weather_at)]),
                 weighting=mode,
+                weight=float(member_weight[position]),
             )
         )
     return assignments

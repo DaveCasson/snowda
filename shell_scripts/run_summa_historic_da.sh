@@ -4,7 +4,7 @@
 #SBATCH -o /home/x-dcasson/GitRepos/snowda/shell_scripts/logs/%x-%j.out
 #SBATCH -e /home/x-dcasson/GitRepos/snowda/shell_scripts/logs/%x-%j.err
 #SBATCH -N 1
-#SBATCH --cpus-per-task=10
+#SBATCH --cpus-per-task=50
 #SBATCH --time=2-00:00:00
 #SBATCH --mem=8G
 

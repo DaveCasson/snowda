@@ -6,19 +6,19 @@ description: >
 
 # Outputs go to <output_dir>/<run_name>/. run_name: timestamp (default) makes a new
 # UTC-timestamped folder per run; any other name uses that fixed folder (re-runs overwrite).
-output_dir: ../../outputs/ross_summa_esp_no_da
+output_dir: /anvil/scratch/x-dcasson/snowda/outputs/ross_summa_esp_no_da/
 run_name: timestamp
 log_file: logs/ross_summa_esp_no_da.log
 
 model_run_id: ross_summa_esp_no_da
-base_file_manager: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManager.txt
+base_file_manager: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManagerANVIL.txt
 ensemble_forcing_mode: historic
-ensemble_forcing_dir: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/forcing
-num_ens: 44
+ensemble_forcing_dir: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/forcing/
+num_ens: 50
 num_workers: 50
 
-start_time: "1980-01-01 00:00"
-end_time: "1990-08-01 00:00"
+start_time: "2000-01-01 00:00"
+end_time: "2020-12-31 00:00"
 time_delta_days: 1
 
 summa_exe: /home/x-dcasson/GitRepos/summa/bin/summa_sundials.exe
@@ -27,7 +27,7 @@ summa_log: false
 
 # Daily restarts so a state file exists at each forecast issue date.
 summa_args:
-  "-m": /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManager.txt
+  "-m": /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManagerANVIL.txt
   "-r": e
 
 # Settings directory for the base file manager and forcing file lists.
@@ -43,7 +43,7 @@ esp:
   end_year: 2024
   forecast_end: "08-01"
   initialization: balanced_independent
-  n_members: 44
+  n_members: 50
   seed: 20270101
   dates: &forecast_dates
     # 1 March, 1 April, and 1 May. Dates before start_time are skipped.
@@ -170,23 +170,11 @@ esp:
     - "2020-03-01 00:00"
     - "2020-04-01 00:00"
     - "2020-05-01 00:00"
-    - "2021-03-01 00:00"
-    - "2021-04-01 00:00"
-    - "2021-05-01 00:00"
-    - "2022-03-01 00:00"
-    - "2022-04-01 00:00"
-    - "2022-05-01 00:00"
-    - "2023-03-01 00:00"
-    - "2023-04-01 00:00"
-    - "2023-05-01 00:00"
-    - "2024-03-01 00:00"
-    - "2024-04-01 00:00"
-    - "2024-05-01 00:00"
   restart_file_filter: restart
   run_mizuroute: true
   mizuroute:
     executable: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe
-    control_file: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/mizuroute.control
+    control_file: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/mizurouteANVIL.control
     ancil_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
     case_name: Ross
     restart_write: monthly

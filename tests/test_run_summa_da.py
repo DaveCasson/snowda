@@ -11,7 +11,12 @@ import pytest
 import xarray as xr
 
 from snowda.core.assimilation import DataAssimilationCore, restart_filename
-from snowda.core.particle_filter import ParticleFilterCore, weighted_ensemble_summary
+from snowda.core.particle_filter import (
+    ParticleFilterCore,
+    weighted_crps,
+    weighted_ensemble_summary,
+    weighted_quantile_rows,
+)
 from snowda.workflows.run_summa_da import _resample_member_states, _run_swe_assimilation
 from tests.test_pysummada_config import _build_config
 
@@ -174,6 +179,17 @@ def test_weighted_ensemble_summary_uses_weights() -> None:
     equal = weighted_ensemble_summary(flows, np.ones(3))
     assert np.allclose(equal["mean"], [2.0, 20.0])
     assert equal["q50"].tolist() == [2.0, 20.0]
+
+
+def test_likelihood_quantiles_and_crps_follow_the_heavy_member() -> None:
+    values = np.array([[10.0, 80.0, 90.0]])
+    weights = np.array([0.9, 0.05, 0.05])
+    quantiles = weighted_quantile_rows(values, weights, (0.1, 0.5, 0.9))
+    assert quantiles[0].tolist() == [10.0, 10.0, 10.0]
+    with_gap = values.copy()
+    with_gap[0, 1] = np.nan
+    assert weighted_quantile_rows(with_gap, weights, (0.5,))[0, 0] == 10.0
+    assert weighted_crps(values, weights, np.array([10.0]))[0] == pytest.approx(0.725)
 
 
 def test_catalog_requires_restart_when_only_esp_mizuroute_is_set(tmp_path: Path) -> None:

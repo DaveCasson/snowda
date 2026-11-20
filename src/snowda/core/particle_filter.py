@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -483,6 +483,80 @@ def weighted_ensemble_summary(
         index = np.minimum((cdf < q).sum(axis=1), data.shape[1] - 1)
         summary[f"q{round(q * 100):02d}"] = sorted_values[rows, index]
     return pd.DataFrame(summary, index=values.index)
+
+
+def weighted_quantile_rows(
+    values: np.ndarray,
+    weights: np.ndarray,
+    quantiles: Sequence[float],
+) -> np.ndarray:
+    """Weighted quantiles of ``values`` shaped ``(time, member)``.
+
+    A quantile is the smallest finite member whose cumulative weight reaches
+    ``q``. Missing members are left out and the remaining weights are
+    renormalized on that row.
+    """
+    data = np.asarray(values, dtype=float)
+    if data.ndim != 2:
+        raise ValueError("values must have shape (time, member).")
+    member_weights = np.asarray(weights, dtype=float)
+    if member_weights.shape != (data.shape[1],):
+        raise ValueError("weights must have one value per member.")
+    finite = np.isfinite(data) & np.isfinite(member_weights) & (member_weights > 0)
+    row_weights = np.where(finite, member_weights, 0.0)
+    totals = row_weights.sum(axis=1)
+    sortable = np.where(finite, data, np.inf)
+    order = np.argsort(sortable, axis=1)
+    sorted_values = np.take_along_axis(sortable, order, axis=1)
+    sorted_weights = np.take_along_axis(row_weights, order, axis=1)
+    safe_total = np.where(totals > 0, totals, 1.0)
+    cdf = np.cumsum(sorted_weights, axis=1) / safe_total[:, None]
+    rows = np.arange(data.shape[0])
+    result = np.empty((data.shape[0], len(quantiles)), dtype=float)
+    for index, quantile in enumerate(quantiles):
+        at = np.minimum((cdf < quantile).sum(axis=1), data.shape[1] - 1)
+        chosen = sorted_values[rows, at]
+        chosen[(totals <= 0) | ~np.isfinite(chosen)] = np.nan
+        result[:, index] = chosen
+    return result
+
+
+def weighted_crps(
+    values: np.ndarray,
+    weights: np.ndarray,
+    observed: np.ndarray,
+) -> np.ndarray:
+    """Probability-weighted CRPS, one score per row.
+
+    ``values`` has shape ``(row, member)`` and ``observed`` one value per row.
+    ``CRPS = E|X - y| - 0.5 E|X - X'|`` with the member weights. A row with no
+    finite members, or a missing observation, scores NaN.
+    """
+    data = np.asarray(values, dtype=float)
+    if data.ndim == 1:
+        data = data.reshape(1, -1)
+    if data.ndim != 2:
+        raise ValueError("values must have shape (row, member).")
+    target = np.asarray(observed, dtype=float).reshape(-1)
+    if target.shape != (data.shape[0],):
+        raise ValueError("observed must have one value per row.")
+    member_weights = np.asarray(weights, dtype=float)
+    if member_weights.shape != (data.shape[1],):
+        raise ValueError("weights must have one value per member.")
+    scores = np.empty(data.shape[0], dtype=float)
+    for row in range(data.shape[0]):
+        finite = np.isfinite(data[row]) & np.isfinite(member_weights) & (member_weights > 0)
+        if not np.isfinite(target[row]) or not finite.any():
+            scores[row] = np.nan
+            continue
+        sample = data[row, finite]
+        sample_weights = member_weights[finite]
+        sample_weights = sample_weights / sample_weights.sum()
+        absolute_error = np.sum(sample_weights * np.abs(sample - target[row]))
+        spread = np.abs(sample[:, None] - sample[None, :])
+        pair = 0.5 * np.sum(sample_weights[:, None] * spread * sample_weights[None, :])
+        scores[row] = absolute_error - pair
+    return scores
 
 
 def resampling_rng(seed: Optional[int], when: datetime) -> np.random.Generator:

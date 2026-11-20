@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Sequence
@@ -91,6 +92,63 @@ def _member_id(path: Path) -> str:
     state_member = parts[idx + 1]
     trace_year = parts[idx + 3]
     return f"{state_member}_{trace_year}"
+
+
+def likelihood_weights_by_member(run_dir: str | Path, issue_key: str) -> dict[str, float] | None:
+    """Likelihood weight for each ``forecastId_traceYear`` on one ESP issue.
+
+    Only issues recorded with ``weighting: likelihood`` and a weight on every
+    member are returned. Equally weighted issues stay unweighted.
+    """
+    path = Path(run_dir) / "esp" / "member_map.json"
+    if not path.is_file():
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    issue = next(
+        (item for item in payload.get("issues", []) if item.get("issue_key") == issue_key),
+        None,
+    )
+    if issue is None or issue.get("weighting") != "likelihood":
+        return None
+    weights: dict[str, float] = {}
+    for member in issue.get("members", []):
+        if "weight" not in member:
+            return None
+        weights[f"{member['forecast_id']}_{member['trace_year']}"] = float(member["weight"])
+    if not weights:
+        return None
+    return weights
+
+
+def member_weights(values: xr.DataArray) -> np.ndarray | None:
+    """Normalized likelihood weights, or None when members are equally weighted."""
+    if "weight" not in values.coords or ENSEMBLE_DIM not in values.dims:
+        return None
+    weights = np.asarray(values["weight"].values, dtype=float)
+    if weights.shape != (int(values.sizes[ENSEMBLE_DIM]),):
+        return None
+    if not np.isfinite(weights).all() or float(weights.sum()) <= 0.0 or np.any(weights < 0):
+        return None
+    if np.allclose(weights, weights[0]):
+        return None
+    return weights / float(weights.sum())
+
+
+def attach_likelihood_weights(
+    values: xr.DataArray,
+    run_dir: str | Path,
+    issue_key: str,
+) -> xr.DataArray:
+    """Add a ``weight`` coordinate when this issue carries likelihood weights."""
+    weights = likelihood_weights_by_member(run_dir, issue_key)
+    if weights is None or ENSEMBLE_DIM not in values.dims:
+        return values
+    member_ids = [str(member) for member in values[ENSEMBLE_DIM].values]
+    if any(member_id not in weights for member_id in member_ids):
+        return values
+    return values.assign_coords(
+        weight=(ENSEMBLE_DIM, [weights[member_id] for member_id in member_ids])
+    )
 
 
 def read_esp_ensemble(
@@ -442,11 +500,15 @@ def load_esp_forecasts(
     forecasts: list[EspPairedForecast] = []
     for state_date_key, files in grouped.items():
         init_time = parse_state_date_key(state_date_key)
-        fcst = read_esp_ensemble(
-            files,
-            variable=variable,
-            seg=seg,
-            reach_id=reach_id,
+        fcst = attach_likelihood_weights(
+            read_esp_ensemble(
+                files,
+                variable=variable,
+                seg=seg,
+                reach_id=reach_id,
+            ),
+            run_dir,
+            state_date_key,
         )
         paired_fcst, paired_obs = pair_ensemble_streamflow(
             fcst, obs, resample=None if rule is not None else resample

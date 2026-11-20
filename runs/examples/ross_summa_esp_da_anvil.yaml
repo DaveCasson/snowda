@@ -11,31 +11,33 @@ run_name: timestamp
 log_file: logs/ross_summa_esp_da.log
 
 model_run_id: ross_summa_esp_da
-base_file_manager: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManager.txt
+base_file_manager: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManagerANVIL.txt
 ensemble_forcing_mode: historic
 ensemble_forcing_dir: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/forcing/
-num_ens: 44
+num_ens: 50
 num_workers: 50
 
-start_time: "1980-01-01 00:00"
-end_time: "1990-08-01 00:00"
+start_time: "2000-01-01 00:00"
+end_time: "2020-12-31 00:00"
 time_delta_days: 1
 
 summa_exe: /home/x-dcasson/GitRepos/summa/bin/summa_sundials.exe
 summa_log: false
 
-pf_scheme: sir
+pf_scheme: sis
 n_eff_threshold: 0.5
 # Limit collapse per update: keep N_eff >= 0.5 * prior N_eff. Guards against
 # sigma_o being a lower bound and station error persisting across dates.
-tempering_target: 0.5
+# tempering_target: 0.5
 # Seed for SIR resampling. Each assimilation date gets its own stream.
 pf_seed: 42
+# Weights reset to equal at the first update of each water year (1 October).
+season_start_month: 10
 assimilation_mode: swe
 
 # Daily restarts so a state file exists at each assimilation date.
 summa_args:
-  "-m": /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManager.txt
+  "-m": /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManagerANVIL.txt
   "-r": m
 
 # Settings directory for the base file manager and forcing file lists.
@@ -47,29 +49,14 @@ file_list_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
 summa_output_suffix: timestep.nc
 
 esp:
-  start_year: 1980  
+  start_year: 1985
   end_year: 2024
   forecast_end: "08-01"
   initialization: balanced_independent
   seed: 20270101
-  n_members: 44
+  n_members: 50
   dates: &forecast_dates
     # 1 March, 1 April, and 1 May. Assimilation reuses this list.
-    - "1980-03-01 00:00"
-    - "1980-04-01 00:00"
-    - "1980-05-01 00:00"
-    - "1981-03-01 00:00"
-    - "1981-04-01 00:00"
-    - "1981-05-01 00:00"
-    - "1982-03-01 00:00"
-    - "1982-04-01 00:00"
-    - "1982-05-01 00:00"
-    - "1983-03-01 00:00"
-    - "1983-04-01 00:00"
-    - "1983-05-01 00:00"
-    - "1984-03-01 00:00"
-    - "1984-04-01 00:00"
-    - "1984-05-01 00:00"
     - "1985-03-01 00:00"
     - "1985-04-01 00:00"
     - "1985-05-01 00:00"
@@ -178,23 +165,11 @@ esp:
     - "2020-03-01 00:00"
     - "2020-04-01 00:00"
     - "2020-05-01 00:00"
-    - "2021-03-01 00:00"
-    - "2021-04-01 00:00"
-    - "2021-05-01 00:00"
-    - "2022-03-01 00:00"
-    - "2022-04-01 00:00"
-    - "2022-05-01 00:00"
-    - "2023-03-01 00:00"
-    - "2023-04-01 00:00"
-    - "2023-05-01 00:00"
-    - "2024-03-01 00:00"
-    - "2024-04-01 00:00"
-    - "2024-05-01 00:00"
   restart_file_filter: restart
   run_mizuroute: true
   mizuroute:
     executable: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe
-    control_file: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/mizuroute.control
+    control_file: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/mizurouteANVIL.control
     ancil_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
     case_name: Ross
     restart_write: monthly
@@ -219,6 +194,7 @@ assimilation:
   # One standard deviation is this fraction of |observed SWE|.
   swe_relative_uncertainty: 0.15
   # Absolute standard-deviation floor, kg m-2. sigma is never smaller than this.
-  # sqrt(sigma_o^2 + sigma_t^2) = sqrt(35^2 + 11^2) for one station at +/-7 days.
+  # Upstream main uses 37: sqrt(35^2 + 11^2) for one station at +/-7 days.
   # sigma_o = 35 is a lower bound from the spread across stations within a campaign.
-  swe_sigma_floor: 37
+  # Local run setting kept below.
+  swe_sigma_floor: 35

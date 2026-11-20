@@ -690,6 +690,7 @@ def _issue_members(assignments: Sequence[ForecastAssignment]) -> list[dict[str, 
                 "donor_label": assignment.particle.donor_label,
                 "trace_year": assignment.trace_year,
                 "weighting": assignment.weighting,
+                "weight": assignment.weight,
                 "summa_restart": assignment.particle.summa_restart,
                 "mizuroute_restart": assignment.particle.mizuroute_restart,
                 "file_manager": assignment.particle.file_manager,
@@ -746,7 +747,8 @@ def run_balanced_esp_issue(
     The issue is appended to ``esp/member_map.json`` before any trace starts.
     Each trace copies that particle's SUMMA and mizuRoute restarts together.
     Traces for this issue run together, up to ``cfg.num_workers`` at once.
-    Records stay in forecast-id order.
+    Records stay in forecast-id order. A missing post-DA catalog skips this
+    issue and returns no traces.
     """
     _require_balanced_esp(esp)
     n_members = esp.n_members
@@ -755,9 +757,12 @@ def run_balanced_esp_issue(
         raise ValueError("Balanced ESP requires `esp.n_members` and `esp.seed`.")
     catalog_path = post_da_catalog_path(run_dir, trigger)
     if not catalog_path.is_file():
-        raise FileNotFoundError(
-            f"No post-DA particle catalog for {trigger}. Expected {catalog_path}."
+        log.warning(
+            "Skipping ESP issue %s; no post-DA particle catalog at %s.",
+            trigger,
+            catalog_path,
         )
+        return []
     particles = _select_catalog_particles(
         read_post_da_catalog(catalog_path),
         esp.state_members,

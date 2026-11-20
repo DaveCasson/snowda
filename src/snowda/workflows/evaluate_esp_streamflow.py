@@ -30,6 +30,7 @@ from snowda.config.run_dir import (
     run_name_from_config,
     utc_timestamp,
 )
+from snowda.core.particle_filter import weighted_crps
 from snowda.io.esp_streamflow import (
     CLIMO_MEMBER_DIM,
     DEFAULT_RETURN_PERIODS,
@@ -40,6 +41,7 @@ from snowda.io.esp_streamflow import (
     climatology_window_volumes,
     group_forecasts_by_init_month,
     load_esp_forecasts,
+    member_weights,
     observational_climatology_ensemble,
     peak_over_horizon,
     read_return_period_thresholds,
@@ -116,6 +118,16 @@ def _scalar_ensemble_crps(
     """One CRPS for a scalar ensemble. NaN when the observation or ensemble is empty."""
     obs_values = np.ravel(np.asarray(observation.values, dtype=float))
     obs_value = float(obs_values[0]) if obs_values.size == 1 else np.nan
+    weights = member_weights(ensemble)
+    if weights is not None:
+        if not np.isfinite(obs_value):
+            return xr.DataArray(np.nan)
+        score = weighted_crps(
+            np.asarray(ensemble.transpose(..., member_dim).values, dtype=float),
+            weights,
+            np.asarray([obs_value]),
+        )
+        return xr.DataArray(float(score[0]))
     members = _finite_ensemble(ensemble, member_dim)
     if int(members.sizes.get(member_dim, 0)) == 0 or not np.isfinite(obs_value):
         return xr.DataArray(np.nan)
@@ -125,6 +137,39 @@ def _scalar_ensemble_crps(
         ensemble_member_dim=member_dim,
         method=crps_method,
     ).astype(float)
+
+
+def _ensemble_crps(
+    ensemble: xr.DataArray,
+    observation: xr.DataArray,
+    *,
+    member_dim: str,
+    crps_method: str,
+    preserve_dims: str | Sequence[str] | None = None,
+) -> xr.DataArray:
+    """Fair CRPS, or probability-weighted CRPS when the ensemble carries likelihoods."""
+    weights = member_weights(ensemble)
+    if weights is None:
+        return crps_for_ensemble(
+            ensemble,
+            observation,
+            ensemble_member_dim=member_dim,
+            method=crps_method,
+            preserve_dims=preserve_dims,
+        )
+    other = [dim for dim in ensemble.dims if dim != member_dim]
+    ordered = ensemble.transpose(*other, member_dim)
+    observed = np.asarray(observation.values, dtype=float)
+    scores = weighted_crps(
+        np.asarray(ordered.values, dtype=float).reshape(-1, ordered.sizes[member_dim]),
+        weights,
+        observed.reshape(-1),
+    )
+    return xr.DataArray(
+        scores.reshape([ordered.sizes[dim] for dim in other]),
+        dims=other,
+        coords={dim: ordered[dim] for dim in other},
+    )
 
 
 def _score_crps_group(
@@ -143,11 +188,11 @@ def _score_crps_group(
             forecast.valid_time,
             exclude_years=exclude,
         )
-        crps = crps_for_ensemble(
+        crps = _ensemble_crps(
             forecast.fcst,
             forecast.obs,
-            ensemble_member_dim=ENSEMBLE_DIM,
-            method=crps_method,
+            member_dim=ENSEMBLE_DIM,
+            crps_method=crps_method,
             preserve_dims="lead",
         )
         crps_ref = crps_for_ensemble(

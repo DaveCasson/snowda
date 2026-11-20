@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import operator
 from pathlib import Path
 
 import numpy as np
@@ -17,6 +18,7 @@ from snowda.io.streamflow import (
     read_streamflow_observations,
 )
 from snowda.workflows.evaluate_streamflow import (
+    _write_eval_netcdf,
     evaluate_deterministic_run,
     evaluate_streamflow,
     run_evaluation,
@@ -344,3 +346,25 @@ def test_evaluate_deterministic_run_writes_into_run_dir(tmp_path: Path):
     assert (eval_dir / "paired_streamflow.nc").is_file()
     assert metrics["nse"] == pytest.approx(1.0)
     assert metrics["n_pairs"] == 5
+
+
+def test_eval_netcdf_writes_comparison_callables_as_symbols(tmp_path: Path):
+    metrics = xr.Dataset(
+        {
+            "bs": xr.DataArray(
+                [0.25],
+                dims=("return_period",),
+                coords={"return_period": [10]},
+                attrs={
+                    "discretisation_mode": operator.ge,
+                    "discretisation_tolerance": 0,
+                },
+            )
+        }
+    )
+    path = tmp_path / "metrics.nc"
+    _write_eval_netcdf(metrics, path)
+    assert metrics["bs"].attrs["discretisation_mode"] is operator.ge
+    with xr.open_dataset(path) as written:
+        assert written["bs"].attrs["discretisation_mode"] == ">="
+        assert written["bs"].attrs["discretisation_tolerance"] == 0

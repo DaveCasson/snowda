@@ -31,6 +31,8 @@ n_eff_threshold: 0.5
 tempering_target: 0.5
 # Seed for SIR resampling. Each assimilation date gets its own stream.
 pf_seed: 42
+# Weights reset to equal at the first update of each water year (1 October).
+season_start_month: 10
 assimilation_mode: swe
 
 # Daily restarts so a state file exists at each assimilation date.
