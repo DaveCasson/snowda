@@ -1,0 +1,84 @@
+# Anvil smoke test. Submit with: shell_scripts/run_case.sh runs/ross_comparison_anvil/smoke/esp_sis.yaml
+# Not part of the comparison set; its scores are not meaningful.
+case_name: ross_smoke_esp_sis
+run_mode: esp_sis
+description: 'Smoke test: 4 members, 2 years, SIS assimilation then ESP. Checks SUMMA,
+  mizuRoute, ESP and evaluation in a few minutes before the full set is submitted.'
+output_dir: /anvil/scratch/x-dcasson/snowda/outputs/ross_comparison/smoke_esp_sis
+run_name: timestamp
+log_file: logs/smoke_esp_sis.log
+model_run_id: ross_smoke_esp_sis
+start_time: 2012-08-01 00:00
+end_time: 2014-08-01 00:00
+time_delta_days: 1
+summa_exe: /home/x-dcasson/GitRepos/summa/bin/summa_sundials.exe
+summa_log: false
+base_file_manager: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManagerANVIL.txt
+ensemble_forcing_mode: historic
+ensemble_forcing_dir: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/forcing
+num_ens: 4
+num_workers: 4
+file_manager_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
+file_list_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
+summa_output_suffix: timestep.nc
+summa_args:
+  -m: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManagerANVIL.txt
+  -r: m
+n_eff_threshold: 0.5
+tempering_target: 0.5
+pf_seed: 42
+season_start_month: 10
+assimilation_mode: swe
+esp:
+  start_year: 2010
+  end_year: 2013
+  forecast_end: 08-01
+  initialization: balanced_independent
+  n_members: 4
+  seed: 20270101
+  dates: &id001
+  - 2013-03-01 00:00
+  - 2013-04-01 00:00
+  - 2013-05-01 00:00
+  - 2014-03-01 00:00
+  - 2014-04-01 00:00
+  - 2014-05-01 00:00
+  restart_file_filter: restart
+  run_mizuroute: true
+  mizuroute:
+    executable: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe
+    control_file: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/mizurouteANVIL.control
+    ancil_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+    case_name: Ross
+    restart_write: monthly
+    log_output: false
+assimilation:
+  dates: *id001
+  obs_window_days: 7
+  swe_nc: /home/x-dcasson/GitRepos/snowda/data/obs_qm/ross_yukon_swe_model_equivalent.nc
+  swe_var: swe_model_equivalent
+  summa_swe_var: scalarSWE
+  hru_stations:
+  - hru_id: 1
+    station_id: 09BA-SC02
+  swe_relative_uncertainty: 0.15
+  swe_sigma_floor: 37
+evaluation:
+  obs_csv: /home/x-dcasson/GitRepos/snowda/data/ross_daily_discharge.csv
+  thresholds_csv: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/thresholds/ross_thresholds.csv
+  variable: IRFroutedRunoff
+  resample: 1D
+  seg: 0
+  start_time: '2012-10-01'
+  water_year_start_month: 10
+  season_months:
+  - 4
+  - 9
+  min_coverage: 0.9
+  figures: true
+  figures_swe: true
+  forecast:
+    return_periods:
+    - 2
+    - 5
+    bootstrap_iterations: 20

@@ -1,0 +1,46 @@
+# Ross River comparison set (Anvil): deterministic
+# Submit with: shell_scripts/run_case.sh runs/ross_comparison_anvil/deterministic.yaml
+# Generated from runs/ross_comparison; see runs/ross_comparison/README.md for what must stay identical between files.
+case_name: ross_deterministic
+run_mode: deterministic
+description: >
+  One SUMMA run forced by the ensemble-mean forcing, routed and scored. No ensemble, no assimilation, no forecast.
+output_dir: /anvil/scratch/x-dcasson/snowda/outputs/ross_comparison/deterministic
+run_name: timestamp
+log_file: logs/deterministic.log
+model_run_id: ross_deterministic
+
+start_time: "1980-08-01 00:00"
+end_time: "2024-08-01 00:00"
+time_delta_days: 1
+summa_exe: /home/x-dcasson/GitRepos/summa/bin/summa_sundials.exe
+summa_log: false
+base_file_manager: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManagerANVILEnsMean.txt
+forcing_file_base: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/
+num_ens: 1
+file_manager_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
+file_list_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
+summa_args:
+  "-m": /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManagerANVILEnsMean.txt
+  "-r": e
+mizuroute:
+  executable: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe
+  control_file: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/mizurouteANVIL.control
+  ancil_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+  case_name: ross
+  restart_write: never
+  log_output: false
+
+# ---- Evaluation: keep this block identical in every file of this folder ----
+evaluation:
+  obs_csv: /home/x-dcasson/GitRepos/snowda/data/ross_daily_discharge.csv
+  thresholds_csv: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/thresholds/ross_thresholds.csv
+  variable: IRFroutedRunoff
+  resample: 1D
+  seg: 0
+  start_time: "1981-10-01"      # first water year is spin-up and is not scored
+  water_year_start_month: 10
+  season_months: [4, 9]         # melt-season scoring window, inclusive
+  min_coverage: 0.9
+  figures: true
+  figures_swe: true

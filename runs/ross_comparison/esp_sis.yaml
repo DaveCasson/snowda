@@ -4,7 +4,7 @@
 case_name: ross_esp_sis
 run_mode: esp_sis
 description: >
-  SWE assimilation by SIS, then ESP forecasts. Member states are never changed; forecast states are drawn in proportion to the weights at each issue date.
+  SWE assimilation by SIS, then ESP forecasts. Member states are never changed; each forecast keeps every particle and carries its likelihood weight.
 output_dir: ../../outputs/ross_comparison/esp_sis
 run_name: timestamp
 log_file: logs/esp_sis.log
@@ -197,6 +197,7 @@ assimilation:
 # ---- Evaluation: keep this block identical in every file of this folder ----
 evaluation:
   obs_csv: /Users/dcasson/GitHub/snowda/data/ross_daily_discharge.csv
+  thresholds_csv: /Users/dcasson/GitHub/snowda/models/ross_lumped/thresholds/ross_thresholds.csv
   variable: IRFroutedRunoff
   resample: 1D
   seg: 0

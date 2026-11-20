@@ -542,3 +542,46 @@ def test_run_case_dispatches_on_run_mode(
     assert result == tmp_path / "run"
     assert seen["run_mode"] == run_mode
     assert run_case_module._workflow(run_mode) is fake
+
+
+def test_likelihood_weighted_forecasts_use_their_weights(tmp_path: Path):
+    """An SIS issue carries a weight per forecast member in esp/member_map.json."""
+    run_dir = tmp_path / "esp_run"
+    _write_historic_ensemble(run_dir)
+    issues = _write_assimilation(run_dir)
+    _write_esp(run_dir, issues)
+    _provenance(run_dir, "esp_sis")
+    # Members are 0.9, 1.0 and 1.1 times the truth; nearly all weight on the high one.
+    member_weights = {"m001": 0.02, "m002": 0.03, "m003": 0.95}
+    payload = {
+        "issues": [
+            {
+                "issue_key": issue.strftime("%Y%m%d%H"),
+                "weighting": "likelihood",
+                "members": [
+                    {"forecast_id": name, "trace_year": 1990 + i, "weight": weight}
+                    for i, (name, weight) in enumerate(member_weights.items())
+                ],
+            }
+            for issue in issues
+        ]
+    }
+    (run_dir / "esp" / "member_map.json").write_text(json.dumps(payload))
+    cfg = _config(
+        tmp_path,
+        _write_obs(tmp_path),
+        season_start_month=10,
+        evaluation={"forecast": {"bootstrap_iterations": 0, "return_periods": [2, 5]}},
+    )
+
+    evaluate_run(run_dir, cfg)
+
+    by_issue = pd.read_csv(run_dir / "evaluation" / "forecast" / "scores_by_issue.csv")
+    assert set(by_issue["weighting"]) == {"likelihood"}
+    np.testing.assert_allclose(by_issue["n_eff"], 1.0 / (0.02**2 + 0.03**2 + 0.95**2))
+    # The weighted median is the heavily weighted member, 10 % above the truth.
+    np.testing.assert_allclose(by_issue["volume_error_pct"], 10.0, atol=1e-6)
+    np.testing.assert_allclose(
+        by_issue["volume_mean"] / by_issue["volume_obs"], 0.02 * 0.9 + 0.03 + 0.95 * 1.1
+    )
+    assert (run_dir / "evaluation" / "historic" / "figures" / "wy_2002.png").is_file()

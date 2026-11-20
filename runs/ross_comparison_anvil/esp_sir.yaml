@@ -1,0 +1,208 @@
+# Ross River comparison set (Anvil): esp_sir
+# Submit with: shell_scripts/run_case.sh runs/ross_comparison_anvil/esp_sir.yaml
+# Generated from runs/ross_comparison; see runs/ross_comparison/README.md for what must stay identical between files.
+case_name: ross_esp_sir
+run_mode: esp_sir
+description: >
+  SWE assimilation by SIR, then ESP forecasts. Members are resampled when N_eff falls to the threshold, and the resampled states carry forward.
+output_dir: /anvil/scratch/x-dcasson/snowda/outputs/ross_comparison/esp_sir
+run_name: timestamp
+log_file: logs/esp_sir.log
+model_run_id: ross_esp_sir
+
+start_time: "1980-08-01 00:00"
+end_time: "2024-08-01 00:00"
+time_delta_days: 1
+summa_exe: /home/x-dcasson/GitRepos/summa/bin/summa_sundials.exe
+summa_log: false
+base_file_manager: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManagerANVIL.txt
+ensemble_forcing_mode: historic
+ensemble_forcing_dir: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/forcing
+num_ens: 50
+num_workers: 50
+file_manager_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
+file_list_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
+summa_output_suffix: timestep.nc
+summa_args:
+  "-m": /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManagerANVIL.txt
+  "-r": m
+
+# ---- Particle filter: identical in the SIS and SIR files; run_mode sets the scheme ----
+n_eff_threshold: 0.5      # SIR resamples when N_eff <= 0.5 N; SIS never resamples
+tempering_target: 0.5
+pf_seed: 42
+season_start_month: 10    # weights reset to equal each 1 October
+assimilation_mode: swe
+
+# ---- ESP: identical in every esp_* file, so forecasts pair member for member ----
+esp:
+  start_year: 1981
+  end_year: 2023
+  forecast_end: "08-01"
+  initialization: balanced_independent
+  n_members: 50
+  seed: 20270101
+  dates: &issue_dates
+    - "1982-03-01 00:00"
+    - "1982-04-01 00:00"
+    - "1982-05-01 00:00"
+    - "1983-03-01 00:00"
+    - "1983-04-01 00:00"
+    - "1983-05-01 00:00"
+    - "1984-03-01 00:00"
+    - "1984-04-01 00:00"
+    - "1984-05-01 00:00"
+    - "1985-03-01 00:00"
+    - "1985-04-01 00:00"
+    - "1985-05-01 00:00"
+    - "1986-03-01 00:00"
+    - "1986-04-01 00:00"
+    - "1986-05-01 00:00"
+    - "1987-03-01 00:00"
+    - "1987-04-01 00:00"
+    - "1987-05-01 00:00"
+    - "1988-03-01 00:00"
+    - "1988-04-01 00:00"
+    - "1988-05-01 00:00"
+    - "1989-03-01 00:00"
+    - "1989-04-01 00:00"
+    - "1989-05-01 00:00"
+    - "1990-03-01 00:00"
+    - "1990-04-01 00:00"
+    - "1990-05-01 00:00"
+    - "1991-03-01 00:00"
+    - "1991-04-01 00:00"
+    - "1991-05-01 00:00"
+    - "1992-03-01 00:00"
+    - "1992-04-01 00:00"
+    - "1992-05-01 00:00"
+    - "1993-03-01 00:00"
+    - "1993-04-01 00:00"
+    - "1993-05-01 00:00"
+    - "1994-03-01 00:00"
+    - "1994-04-01 00:00"
+    - "1994-05-01 00:00"
+    - "1995-03-01 00:00"
+    - "1995-04-01 00:00"
+    - "1995-05-01 00:00"
+    - "1996-03-01 00:00"
+    - "1996-04-01 00:00"
+    - "1996-05-01 00:00"
+    - "1997-03-01 00:00"
+    - "1997-04-01 00:00"
+    - "1997-05-01 00:00"
+    - "1998-03-01 00:00"
+    - "1998-04-01 00:00"
+    - "1998-05-01 00:00"
+    - "1999-03-01 00:00"
+    - "1999-04-01 00:00"
+    - "1999-05-01 00:00"
+    - "2000-03-01 00:00"
+    - "2000-04-01 00:00"
+    - "2000-05-01 00:00"
+    - "2001-03-01 00:00"
+    - "2001-04-01 00:00"
+    - "2001-05-01 00:00"
+    - "2002-03-01 00:00"
+    - "2002-04-01 00:00"
+    - "2002-05-01 00:00"
+    - "2003-03-01 00:00"
+    - "2003-04-01 00:00"
+    - "2003-05-01 00:00"
+    - "2004-03-01 00:00"
+    - "2004-04-01 00:00"
+    - "2004-05-01 00:00"
+    - "2005-03-01 00:00"
+    - "2005-04-01 00:00"
+    - "2005-05-01 00:00"
+    - "2006-03-01 00:00"
+    - "2006-04-01 00:00"
+    - "2006-05-01 00:00"
+    - "2007-03-01 00:00"
+    - "2007-04-01 00:00"
+    - "2007-05-01 00:00"
+    - "2008-03-01 00:00"
+    - "2008-04-01 00:00"
+    - "2008-05-01 00:00"
+    - "2009-03-01 00:00"
+    - "2009-04-01 00:00"
+    - "2009-05-01 00:00"
+    - "2010-03-01 00:00"
+    - "2010-04-01 00:00"
+    - "2010-05-01 00:00"
+    - "2011-03-01 00:00"
+    - "2011-04-01 00:00"
+    - "2011-05-01 00:00"
+    - "2012-03-01 00:00"
+    - "2012-04-01 00:00"
+    - "2012-05-01 00:00"
+    - "2013-03-01 00:00"
+    - "2013-04-01 00:00"
+    - "2013-05-01 00:00"
+    - "2014-03-01 00:00"
+    - "2014-04-01 00:00"
+    - "2014-05-01 00:00"
+    - "2015-03-01 00:00"
+    - "2015-04-01 00:00"
+    - "2015-05-01 00:00"
+    - "2016-03-01 00:00"
+    - "2016-04-01 00:00"
+    - "2016-05-01 00:00"
+    - "2017-03-01 00:00"
+    - "2017-04-01 00:00"
+    - "2017-05-01 00:00"
+    - "2018-03-01 00:00"
+    - "2018-04-01 00:00"
+    - "2018-05-01 00:00"
+    - "2019-03-01 00:00"
+    - "2019-04-01 00:00"
+    - "2019-05-01 00:00"
+    - "2020-03-01 00:00"
+    - "2020-04-01 00:00"
+    - "2020-05-01 00:00"
+    - "2021-03-01 00:00"
+    - "2021-04-01 00:00"
+    - "2021-05-01 00:00"
+    - "2022-03-01 00:00"
+    - "2022-04-01 00:00"
+    - "2022-05-01 00:00"
+    - "2023-03-01 00:00"
+    - "2023-04-01 00:00"
+    - "2023-05-01 00:00"
+    - "2024-03-01 00:00"
+    - "2024-04-01 00:00"
+    - "2024-05-01 00:00"
+  restart_file_filter: restart
+  run_mizuroute: true
+  mizuroute:
+    executable: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe
+    control_file: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/mizurouteANVIL.control
+    ancil_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
+    case_name: Ross
+    restart_write: monthly
+    log_output: false
+assimilation:
+  dates: *issue_dates
+  obs_window_days: 7
+  swe_nc: /home/x-dcasson/GitRepos/snowda/data/obs_qm/ross_yukon_swe_model_equivalent.nc
+  swe_var: swe_model_equivalent
+  summa_swe_var: scalarSWE
+  hru_stations:
+    - hru_id: 1
+      station_id: "09BA-SC02"
+  swe_relative_uncertainty: 0.15
+  swe_sigma_floor: 37
+
+# ---- Evaluation: keep this block identical in every file of this folder ----
+evaluation:
+  obs_csv: /home/x-dcasson/GitRepos/snowda/data/ross_daily_discharge.csv
+  thresholds_csv: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/thresholds/ross_thresholds.csv
+  variable: IRFroutedRunoff
+  resample: 1D
+  seg: 0
+  start_time: "1981-10-01"      # first water year is spin-up and is not scored
+  water_year_start_month: 10
+  season_months: [4, 9]         # melt-season scoring window, inclusive
+  min_coverage: 0.9
+  figures: true
+  figures_swe: true

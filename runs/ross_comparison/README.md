@@ -57,11 +57,37 @@ python -m snowda.workflows.evaluate_run <run_dir>
 Compare runs by joining the per-year or per-issue tables on `water_year` or
 `init_time` and keeping the rows both runs have.
 
+## Anvil
+
+`runs/ross_comparison_anvil/` holds the same six configs with Anvil paths, the
+SUNDIALS SUMMA build, one CPU per member and output on scratch. They are a
+path-substituted copy of this folder; the test checks every other setting
+matches. Run all six on the same machine: the two SUMMA builds differ.
+
+```bash
+cd shell_scripts
+./run_case.sh ../runs/ross_comparison_anvil/smoke/esp_sis.yaml   # a few minutes
+./run_case.sh ../runs/ross_comparison_anvil/*.yaml               # six jobs
+```
+
+`run_case.sh` submits one single-node job per config and asks for
+`num_workers` CPUs. Add `--dry-run` to print the `sbatch` commands. When a job
+ends it copies `evaluation/`, `provenance.json` and `config.resolved.json` to
+`outputs/ross_comparison/<case_name>/<run folder>` in the repo, because
+scratch is purged. Set `SNOWDA_RESULTS` to copy somewhere else.
+
+The six jobs can run at the same time. Submit them from one commit;
+`provenance.json` records it.
+
 ## Notes
 
-- Paths are for the local machine. Copy the folder and change them for Anvil.
 - The run ends on 2024-08-01, so water year 2024 has less than 90 % of its
   melt season and is not scored.
-- No `thresholds_csv` is set, so flood thresholds are empirical quantiles of
-  the observed annual maxima. With about 43 years, the 10- and 20-year event
-  scores rest on a few events.
+- Flood thresholds come from `models/ross_lumped/thresholds/ross_thresholds.csv`.
+  With about 43 years, the 10- and 20-year event scores rest on a few events.
+- The Anvil configs use `fileManagerANVIL.txt`, `fileManagerANVILEnsMean.txt`
+  and `mizurouteANVIL.control`, the same files as `runs/examples/*_anvil.yaml`.
+- An SIS forecast keeps every particle and weights each forecast member by its
+  likelihood, so `esp.n_members` must be a multiple of `num_ens`. SIR and
+  open-loop forecast members are equally weighted. `forecast/scores_by_issue.csv`
+  records which applies in `weighting`, with the effective size in `n_eff`.

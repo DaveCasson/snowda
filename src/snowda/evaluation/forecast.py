@@ -4,7 +4,12 @@ The monthly scores come from ``compute_esp_metrics``, unchanged. This module
 adds one row per issue date, which is the unit a paired comparison between
 two runs needs: with the same ``esp.seed``, issue dates and ``n_members``,
 two runs use the same weather years for the same forecast member, so score
-differences at one issue date come from the initial states.
+differences at one issue date come from the initial states and their weights.
+
+An unresampled (SIS) issue keeps every particle and carries its likelihood
+weight on each forecast member (``esp_sampling.WEIGHTING_LIKELIHOOD``). The
+CRPS, median, mean and spread here use those weights. Resampled (SIR) and
+open-loop issues have equally weighted members.
 """
 
 from __future__ import annotations
@@ -18,6 +23,7 @@ import pandas as pd
 import xarray as xr
 
 from snowda.config.pysummada import StreamflowEvaluationConfig
+from snowda.core.particle_filter import weighted_quantile_rows
 from snowda.evaluation.historic import water_year_of
 from snowda.evaluation.loaders import empirical_return_period_thresholds
 from snowda.io.esp_streamflow import (
@@ -26,6 +32,7 @@ from snowda.io.esp_streamflow import (
     EspPairedForecast,
     group_forecasts_by_init_month,
     load_esp_forecasts,
+    member_weights,
     peak_over_horizon,
     read_return_period_thresholds,
     volume_over_horizon,
@@ -75,6 +82,34 @@ def forecast_options(evaluation: StreamflowEvaluationConfig) -> dict[str, Any]:
     return options
 
 
+def _member_statistics(
+    values: xr.DataArray, weights: np.ndarray | None
+) -> dict[str, float]:
+    """Median, mean and spread of one value per forecast member.
+
+    ``weights`` are the likelihood weights of an unresampled (SIS) issue, or
+    ``None`` for equally weighted members. The weighted median follows
+    ``weighted_quantile_rows``; the spread is the weighted standard deviation.
+    """
+    data = np.asarray(values.transpose(ENSEMBLE_DIM).values, dtype=float)
+    finite = np.isfinite(data)
+    if not finite.any():
+        return {"median": np.nan, "mean": np.nan, "spread": np.nan}
+    if weights is None:
+        sample = data[finite]
+        return {
+            "median": float(np.median(sample)),
+            "mean": float(np.mean(sample)),
+            "spread": float(np.std(sample, ddof=1)) if sample.size > 1 else np.nan,
+        }
+    w = np.where(finite, weights, 0.0)
+    w = w / w.sum()
+    mean = float(np.sum(w * np.where(finite, data, 0.0)))
+    variance = float(np.sum(w * np.where(finite, data - mean, 0.0) ** 2))
+    median = float(weighted_quantile_rows(data[None, :], weights, [0.5])[0, 0])
+    return {"median": median, "mean": mean, "spread": float(np.sqrt(variance))}
+
+
 def scores_by_issue(
     forecasts: Sequence[EspPairedForecast],
     obs: xr.DataArray,
@@ -97,11 +132,10 @@ def scores_by_issue(
             init = pd.Timestamp(forecast.init_time)
             fcst_volume, obs_volume = volume_over_horizon(forecast.fcst, forecast.obs)
             fcst_peak, obs_peak = peak_over_horizon(forecast.fcst, forecast.obs)
-            volumes = np.asarray(fcst_volume.values, dtype=float)
-            peaks = np.asarray(fcst_peak.values, dtype=float)
+            weights = member_weights(forecast.fcst)
+            volume = _member_statistics(fcst_volume, weights)
+            peak = _member_statistics(fcst_peak, weights)
             observed_volume = float(obs_volume)
-            median_volume = float(np.nanmedian(volumes)) if np.isfinite(volumes).any() else np.nan
-            mean_crps = float(crps.sel(init_time=init).mean("lead", skipna=True))
             rows.append(
                 {
                     "init_time": init,
@@ -110,24 +144,30 @@ def scores_by_issue(
                         water_year_of(pd.DatetimeIndex([init]), water_year_start_month)[0]
                     ),
                     "n_members": forecast.n_members,
+                    "weighting": "likelihood" if weights is not None else "equal",
+                    "n_eff": (
+                        float(1.0 / np.sum(np.square(weights)))
+                        if weights is not None
+                        else float(forecast.n_members)
+                    ),
                     "n_lead": int(forecast.fcst.sizes["lead"]),
-                    "crps_mean": mean_crps,
+                    "crps_mean": float(crps.sel(init_time=init).mean("lead", skipna=True)),
                     "crpss_mean": float(
                         crpss.sel(init_time=init).mean("lead", skipna=True)
                     ),
                     "volume_obs": observed_volume,
-                    "volume_median": median_volume,
-                    "volume_mean": float(np.nanmean(volumes)) if np.isfinite(volumes).any() else np.nan,
-                    "volume_spread": float(np.nanstd(volumes, ddof=1)) if np.isfinite(volumes).sum() > 1 else np.nan,
+                    "volume_median": volume["median"],
+                    "volume_mean": volume["mean"],
+                    "volume_spread": volume["spread"],
                     "volume_error_pct": (
-                        100.0 * (median_volume - observed_volume) / observed_volume
+                        100.0 * (volume["median"] - observed_volume) / observed_volume
                         if np.isfinite(observed_volume) and observed_volume > 0
                         else np.nan
                     ),
                     "volume_crps": float(volume_crps.sel(init_time=init)),
                     "volume_crpss": float(volume_crpss.sel(init_time=init)),
                     "peak_obs": float(obs_peak),
-                    "peak_median": float(np.nanmedian(peaks)) if np.isfinite(peaks).any() else np.nan,
+                    "peak_median": peak["median"],
                     "peak_crps": float(peak_crps.sel(init_time=init)),
                     "peak_crpss": float(peak_crpss.sel(init_time=init)),
                 }

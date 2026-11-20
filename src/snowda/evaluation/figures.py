@@ -16,6 +16,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 
+from snowda.core.particle_filter import weighted_quantile_rows
 from snowda.evaluation.historic import (
     ESTIMATE_DETERMINISTIC,
     ESTIMATE_ENSEMBLE,
@@ -23,7 +24,7 @@ from snowda.evaluation.historic import (
     WINDOW_SEASON,
 )
 from snowda.io.da_traces import DaTraceSet
-from snowda.io.esp_streamflow import ENSEMBLE_DIM, EspPairedForecast
+from snowda.io.esp_streamflow import ENSEMBLE_DIM, EspPairedForecast, member_weights
 from snowda.utils.logging import get_logger
 from snowda.viz.summa_da import _forecast_colors, plot_da_traces
 
@@ -77,7 +78,11 @@ def _draw_forecast_fans(
             continue
         times = pd.DatetimeIndex(forecast.valid_time.values)
         values = forecast.fcst.transpose("lead", ENSEMBLE_DIM).values
-        low, median, high = np.nanquantile(values, [0.10, 0.50, 0.90], axis=1)
+        weights = member_weights(forecast.fcst)
+        if weights is None:
+            low, median, high = np.nanquantile(values, [0.10, 0.50, 0.90], axis=1)
+        else:
+            low, median, high = weighted_quantile_rows(values, weights, [0.10, 0.50, 0.90]).T
         color = colors[forecast.init_month]
         ax.fill_between(times, low, high, color=color, alpha=0.22, linewidth=0,
                         label=f"Forecast {forecast.init_month} 10–90 %")
