@@ -208,11 +208,15 @@ PF update 2014-03-01: beta 0.504, N_eff 15.0 of 50, resampled True, 21 unique do
   `pf_seed`, `tempering_target` and `season_start_month`. A season reset is also logged.
 - `assimilation/<date>_swe_weights.csv` holds the posterior weights after carry-forward and
   tempering.
-- `assimilation/sis_weighted_streamflow.csv` (`pf_scheme: sis` with ensemble mizuRoute, SWE
-  mode) holds the filtered streamflow: the weighted mean and 5/50/95 % weighted quantiles of the
-  members' routed flow. Each segment uses the weights known at its start (equal before the first
-  update). SIS never changes member traces, so this is the SIS streamflow estimate. The reach and
-  variable come from `evaluation` (`seg`, `reach_id`, `variable`) when set.
+- `assimilation/updates.csv` has one row per SWE date (`n_eff`, `tempering_beta`,
+  `season_reset`, `resampled`), and `assimilation/<date>_swe_particles.csv` holds each member's
+  SWE at that date.
+- The weighted streamflow is not written during the run. SIS never changes member traces, so
+  the evaluation step applies the filter weights to the routed historic ensemble and writes the
+  weighted mean and 10/25/50/75/90 % weighted quantiles to `evaluation/historic/series.nc`. A
+  day uses the latest update on or before it. With `season_start_month` set, weights return to
+  equal on the first day of each season, so one season's weights never reach the next winter.
+  See `snowda.evaluation.weights.filter_weight_timeline`.
 - `assimilation/post_da_<YYYYMMDDHH>.json` binds each member to its donor's restarts. The number
   of distinct donors there shows how many particles survived resampling.
 - Snow5 logs `beta` and `N_eff` and records both for each assimilation time.

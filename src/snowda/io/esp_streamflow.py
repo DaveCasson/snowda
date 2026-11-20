@@ -20,6 +20,7 @@ from snowda.io.streamflow import (
     read_routed_streamflow,
     read_streamflow_observations,
 )
+from snowda.utils.dates import replace_year
 from snowda.utils.logging import get_logger
 
 log = get_logger(__name__)
@@ -61,14 +62,6 @@ def parse_state_date_key(key: str) -> pd.Timestamp:
 
 def init_month_key(init_time: pd.Timestamp | str) -> str:
     return pd.Timestamp(init_time).strftime("%m-%d")
-
-
-def _replace_year(ts: pd.Timestamp, year: int) -> pd.Timestamp:
-    try:
-        return ts.replace(year=year)
-    except ValueError:
-        last_day = int(pd.Timestamp(year=year, month=ts.month, day=1).days_in_month)
-        return ts.replace(year=year, day=min(ts.day, last_day))
 
 
 def discover_esp_mizuroute_outputs(run_dir: str | Path) -> list[Path]:
@@ -261,7 +254,7 @@ def climatology_window_peaks(
     years = sorted({int(year) for year in obs_index.year if int(year) not in exclude})
     peaks = np.full(len(years), np.nan, dtype=float)
     for i, year in enumerate(years):
-        year_start = _replace_year(start, year)
+        year_start = replace_year(start, year)
         year_end = year_start + pd.Timedelta(days=window_days)
         window = obs.sel(time=slice(year_start, year_end))
         if window.size == 0:

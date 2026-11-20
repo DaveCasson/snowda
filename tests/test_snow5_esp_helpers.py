@@ -2,19 +2,19 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from snowda.workflows.run_snow5_da import _replace_year, _resolve_esp_trigger_dates
+from snowda.utils.dates import replace_year, scheduled_dates
 
 
 def test_replace_year_handles_leap_day():
     leap = datetime(2012, 2, 29, 0, 0)
-    shifted = _replace_year(leap, 2011)
+    shifted = replace_year(leap, 2011)
     assert shifted == datetime(2011, 2, 28, 0, 0)
 
 
 def test_resolve_esp_trigger_dates_filters_months():
     start = datetime(2011, 1, 1, 0, 0)
     end = datetime(2011, 4, 30, 0, 0)
-    resolved = _resolve_esp_trigger_dates(
+    resolved = scheduled_dates(
         start,
         end,
         explicit_dates=[datetime(2011, 2, 15, 0, 0)],

@@ -6,6 +6,8 @@ from typing import Any
 
 from snowda.config.loader import config_label
 from snowda.config.pysummada import load_pysummada_config, validate_historic_da_config
+from snowda.config.run_modes import check_run_mode, historic_da_mode
+from snowda.evaluation import evaluate_run_safely
 from snowda.workflows.run_summa_da import (
     assimilation_provenance,
     run_summa_assimilation,
@@ -18,6 +20,7 @@ def run_summa_historic_da(config: str | Path | Mapping[str, Any]) -> Path:
     cfg = load_pysummada_config(config)
     label = config_label(config)
     validate_historic_da_config(cfg)
+    run_mode = check_run_mode(cfg.run_mode, historic_da_mode(cfg.pf_scheme))
     result = run_summa_assimilation(
         cfg,
         label,
@@ -27,9 +30,13 @@ def run_summa_historic_da(config: str | Path | Mapping[str, Any]) -> Path:
     )
     write_provenance(
         result.run_dir,
-        assimilation_provenance(cfg, label, result, variant="historic_da"),
+        {
+            **assimilation_provenance(cfg, label, result, variant="historic_da"),
+            "run_mode": run_mode,
+        },
         result.log,
     )
+    evaluate_run_safely(result.run_dir, cfg, run_mode=run_mode, run_log=result.log)
     result.log.info("snowda SUMMA historic DA run complete")
     return result.run_dir
 

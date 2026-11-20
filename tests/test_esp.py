@@ -2,11 +2,18 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
+
+import numpy as np
+import pandas as pd
+import xarray as xr
 
 from snowda.config.pysummada import _load_esp_config
 from snowda.workflows.esp import (
+    _dropped_leap_days,
     _mizuroute_sim_end,
-    discover_restart_dates,
+    _shift_time_to_state_year,
+    _trace_years,
     forecast_end_datetime,
     resolve_esp_trigger_dates,
     resolve_forecast_window_end,
@@ -28,21 +35,6 @@ def test_resolve_esp_trigger_dates_with_frequency_and_month_filter():
         datetime(2010, 2, 10, 0, 0),
         datetime(2010, 3, 2, 0, 0),
     ]
-
-
-def test_discover_restart_dates_filters_by_member(tmp_path: Path):
-    files = [
-        "001_restart_2011040100_2011_04_01.nc",
-        "001_restart_2011050100_2011_05_01.nc",
-        "002_restart_2011040100_2011_04_01.nc",
-        "notes.txt",
-    ]
-    for name in files:
-        (tmp_path / name).write_text("x", encoding="utf-8")
-
-    discovered = discover_restart_dates(tmp_path, "restart", "001")
-    assert discovered.keys() == {"2011040100", "2011050100"}
-    assert discovered["2011040100"].name.startswith("001_restart_2011040100")
 
 
 def test_load_esp_config_deterministic_state(tmp_path: Path):
@@ -161,17 +153,37 @@ def test_resolve_forecast_window_end_calendar():
     assert end == datetime(2014, 8, 1, 0, 0)
 
 
-def test_mizuroute_sim_end_leap_adjust_for_duration():
+def test_mizuroute_sim_end_shortens_by_dropped_leap_days():
     base_end = datetime(2014, 6, 1, 0, 0)
-    leap = _mizuroute_sim_end(base_end, 2016, leap_day_adjust=True)
-    non_leap = _mizuroute_sim_end(base_end, 2015, leap_day_adjust=True)
-    assert leap == datetime(2014, 5, 30, 23, 0)
-    assert non_leap == datetime(2014, 5, 31, 23, 0)
+    assert _mizuroute_sim_end(base_end, 1) == datetime(2014, 5, 30, 23, 0)
+    assert _mizuroute_sim_end(base_end) == datetime(2014, 5, 31, 23, 0)
 
 
-def test_mizuroute_sim_end_skips_leap_adjust_for_calendar():
-    base_end = datetime(2014, 8, 1, 0, 0)
-    leap = _mizuroute_sim_end(base_end, 2016, leap_day_adjust=False)
-    non_leap = _mizuroute_sim_end(base_end, 2015, leap_day_adjust=False)
-    assert leap == non_leap == datetime(2014, 7, 31, 23, 0)
+def test_dropped_leap_days_counts_only_29_february_inside_the_trace():
+    # 2016 trace shown on the 2014 calendar: 29 Feb 2016 has no 2014 date.
+    assert _dropped_leap_days(datetime(2016, 2, 1), datetime(2016, 4, 1), -2) == 1
+    # A leap trace year that starts after February loses nothing.
+    assert _dropped_leap_days(datetime(2016, 4, 1), datetime(2016, 8, 1), -2) == 0
+    # Leap year onto leap year keeps the day.
+    assert _dropped_leap_days(datetime(2016, 2, 1), datetime(2016, 4, 1), 4) == 0
+    # The leap day falls in the year after the trace starts.
+    assert _dropped_leap_days(datetime(2015, 11, 1), datetime(2016, 4, 1), -1) == 1
+
+
+def test_shift_time_keeps_a_trace_that_crosses_new_year_in_order(tmp_path):
+    times = pd.date_range("1995-11-01", "1996-02-01", freq="MS")
+    source = tmp_path / "trace.nc"
+    xr.Dataset({"q": ("time", np.arange(times.size, dtype=float))}, {"time": times}).to_netcdf(source)
+    shifted = _shift_time_to_state_year(source, 2010, tmp_path / "shifted.nc", trace_year=1995)
+    with xr.open_dataset(shifted) as ds:
+        assert list(pd.DatetimeIndex(ds["time"].values)) == list(
+            pd.date_range("2010-11-01", "2011-02-01", freq="MS")
+        )
+
+
+def test_trace_years_leave_out_the_issue_year_unless_asked():
+    esp = SimpleNamespace(start_year=2013, end_year=2016, exclude_issue_year=True)
+    assert _trace_years(esp, datetime(2014, 3, 1)) == [2013, 2015, 2016]
+    esp.exclude_issue_year = False
+    assert _trace_years(esp, datetime(2014, 3, 1)) == [2013, 2014, 2015, 2016]
 

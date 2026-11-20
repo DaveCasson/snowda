@@ -47,9 +47,10 @@ def linear_reversion(
         residual_new_snow = new_snowfall - melt
     else:
         residual_melt = melt - melt_threshold
+        # Full cover at the threshold, back to the pre-snowfall fSCA once the
+        # new snow has melted.
         slope = (1 - original_fsca) / (alpha * new_snowfall)
-        y_intercept = original_fsca - slope * snowfall_total
-        new_fsca = slope * (snowfall_total - residual_melt) + y_intercept
+        new_fsca = 1 - slope * residual_melt
         residual_new_snow = new_snowfall - melt
 
     return new_fsca, residual_new_snow

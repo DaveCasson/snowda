@@ -136,14 +136,6 @@ def test_timestep_conserves_swe(laugh) -> None:
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "The SNOW-17 melt factor is (f_max+f_min)/2 + (f_max-f_min)/2*sin(phase), "
-        "so equal bounds give that constant all year. compute_melt_factor multiplies "
-        "mean * sin * diff, as the legacy port does, and equal bounds give zero melt."
-    ),
-)
 def test_equal_melt_bounds_give_a_constant_factor(laugh) -> None:
     day = np.linspace(0.0, 365.0, 366)
     computed = compute_melt_factor(day, f_max=2.0, f_min=2.0)

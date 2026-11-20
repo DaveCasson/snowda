@@ -15,7 +15,9 @@ from snowda.config.pysummada import (
     load_pysummada_config,
     validate_deterministic_config,
 )
-from snowda.config.run_dir import make_run_dir, run_name_from_config
+from snowda.config.run_dir import make_run_dir, run_name_from_config, utc_timestamp
+from snowda.config.run_modes import DETERMINISTIC, check_run_mode
+from snowda.evaluation import evaluate_run_safely
 from snowda.utils.logging import configure_logging, get_logger
 from snowda.workflows.evaluate_streamflow import evaluate_deterministic_run
 from snowda.workflows.summa_common import (
@@ -48,6 +50,7 @@ def run_summa(config: str | Path | Mapping[str, Any]) -> Path:
 def _run_summa_deterministic(config: Mapping[str, Any], label: str) -> Path:
     cfg = load_pysummada_config(config)
     validate_deterministic_config(cfg)
+    run_mode = check_run_mode(cfg.run_mode, DETERMINISTIC)
     run_dir, log = setup_run_directory(
         cfg,
         label,
@@ -120,20 +123,16 @@ def _run_summa_deterministic(config: Mapping[str, Any], label: str) -> Path:
             "config_path": label,
             "model_result_output_dir": str(cfg.model_result_output_dir),
             "variant": "deterministic",
+            "run_mode": run_mode,
             "summa_output_dir": str(summa_output_dir),
             "mizuroute_output": mizuroute_output,
             "evaluation": evaluation_metrics,
         },
         log,
     )
+    evaluate_run_safely(run_dir, cfg, run_mode=run_mode, run_log=log)
     log.info("snowda SUMMA deterministic run complete")
     return run_dir
-
-
-def _ensure_dir(path: str | Path) -> Path:
-    p = Path(path)
-    p.mkdir(parents=True, exist_ok=True)
-    return p
 
 
 def _normalize_path(raw: str, base_dir: Path | None, *, allow_relative: bool) -> str:
@@ -342,7 +341,7 @@ def _run_summa_flat(config: Mapping[str, Any], label: str) -> Path:
         print(getattr(sim, "stdout", ""))
 
     prov = {
-        "timestamp_utc": datetime.utcnow().isoformat() + "Z",
+        "timestamp_utc": utc_timestamp(),
         "config_path": label,
         "run_dir": str(run_dir),
         "summa_stdout": getattr(sim, "stdout", None),

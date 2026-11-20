@@ -19,6 +19,7 @@ from snowda.config.pysummada import (
     load_pysummada_config,
     validate_da_config,
 )
+from snowda.config.run_modes import check_run_mode, esp_da_mode
 from snowda.core.assimilation import (
     DataAssimilationCore,
     assimilation_segments,
@@ -35,11 +36,10 @@ from snowda.core.particle_filter import (
     TEMPERING_BETA,
     ParticleFilterCore,
     resampling_rng,
-    weighted_ensemble_summary,
 )
 from snowda.core.swe_assimilation import DatedHruSwe, mapped_swe_by_date
+from snowda.evaluation import evaluate_run_safely
 from snowda.io.fsca_obs import read_fsca_observations
-from snowda.io.streamflow import read_routed_streamflow
 from snowda.io.summa_ensemble import SummaEnsembleReader, update_file_manager_option
 from snowda.io.summa_fsca import calc_summa_fsca, prepare_summa_fsca_input
 from snowda.io.swe_obs import read_member_hru_swe, read_model_equivalent_swe
@@ -52,7 +52,6 @@ from snowda.workflows.esp import (
 from snowda.workflows.summa_common import (
     apply_run_time,
     apply_segment_initial_conditions,
-    mizuroute_member_output_name,
     prepare_ensemble,
     redirect_summa_output,
     resample_routing_restarts,
@@ -162,7 +161,6 @@ def _run_swe_assimilation(
     prior_weights: pd.DataFrame | None = None
     routing_restarts: dict[str, Path | None] = {}
     mizu = _ensemble_routing(cfg)
-    sis_streamflow: list[pd.DataFrame] = []
     for index, (segment_start, segment_end, do_assimilate) in enumerate(segments):
         run_log.info("Starting ensemble run %s to %s", segment_start, segment_end)
         current_run_config = apply_run_time(
@@ -201,10 +199,6 @@ def _run_swe_assimilation(
                 require_restart=index < len(segments) - 1 or do_assimilate,
                 num_workers=cfg.num_workers,
             )
-            if cfg.pf_scheme == "sis":
-                sis_streamflow.append(
-                    _sis_segment_streamflow(cfg, run_dir, labels, segment_end, prior_weights)
-                )
         previous_resampled = False
         if not do_assimilate:
             continue
@@ -248,44 +242,34 @@ def _run_swe_assimilation(
                 "resampled": resampled,
             }
         )
-    if sis_streamflow:
-        path = run_dir / "assimilation" / "sis_weighted_streamflow.csv"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        pd.concat(sis_streamflow).to_csv(path)
-        run_log.info("Wrote SIS weighted streamflow: %s", path)
+    _write_update_table(run_dir, updates, run_log)
     return updates
 
 
-def _sis_segment_streamflow(
-    cfg: PysummadaConfig,
-    run_dir: Path,
-    labels: list[str],
-    segment_end: datetime,
-    weights: pd.DataFrame | None,
-) -> pd.DataFrame:
-    """Filtered SIS streamflow for one segment: weighted mean and 5/50/95 %.
+def _write_update_table(
+    run_dir: Path, updates: list[dict[str, Any]], run_log: Any
+) -> Path | None:
+    """One row per assimilation date in ``assimilation/updates.csv``.
 
-    SIS leaves every member's trace unchanged, so the estimate is the weights
-    known at the segment start (equal before the first update) applied to the
-    members' routed streamflow.
+    Evaluation reads this with the per-date weight files to put the filter
+    weights on a daily axis (``snowda.evaluation.weights``).
     """
-    ev = cfg.evaluation
-    flows = pd.DataFrame(
-        {
-            label: read_routed_streamflow(
-                run_dir / "mizuroute" / mizuroute_member_output_name(label, segment_end),
-                variable=ev.variable if ev else "IRFroutedRunoff",
-                seg=ev.seg if ev else 0,
-                reach_id=ev.reach_id if ev else None,
-            ).to_series()
-            for label in labels
-        }
-    )
-    if weights is None:
-        member_weights = [1.0] * len(labels)
-    else:
-        member_weights = weights.iloc[0].reindex(labels).to_numpy(dtype=float)
-    return weighted_ensemble_summary(flows, member_weights)
+    if not updates:
+        return None
+    columns = [
+        "date",
+        "lumped_swe",
+        "n_samples",
+        "n_eff",
+        "tempering_beta",
+        "season_reset",
+        "resampled",
+    ]
+    path = run_dir / "assimilation" / "updates.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(updates)[columns].to_csv(path, index=False)
+    run_log.info("Wrote assimilation updates: %s", path)
+    return path
 
 
 def _update_swe_particles(
@@ -355,6 +339,9 @@ def _update_swe_particles(
     )
     weight_dir = run_dir / "assimilation"
     weight_dir.mkdir(parents=True, exist_ok=True)
+    particles.to_csv(
+        weight_dir / f"{observation.date.strftime('%Y_%m_%d')}_swe_particles.csv"
+    )
     weight_path = weight_dir / f"{observation.date.strftime('%Y_%m_%d')}_swe_weights.csv"
     weights.to_csv(weight_path)
     run_log.info("Wrote SWE weights: %s", weight_path)
@@ -757,6 +744,7 @@ def run_summa_da(config: str | Path | Mapping[str, Any]) -> Path:
     validate_da_config(cfg)
     if cfg.esp is None:
         raise ValueError("SUMMA DA requires an `esp` section.")
+    run_mode = check_run_mode(cfg.run_mode, esp_da_mode(cfg.pf_scheme))
 
     esp_records: list = []
     issued: set[str] = set()
@@ -798,6 +786,7 @@ def run_summa_da(config: str | Path | Mapping[str, Any]) -> Path:
     result.log.info("ESP complete. Generated %s traces.", len(esp_records))
 
     provenance = assimilation_provenance(cfg, label, result, variant="da")
+    provenance["run_mode"] = run_mode
     provenance["esp_trace_count"] = len(esp_records)
     provenance["esp_traces"] = [record.__dict__ for record in esp_records]
     if cfg.esp.initialization == INITIALIZATION_BALANCED:
@@ -805,6 +794,7 @@ def run_summa_da(config: str | Path | Mapping[str, Any]) -> Path:
         provenance["esp_sampling"] = ESP_SAMPLING_DESCRIPTION
         provenance["esp_member_map"] = str(result.run_dir / "esp" / "member_map.json")
     write_provenance(result.run_dir, provenance, result.log)
+    evaluate_run_safely(result.run_dir, cfg, run_mode=run_mode, run_log=result.log)
     result.log.info("snowda SUMMA DA run complete")
     return result.run_dir
 

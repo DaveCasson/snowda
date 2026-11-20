@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence, Tuple
+from typing import Sequence
 
 import numpy as np
 
@@ -68,15 +68,17 @@ def apply_shuffle(X: Sequence, B: Sequence) -> np.ndarray:
 
 def apply_permutation(X: Sequence, B: Sequence) -> np.ndarray:
     """
-    Reorder ``X`` using the permutation ``B`` without re-sorting each column.
+    Move another variable with the members that the shuffle moved.
+
+    ``B`` is the source index from ``shuffle_source``: member ``m`` receives
+    the value that member ``B[m]`` held. Applying it to a second variable
+    keeps that variable with the primary value it belonged to.
     """
     X_flat, original_shape = _flatten_for_shuffle(X, dtype=np.float64)
     B_flat, _ = _flatten_for_shuffle(B, dtype=np.int64)
     if X_flat.shape != B_flat.shape:
         raise ValueError("X and B must share the same shape.")
-    permuted = np.empty_like(X_flat)
-    for col in range(X_flat.shape[1]):
-        permuted[B_flat[:, col], col] = X_flat[:, col]
+    permuted = np.take_along_axis(X_flat, B_flat, axis=0)
     return _reshape_from_flat(permuted, original_shape)
 
 
@@ -87,3 +89,20 @@ def schaake_shuffle(X: Sequence, Y: Sequence) -> tuple[np.ndarray, np.ndarray]:
     permutation = compute_shuffle_permutation(Y)
     shuffled = apply_shuffle(X, permutation)
     return shuffled, permutation
+
+
+def shuffle_source(X: Sequence, B: Sequence) -> np.ndarray:
+    """
+    Member whose ``X`` value ``apply_shuffle(X, B)`` places at each member.
+
+    ``source[m]`` is that member's index before the shuffle, per site. Pass it
+    to ``apply_permutation`` to move other variables with the same members.
+    """
+    X_flat, original_shape = _flatten_for_shuffle(X, dtype=np.float64)
+    B_flat, _ = _flatten_for_shuffle(B, dtype=np.int64)
+    if X_flat.shape != B_flat.shape:
+        raise ValueError("X and B must share the same shape.")
+    by_rank = np.argsort(X_flat, axis=0, kind="stable")
+    source = np.empty_like(B_flat)
+    np.put_along_axis(source, B_flat, by_rank, axis=0)
+    return _reshape_from_flat(source, original_shape)

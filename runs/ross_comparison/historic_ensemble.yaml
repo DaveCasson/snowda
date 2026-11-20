@@ -1,0 +1,49 @@
+# Ross River comparison set: historic_ensemble
+# Run with: python -m snowda.workflows.run_case runs/ross_comparison/historic_ensemble.yaml
+# See runs/ross_comparison/README.md for what must stay identical between files.
+case_name: ross_historic_ensemble
+run_mode: historic_ensemble
+description: >
+  Open-loop historic ensemble. Each member keeps its own forcing. No assimilation, no forecast.
+output_dir: ../../outputs/ross_comparison/historic_ensemble
+run_name: timestamp
+log_file: logs/historic_ensemble.log
+model_run_id: ross_historic_ensemble
+
+start_time: "1980-08-01 00:00"
+end_time: "2024-08-01 00:00"
+time_delta_days: 1
+summa_exe: /Users/dcasson/GitHub/summa/bin/summa.exe
+summa_log: false
+base_file_manager: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
+forcing_file_base: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/Ross_
+ensemble_forcing_mode: historic
+ensemble_forcing_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/forcing/ensemble
+num_ens: 50
+num_workers: 10
+file_manager_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
+file_list_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
+summa_output_suffix: timestep.nc
+summa_args:
+  "-m": /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
+  "-r": e
+mizuroute:
+  executable: /Users/dcasson/GitHub/mizuRoute/route/bin/route_runoff.exe
+  control_file: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/mizuroute.control
+  ancil_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/mizuRoute/
+  case_name: Ross
+  restart_write: never
+  log_output: false
+
+# ---- Evaluation: keep this block identical in every file of this folder ----
+evaluation:
+  obs_csv: /Users/dcasson/GitHub/snowda/data/ross_daily_discharge.csv
+  variable: IRFroutedRunoff
+  resample: 1D
+  seg: 0
+  start_time: "1981-10-01"      # first water year is spin-up and is not scored
+  water_year_start_month: 10
+  season_months: [4, 9]         # melt-season scoring window, inclusive
+  min_coverage: 0.9
+  figures: true
+  figures_swe: true

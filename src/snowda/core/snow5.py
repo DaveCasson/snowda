@@ -58,14 +58,16 @@ def phase_shift_day_of_year(doy: Iterable[float]) -> np.ndarray:
 
 
 def compute_melt_factor(mdoy: Iterable[float], f_max: float, f_min: float) -> np.ndarray:
-    """Seasonal melt factor derived from simple sinusoidal modulation."""
+    """Seasonal melt factor, SNOW-17 form (Anderson 2006).
+
+    ``(f_max + f_min) / 2 + sin(2 pi n / 366) * (f_max - f_min) / 2``: ``f_min``
+    at the winter solstice and ``f_max`` at the summer solstice.
+    """
     mdoy_arr = _to_float_array(mdoy)
     mean_factor = (f_max + f_min) / 2.0
     diff_factor = (f_max - f_min) / 2.0
     sin_term = np.sin((2.0 * np.pi * mdoy_arr) / 366.0)
-    melt_rate_factor = mean_factor * sin_term * diff_factor
-    melt_rate_factor[melt_rate_factor < 0] = 0.0
-    return melt_rate_factor
+    return np.maximum(mean_factor + sin_term * diff_factor, 0.0)
 
 
 def compute_potential_melt(airtemp: Iterable[float], melt_factor: Iterable[float], t_mlt: float) -> np.ndarray:

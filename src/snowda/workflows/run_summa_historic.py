@@ -11,6 +11,8 @@ from snowda.config.pysummada import (
     load_pysummada_config,
     validate_historic_config,
 )
+from snowda.config.run_modes import HISTORIC_ENSEMBLE, check_run_mode
+from snowda.evaluation import evaluate_run_safely
 from snowda.workflows.summa_common import (
     apply_run_time,
     prepare_ensemble,
@@ -35,6 +37,7 @@ def run_summa_historic(config: str | Path | Mapping[str, Any]) -> Path:
     cfg = load_pysummada_config(config)
     label = config_label(config)
     validate_historic_config(cfg)
+    run_mode = check_run_mode(cfg.run_mode, HISTORIC_ENSEMBLE)
     run_dir, log = setup_run_directory(
         cfg,
         label,
@@ -90,6 +93,7 @@ def run_summa_historic(config: str | Path | Mapping[str, Any]) -> Path:
             "config_path": label,
             "model_result_output_dir": str(cfg.model_result_output_dir),
             "variant": "historic",
+            "run_mode": run_mode,
             "ensemble_forcing_mode": cfg.ensemble_forcing_mode,
             "summa_output_dir": str(summa_output_dir),
             "routed": routed,
@@ -97,6 +101,8 @@ def run_summa_historic(config: str | Path | Mapping[str, Any]) -> Path:
         },
         log,
     )
+    if routed:
+        evaluate_run_safely(run_dir, cfg, run_mode=run_mode, run_log=log)
     log.info("snowda SUMMA historic run complete")
     return run_dir
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Mapping, Optional
+from typing import Mapping
 
 import xarray as xr
 
@@ -116,41 +116,3 @@ def convert_vars(
         log.info("Units: %s: %s -> %s", var, from_unit, to_unit)
 
     return out
-
-
-# ---- Convenience: canonical internal targets (SI-first, except SWE in mm) ----
-
-INTERNAL_TARGETS_DEFAULT: Dict[str, str] = {
-    # SWE as water-equivalent depth (hydrologically conventional)
-    "SWE": "millimeter",
-    # Snow depth as a length
-    "snow_depth": "meter",
-    # Temperature in Kelvin internally
-    "tair": "kelvin",
-    # Example precipitation convention (choose one and standardize when ready):
-    # "precip": "millimeter / hour",
-}
-
-
-def to_internal_units(
-    ds: xr.Dataset,
-    targets: Optional[Mapping[str, str]] = None,
-    *,
-    quantify_first: bool = True,
-    strict: bool = False,
-) -> xr.Dataset:
-    """
-    Convert a dataset to snowda's canonical internal units.
-
-    Policy:
-      - Prefer SI units for most quantities.
-      - SWE is kept as water-equivalent depth in millimeters.
-
-    By default uses INTERNAL_TARGETS_DEFAULT; pass `targets` to override or extend.
-
-    strict=False by default because not every dataset will contain every variable.
-    """
-    merged = dict(INTERNAL_TARGETS_DEFAULT)
-    if targets:
-        merged.update(targets)
-    return convert_vars(ds, merged, quantify_first=quantify_first, strict=strict)

@@ -2,19 +2,12 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
 from snowda.config.loader import load_config
-from snowda.config.run_dir import make_run_dir, run_name_from_config
+from snowda.config.run_dir import make_run_dir, run_name_from_config, utc_timestamp
 from snowda.utils.logging import configure_logging, get_logger
-
-
-def _ensure_dir(path: str | Path) -> Path:
-    p = Path(path)
-    p.mkdir(parents=True, exist_ok=True)
-    return p
 
 
 def _require_keys(section: Dict[str, Any], keys: list[str], section_name: str) -> None:
@@ -145,7 +138,7 @@ def init_summa_run(config_path: str | Path) -> Path:
     _require_keys(summa_cfg, ["summa_exe", "file_manager"], "summa")
 
     plan = {
-        "initialized_utc": datetime.utcnow().isoformat() + "Z",
+        "initialized_utc": utc_timestamp(),
         "run_dir": str(run_dir),
         "case": cfg.get("case", {}),
         "paths": paths,

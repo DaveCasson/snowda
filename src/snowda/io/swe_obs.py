@@ -17,24 +17,6 @@ from snowda.utils.logging import get_logger
 log = get_logger(__name__)
 
 
-def _agent_log(hypothesis_id: str, location: str, message: str, data: dict) -> None:
-    # #region agent log
-    try:
-        import json
-        import time
-
-        payload = {
-            "sessionId": "83d907",
-            "hypothesisId": hypothesis_id,
-            "location": location,
-            "message": message,
-            "data": data,
-            "timestamp": int(time.time() * 1000),
-        }
-        with open("/Users/dcasson/GitHub/snowda/.cursor/debug-83d907.log", "a") as handle:
-            handle.write(json.dumps(payload) + "\n")
-    except Exception:
-        pass
     # #endregion
 
 _SWE_UNIT = "kg / m**2"
@@ -179,50 +161,6 @@ def _select_time_index(times: pd.DatetimeIndex, when: datetime) -> int:
     return int(same_day[int(np.argmin(offsets))])
 
 
-def read_lumped_member_swe(
-    output_dir: str | Path,
-    member: str,
-    *,
-    variable: str,
-    when: datetime,
-    file_suffix: str,
-) -> tuple[int, float, str | None]:
-    """Read one HRU's SWE for ``member`` at ``when``.
-
-    The assimilation observation is compared with the HRU named in the
-    config. This helper still requires the member file to contain one HRU.
-    """
-    files = _member_output_files(output_dir, member, when, file_suffix)
-    with _open_member_outputs(files) as ds:
-        if variable not in ds:
-            raise KeyError(
-                f"Variable {variable!r} not found for member {member}. "
-                f"Available: {list(ds.data_vars)}"
-            )
-        da = ds[variable]
-        if "hru" in da.dims and int(da.sizes["hru"]) != 1:
-            raise ValueError(
-                f"SWE assimilation expects one HRU; member {member} has "
-                f"{int(da.sizes['hru'])}."
-            )
-        if "time" not in da.dims:
-            raise ValueError(f"{variable} for member {member} has no time dimension.")
-        time_index = _select_time_index(pd.DatetimeIndex(da["time"].values), when)
-        selected = da.isel(time=time_index)
-        if "hru" in selected.dims:
-            selected = selected.isel(hru=0)
-        value = float(selected.values)
-        units = da.attrs.get("units")
-        hru_ids = _hru_id_array(ds, da, member)
-        hru_id = int(hru_ids[0])
-    if units is not None and not units_are_swe(str(units)):
-        raise ValueError(
-            f"Member {member} {variable} units {units!r} are not {_SWE_UNIT} or mm."
-        )
-    log.info("Member %s %s at %s is %s", member, variable, when, value)
-    return hru_id, value, None if units is None else str(units)
-
-
 def read_member_hru_swe(
     output_dir: str | Path,
     member: str,
@@ -237,26 +175,6 @@ def read_member_hru_swe(
     if not requested:
         raise ValueError("No HRU ids were requested.")
     files = _member_output_files(output_dir, member, when, file_suffix)
-    # #region agent log
-    dask_client = None
-    try:
-        from distributed import get_client
-
-        dask_client = str(get_client(timeout=0.2))
-    except Exception as exc:
-        dask_client = f"{type(exc).__name__}: {exc}"
-    _agent_log(
-        "B",
-        "swe_obs.py:read_member_hru_swe",
-        "opening member swe",
-        {
-            "member": member,
-            "when": str(when),
-            "files": files,
-            "dask_client": dask_client,
-        },
-    )
-    # #endregion
     with _open_member_outputs(files) as ds:
         if variable not in ds:
             raise KeyError(
@@ -290,12 +208,4 @@ def read_member_hru_swe(
             f"Member {member} {variable} units {units!r} are not {_SWE_UNIT} or mm."
         )
     log.info("Member %s %s at %s is %s", member, variable, when, values)
-    # #region agent log
-    _agent_log(
-        "B",
-        "swe_obs.py:read_member_hru_swe",
-        "read member swe",
-        {"member": member, "when": str(when), "values": values, "runId": "post-fix"},
-    )
-    # #endregion
     return values

@@ -4,7 +4,6 @@ from numbers import Integral
 from typing import Literal
 
 import matplotlib.pyplot as plt
-import numpy as np
 import xarray as xr
 
 Figure = plt.Figure

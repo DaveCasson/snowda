@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Mapping
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -11,16 +10,10 @@ import xarray as xr
 
 from snowda.adapters.pysumma import run_simulation
 from snowda.config.loader import as_config_dict, config_label
-from snowda.config.run_dir import make_run_dir, run_name_from_config
+from snowda.config.run_dir import make_run_dir, run_name_from_config, utc_timestamp
 from snowda.io.fsca_obs import read_fsca_observations
 from snowda.io.summa_fsca import calc_summa_fsca, prepare_summa_fsca_input
 from snowda.utils.logging import configure_logging, get_logger
-
-
-def _ensure_dir(path: str | Path) -> Path:
-    p = Path(path)
-    p.mkdir(parents=True, exist_ok=True)
-    return p
 
 
 def _normalize_path(raw: str, base_dir: Path | None, *, allow_relative: bool) -> Path:
@@ -178,7 +171,7 @@ def run_summa_fsca(config: str | Path | Mapping[str, Any]) -> Path:
         log.info("Wrote fSCA observation comparison: %s", error_out)
 
     prov = {
-        "timestamp_utc": datetime.utcnow().isoformat() + "Z",
+        "timestamp_utc": utc_timestamp(),
         "config_path": label,
         "run_dir": str(run_dir),
         "fsca_input": str(fsca_input_path),

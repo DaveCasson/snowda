@@ -13,12 +13,14 @@ from snowda.config.pysummada import (
     load_pysummada_config,
     validate_esp_config,
 )
+from snowda.config.run_modes import ESP_OPEN_LOOP, check_run_mode
 from snowda.core.assimilation import assimilation_segments, restart_filename
 from snowda.core.esp_sampling import (
     ESP_SAMPLING_DESCRIPTION,
     ParticleState,
     write_post_da_catalog,
 )
+from snowda.evaluation import evaluate_run_safely
 from snowda.workflows.esp import (
     balanced_trigger_dates,
     resolve_esp_trigger_dates,
@@ -218,6 +220,7 @@ def run_summa_esp(config: str | Path | Mapping[str, Any]) -> Path:
     validate_esp_config(cfg)
     if cfg.esp is None:
         raise ValueError("ESP workflow requires an `esp` section.")
+    run_mode = check_run_mode(cfg.run_mode, ESP_OPEN_LOOP)
 
     run_dir, log = setup_run_directory(
         cfg,
@@ -253,6 +256,7 @@ def run_summa_esp(config: str | Path | Mapping[str, Any]) -> Path:
             "config_path": label,
             "model_result_output_dir": str(cfg.model_result_output_dir),
             "variant": "esp",
+            "run_mode": run_mode,
             "summa_output_dir": str(summa_output_dir),
             "state_dir": str(summa_run_state_dir(run_dir)),
             "esp_trace_count": len(esp_records),
@@ -264,6 +268,7 @@ def run_summa_esp(config: str | Path | Mapping[str, Any]) -> Path:
         },
         log,
     )
+    evaluate_run_safely(run_dir, cfg, run_mode=run_mode, run_log=log)
     log.info("snowda SUMMA ESP run complete")
     return run_dir
 

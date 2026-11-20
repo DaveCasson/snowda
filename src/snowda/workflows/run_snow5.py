@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
@@ -11,7 +10,7 @@ import pandas as pd
 import xarray as xr
 
 from snowda.config.loader import load_config
-from snowda.config.run_dir import make_run_dir, run_name_from_config
+from snowda.config.run_dir import make_run_dir, run_name_from_config, utc_timestamp
 from snowda.core.snow5 import Snow5Parameters, run_snow5_simulation
 from snowda.io.snow5 import (
     convert_arrays_to_dataset,
@@ -21,11 +20,6 @@ from snowda.io.snow5 import (
 from snowda.utils.logging import configure_logging, get_logger
 
 log = get_logger(__name__)
-
-
-def _ensure_dir(path: Path) -> Path:
-    path.mkdir(parents=True, exist_ok=True)
-    return path
 
 
 def _normalize_output_dir(raw: str, base_dir: Path) -> Path:
@@ -182,7 +176,7 @@ def run_snow5(config_path: str | Path) -> Path:
     write_results(result_ds, result_path)
 
     prov = {
-        "timestamp_utc": datetime.utcnow().isoformat() + "Z",
+        "timestamp_utc": utc_timestamp(),
         "config_path": cfg.get("_meta", {}).get("config_path", str(config_path)),
         "run_dir": str(run_dir),
         "forcing_dir": forcing_dir,

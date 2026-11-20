@@ -408,7 +408,7 @@ def test_balanced_esp_smoke_copies_bound_restarts_without_mutating_sources(
         )
 
     monkeypatch.setattr("snowda.workflows.esp.run_simulation", fake_summa)
-    monkeypatch.setattr("snowda.workflows.esp.run_mizuroute", fake_route)
+    monkeypatch.setattr("snowda.workflows.summa_common.run_mizuroute", fake_route)
 
     from snowda.config.pysummada import load_pysummada_config
 
@@ -531,8 +531,8 @@ def test_balanced_esp_traces_overlap_when_num_workers_exceeds_one(
                 "initialization": "balanced_independent",
                 "n_members": 2,
                 "seed": 3,
-                "start_year": 2014,
-                "end_year": 2014,
+                "start_year": 2015,
+                "end_year": 2015,
                 "forecast_length_days": 5,
                 "dates": ["2014-03-01 00:00"],
                 "run_mizuroute": True,
@@ -609,7 +609,7 @@ def test_balanced_esp_traces_overlap_when_num_workers_exceeds_one(
         (output_dir / "Ross.h.2014-03-01-00000.nc").write_bytes(b"routed")
 
     monkeypatch.setattr("snowda.workflows.esp.run_simulation", fake_summa)
-    monkeypatch.setattr("snowda.workflows.esp.run_mizuroute", fake_route)
+    monkeypatch.setattr("snowda.workflows.summa_common.run_mizuroute", fake_route)
 
     from snowda.config.pysummada import load_pysummada_config
 

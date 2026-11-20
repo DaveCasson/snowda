@@ -101,11 +101,13 @@ def test_pf_resample_is_rejected(tmp_path: Path) -> None:
         load_pysummada_config(config_file)
 
 
-def test_run_mode_is_ignored(tmp_path: Path) -> None:
+def test_run_mode_is_optional_and_validated(tmp_path: Path) -> None:
+    assert load_pysummada_config(_build_config(tmp_path)).run_mode is None
+    config_file = _build_config(tmp_path, extra={"run_mode": "ESP_SIS"})
+    assert load_pysummada_config(config_file).run_mode == "esp_sis"
     config_file = _build_config(tmp_path, extra={"run_mode": "da_esp"})
-    cfg = load_pysummada_config(config_file)
-    assert not hasattr(cfg, "run_mode")
-    validate_deterministic_config(cfg)
+    with pytest.raises(ValueError, match="Unsupported run_mode"):
+        load_pysummada_config(config_file)
 
 
 def test_esp_implicitly_enabled_without_enabled_flag(tmp_path: Path) -> None:

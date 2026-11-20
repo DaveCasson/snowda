@@ -152,12 +152,16 @@ def test_swe_assimilation_routes_from_esp_mizuroute(
     assert particle["label"] == "001"
     assert Path(particle["summa_restart"]).read_bytes() == b"summa-001"
     assert Path(particle["mizuroute_restart"]).read_bytes() == b"route-001"
-    sis_flow = pd.read_csv(
-        run_dir / "assimilation" / "sis_weighted_streamflow.csv", index_col=0
+    updates = pd.read_csv(run_dir / "assimilation" / "updates.csv")
+    assert list(updates["date"]) == ["2014-03-01T00:00:00"]
+    assert not bool(updates["resampled"].iloc[0])
+    assert updates["n_eff"].iloc[0] == pytest.approx(1.0)
+    particles = pd.read_csv(
+        run_dir / "assimilation" / "2014_03_01_swe_particles.csv", dtype={"001": float}
     )
-    assert list(sis_flow.columns) == ["mean", "q05", "q50", "q95"]
-    assert len(sis_flow) == (datetime(2014, 8, 1) - datetime(2014, 2, 1)).days
-    assert np.allclose(sis_flow.to_numpy(), 3.0)
+    assert list(particles.columns) == ["hru", "time", "001"]
+    assert particles["001"].iloc[0] == pytest.approx(12.0)
+    assert not (run_dir / "assimilation" / "sis_weighted_streamflow.csv").exists()
 
 
 def test_weighted_ensemble_summary_uses_weights() -> None:

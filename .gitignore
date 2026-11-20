@@ -209,3 +209,6 @@ __marimo__/
 # output
 /outputs/*
 timing_stats
+
+# macOS
+.DS_Store

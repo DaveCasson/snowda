@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Dict
 
 import geopandas as gpd
 import numpy as np
-import xarray as xr
-import rioxarray  # noqa: F401
 import rasterio.features
+import rioxarray  # noqa: F401
+import xarray as xr
 
 from snowda.config.loader import load_config
 from snowda.utils.logging import get_logger

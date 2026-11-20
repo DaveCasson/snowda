@@ -23,13 +23,6 @@ class SweSample:
 
 
 @dataclass(frozen=True)
-class LumpedSwe:
-    date: datetime
-    value: float
-    samples: tuple[SweSample, ...]
-
-
-@dataclass(frozen=True)
 class HruSwe:
     hru_id: int
     value: float
@@ -117,25 +110,6 @@ def _assign_samples(
                 SweSample(time=obs_stamp, station_id=station_id, value=value)
             )
     return assigned
-
-
-def lumped_swe_by_date(
-    obs_time: Sequence[object],
-    station_ids: Sequence[object],
-    swe: np.ndarray,
-    flags: np.ndarray,
-    dates: Sequence[datetime],
-    window_days: int,
-) -> dict[datetime, LumpedSwe]:
-    """Average usable model-equivalent SWE assigned to each assimilation date."""
-    assigned = _assign_samples(obs_time, station_ids, swe, flags, dates, window_days)
-    lumped: dict[datetime, LumpedSwe] = {}
-    for date, samples in assigned.items():
-        if not samples:
-            continue
-        mean_value = float(np.mean([sample.value for sample in samples]))
-        lumped[date] = LumpedSwe(date=date, value=mean_value, samples=tuple(samples))
-    return lumped
 
 
 def mapped_swe_by_date(

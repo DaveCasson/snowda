@@ -1,6 +1,6 @@
 # Laugh test report
 
-111 PASS, 1 KNOWN DEVIATION, 0 FAIL.
+112 PASS, 0 KNOWN DEVIATION, 0 FAIL.
 
 A PASS row matches an analytical result. A KNOWN DEVIATION row is a
 textbook result the current code does not reproduce. The test is marked
@@ -104,7 +104,7 @@ the deviation note is not retired.
 | PASS | test_snow5::test_cold_day_stores_all_snowfall | SWE | 25 | 25 | SWE_after = SWE + snowfall - melt = 20 + 5 - 0 |
 | PASS | test_snow5::test_timestep_conserves_swe | mass-balance residual | [0., 0.] | [0., 0.] | SWE_after = SWE + snowfall - melt at each HRU |
 | PASS | test_snow5::test_timestep_conserves_swe | SWE stays non-negative | True | True | Melt is capped by the snow on the ground |
-| KNOWN DEVIATION | test_snow5::test_equal_melt_bounds_give_a_constant_factor | minimum melt factor over the year when f_max = f_min = 2 | 2 | 0 | SNOW-17: Mf = (f_max + f_min)/2 + (f_max - f_min)/2 * sin(phase), which equals f when f_max = f_min |
+| PASS | test_snow5::test_equal_melt_bounds_give_a_constant_factor | minimum melt factor over the year when f_max = f_min = 2 | 2 | 2 | SNOW-17: Mf = (f_max + f_min)/2 + (f_max - f_min)/2 * sin(phase), which equals f when f_max = f_min |
 | PASS | test_ssnowd::test_parameters_have_the_right_mean | exp(lambda + zeta^2/2) | 2.5 | 2.5 | Liston (2004): lognormal SWE, zeta = sqrt(ln(1+CV^2)), lambda = ln(mu) - zeta^2/2 |
 | PASS | test_ssnowd::test_parameters_have_the_right_mean | scipy lognormal mean | 2.5 | 2.5 | Liston (2004): lognormal SWE, zeta = sqrt(ln(1+CV^2)), lambda = ln(mu) - zeta^2/2 |
 | PASS | test_ssnowd::test_depletion_matches_the_lognormal | fSCA against the lognormal survival function | 0.955766 | 0.955766 | fSCA = P(SWE > dm) for the lognormal distribution |
@@ -121,13 +121,6 @@ the deviation note is not retired.
 | PASS | test_ssnowd::test_figure_step_and_inversion | fSCA on either side of mu when CV = 0.001 | [1., 0.] | [1., 0.] | A degenerate distribution at mu is fully covered until dm reaches mu |
 | PASS | test_ssnowd::test_figure_step_and_inversion | largest melt-depth recovery error | 0 | 3.48499e-13 | Brent inversion of the partial expectation |
 | PASS | test_ssnowd::test_figure_depletion_curve | largest gap from the lognormal partial expectation | 0 | 2.22045e-16 | Liston (2004): lognormal SWE, zeta = sqrt(ln(1+CV^2)), lambda = ln(mu) - zeta^2/2 |
-
-## Known deviations
-
-- **test_snow5::test_equal_melt_bounds_give_a_constant_factor** — minimum melt factor over the year when f_max = f_min = 2
-  - expected: 2
-  - computed: 0
-  - note: The SNOW-17 melt factor is (f_max+f_min)/2 + (f_max-f_min)/2*sin(phase), so equal bounds give that constant all year. compute_melt_factor multiplies mean * sin * diff, as the legacy port does, and equal bounds give zero melt.
 
 ## Figures
 

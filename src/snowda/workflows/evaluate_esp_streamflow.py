@@ -24,7 +24,12 @@ from snowda.adapters.scores import (
     skill_score,
 )
 from snowda.config.loader import load_config
-from snowda.config.run_dir import make_run_dir, run_name_from_config
+from snowda.config.run_dir import (
+    git_commit_hash,
+    make_run_dir,
+    run_name_from_config,
+    utc_timestamp,
+)
 from snowda.io.esp_streamflow import (
     CLIMO_MEMBER_DIM,
     DEFAULT_RETURN_PERIODS,
@@ -44,7 +49,6 @@ from snowda.io.esp_streamflow import (
 from snowda.io.streamflow import DEFAULT_RESAMPLE
 from snowda.utils.logging import configure_logging, get_logger
 from snowda.workflows.evaluate_streamflow import (
-    _git_commit_hash,
     _json_safe,
     _normalize_output_dir,
     _require_absolute_input,
@@ -1062,8 +1066,8 @@ def evaluate_esp_run(
 
     repo_root = Path(__file__).resolve().parents[3]
     provenance = {
-        "timestamp_utc": pd.Timestamp.utcnow().isoformat() + "Z",
-        "git_commit": _git_commit_hash(repo_root),
+        "timestamp_utc": utc_timestamp(),
+        "git_commit": git_commit_hash(repo_root),
         "config_path": str(Path(config_path).resolve()) if config_path else None,
         "eval_dir": str(eval_dir),
         "run_dir": str(run_dir),

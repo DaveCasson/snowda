@@ -2,20 +2,19 @@ from __future__ import annotations
 
 import copy
 import json
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, Sequence
 
-import logging
 import numpy as np
 import pandas as pd
 import xarray as xr
 
 from snowda.config.loader import load_config
 from snowda.config.pysummada import _parse_esp_horizon
-from snowda.config.run_dir import make_run_dir, run_name_from_config
-from snowda.core.assimilation import DataAssimilationCore
+from snowda.config.run_dir import make_run_dir, run_name_from_config, utc_timestamp
 from snowda.core.fsca_models import FscaState, initialize_model_arrays
 from snowda.core.particle_filter import (
     DEFAULT_N_EFF_THRESHOLD,
@@ -27,7 +26,12 @@ from snowda.core.snow5 import Snow5Parameters, run_snow5_simulation
 from snowda.io.snow5 import convert_arrays_to_dataset, read_snow5_forcing, write_results
 from snowda.schaake_shuffle.archive import Snow5ArchiveAdapter
 from snowda.schaake_shuffle.config import SchaakeShuffleConfig
-from snowda.schaake_shuffle.core import apply_permutation, schaake_shuffle
+from snowda.schaake_shuffle.core import (
+    apply_permutation,
+    schaake_shuffle,
+    shuffle_source,
+)
+from snowda.utils.dates import replace_year, scheduled_dates
 from snowda.utils.logging import configure_logging, get_logger
 from snowda.workflows.esp import resolve_forecast_window_end
 from snowda.workflows.run_snow5 import _load_cv_array
@@ -61,11 +65,6 @@ def _parse_time(value: str | None, field_name: str) -> datetime | None:
         return datetime.strptime(value, "%Y-%m-%d")
     except ValueError as exc:
         raise ValueError(f"{field_name} must be YYYY-MM-DD (got: {value})") from exc
-
-
-def _ensure_dir(path: Path) -> Path:
-    path.mkdir(parents=True, exist_ok=True)
-    return path
 
 
 def _load_helbig_params_nc(path: str | Path) -> dict[str, np.ndarray]:
@@ -166,14 +165,6 @@ def _build_assimilation_times(
         times.append(window_end)
         window_start = window_end + timedelta(days=1)
     return times
-
-
-@dataclass(frozen=True)
-class Snow5DAConfig:
-    start_time: datetime
-    end_time: datetime
-    time_delta: timedelta
-    ens_label_array: list[str]
 
 
 @dataclass
@@ -539,7 +530,9 @@ class Snow5DAEngine:
                 "Schaake shuffle skipped: no archive candidates for %s", time
             )
             return False
-        shuffled, permutation = schaake_shuffle(matrix, reference)
+        shuffled, rank_index = schaake_shuffle(matrix, reference)
+        # Other variables follow the member their SWE value came from.
+        permutation = shuffle_source(matrix, rank_index)
         self._write_variable_matrix(primary_var, shuffled, value_shape, time)
         for var in config.apply_same_permutation_to:
             if var == primary_var:
@@ -573,41 +566,15 @@ class Snow5DAEngine:
         return output_paths
 
 
-def _replace_year(dt: datetime, year: int) -> datetime:
-    try:
-        return dt.replace(year=year)
-    except ValueError:
-        max_day = pd.Timestamp(f"{year}-{dt.month:02d}-01").days_in_month
-        return dt.replace(year=year, day=min(dt.day, max_day))
-
-
 def _parse_esp_dates(values: Sequence[str]) -> list[datetime]:
     return [pd.Timestamp(v).to_pydatetime() for v in values]
 
 
-def _resolve_esp_trigger_dates(
-    start: datetime,
-    end: datetime,
-    explicit_dates: Sequence[datetime],
-    frequency_days: int | None,
-    months: Sequence[int],
-) -> list[datetime]:
-    dates = set(explicit_dates)
-    if frequency_days:
-        current = start
-        while current <= end:
-            dates.add(current)
-            current += timedelta(days=frequency_days)
-    if months:
-        month_set = set(months)
-        dates = {dt for dt in dates if dt.month in month_set}
-    return sorted(dates)
-
-
-def _shift_dataset_time_to_year(ds: xr.Dataset, target_year: int) -> xr.Dataset:
+def _shift_dataset_time_by_years(ds: xr.Dataset, year_offset: int) -> xr.Dataset:
+    """Move every time stamp by whole years, so a trace can cross 31 December."""
     shifted_times = [
-        _replace_year(pd.Timestamp(ts).to_pydatetime(), target_year)
-        for ts in pd.to_datetime(ds["time"].values)
+        replace_year(stamp, stamp.year + year_offset)
+        for stamp in (pd.Timestamp(ts).to_pydatetime() for ts in ds["time"].values)
     ]
     out = ds.copy(deep=True)
     out["time"] = pd.DatetimeIndex(shifted_times)
@@ -637,6 +604,8 @@ def _run_snow5_esp_from_da(
     if end_year < start_year:
         raise ValueError("`esp.end_year` must be >= `esp.start_year`.")
     forecast_length_days, forecast_end = _parse_esp_horizon(esp_cfg)
+    # The issue year's weather is the verifying weather, so it is not a trace.
+    exclude_issue_year = bool(esp_cfg.get("exclude_issue_year", True))
 
     frequency_days_raw = esp_cfg.get("frequency_days")
     frequency_days = int(frequency_days_raw) if frequency_days_raw is not None else None
@@ -645,7 +614,7 @@ def _run_snow5_esp_from_da(
     if frequency_days is None and not explicit_dates:
         raise ValueError("ESP requires either `esp.frequency_days` or `esp.dates`.")
 
-    trigger_dates = _resolve_esp_trigger_dates(
+    trigger_dates = scheduled_dates(
         assimilation_times[0],
         assimilation_times[-1],
         explicit_dates,
@@ -677,7 +646,9 @@ def _run_snow5_esp_from_da(
                 continue
             forcing_ds = forcing_lookup[state_member]
             for trace_year in range(start_year, end_year + 1):
-                trace_start = _replace_year(trigger, trace_year)
+                if exclude_issue_year and trace_year == trigger.year:
+                    continue
+                trace_start = replace_year(trigger, trace_year)
                 trace_end = resolve_forecast_window_end(
                     trace_start, forecast_length_days, forecast_end
                 )
@@ -704,7 +675,9 @@ def _run_snow5_esp_from_da(
                     initial_states=[copy.deepcopy(state) for state in particle_state.fsca_states],
                 )
                 trace_ds = convert_arrays_to_dataset(output_arrays, forcing_subset)
-                trace_ds = _shift_dataset_time_to_year(trace_ds, trigger.year)
+                trace_ds = _shift_dataset_time_by_years(
+                    trace_ds, trigger.year - trace_year
+                )
                 trace_dir = output_dir / "esp" / state_member / trigger.strftime("%Y%m%d")
                 trace_dir.mkdir(parents=True, exist_ok=True)
                 trace_path = trace_dir / f"snow5_{trace_year}.nc"
@@ -831,14 +804,6 @@ def run_snow5_da(config_path: str | Path) -> Path:
         )
 
     pf_core = ParticleFilterCore()
-    da_config = Snow5DAConfig(
-        start_time=start_time,
-        end_time=end_time,
-        time_delta=timedelta(days=assimilation_interval_days),
-        ens_label_array=ens_labels,
-    )
-    da_core = DataAssimilationCore(da_config)
-    da_core.set_run_period()
     schaake_shuffle_config = SchaakeShuffleConfig.from_config(
         cfg.get("schaake_shuffle"),
         Path(cfg["_meta"]["config_dir"]),
@@ -896,7 +861,7 @@ def run_snow5_da(config_path: str | Path) -> Path:
     )
 
     prov = {
-        "timestamp_utc": datetime.utcnow().isoformat() + "Z",
+        "timestamp_utc": utc_timestamp(),
         "config_path": str(config_path),
         "output_dir": str(output_dir),
         "ensemble_forcing_files": [str(p) for p in forcing_paths],

@@ -2,21 +2,24 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, List
 
 import numpy as np
 import xarray as xr
 
 from snowda.config.loader import load_config
-from snowda.config.run_dir import make_run_dir, run_name_from_config
+from snowda.config.run_dir import (
+    ensure_dir,
+    make_run_dir,
+    run_name_from_config,
+    utc_timestamp,
+)
 from snowda.core.snow5 import Snow5Parameters, run_snow5_simulation
 from snowda.io.snow5 import convert_arrays_to_dataset, read_snow5_forcing, write_results
 from snowda.utils.logging import configure_logging, get_logger
 from snowda.workflows.run_snow5 import (
     _apply_time_window,
-    _ensure_dir,
     _load_cv_array,
     _load_helbig_params,
     _parse_time,
@@ -134,7 +137,7 @@ def run_snow5_ensemble(config_path: str | Path) -> Path:
     ensemble_info = []
     for idx, forcing_path in enumerate(forcing_files, start=1):
         label = f"{idx:03d}" if cfg.get("ensemble_forcing_dir") else (forcing_path.stem or f"forcing_{idx}")
-        run_dir = _ensure_dir(output_dir / label)
+        run_dir = ensure_dir(output_dir / label)
         forcing_ds = read_snow5_forcing(forcing_path)
         if start_time or end_time:
             forcing_ds = _apply_time_window(forcing_ds, start_time, end_time)
@@ -178,7 +181,7 @@ def run_snow5_ensemble(config_path: str | Path) -> Path:
         )
 
     prov = {
-        "timestamp_utc": datetime.utcnow().isoformat() + "Z",
+        "timestamp_utc": utc_timestamp(),
         "config_path": cfg.get("_meta", {}).get("config_path", str(config_path)),
         "run_dir": str(output_dir),
         "ensemble_forcing_files": [str(p) for p in forcing_files],

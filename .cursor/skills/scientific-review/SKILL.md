@@ -37,8 +37,7 @@ assimilation and paper-figure pipelines. The scientific cores are:
    traces from a model state through SUMMA and optionally mizuRoute.
 
 Documented intent lives in `ARCHITECTURE.md`, `DATA_CONVENTIONS.md`,
-`docs/SCHAKE_SHUFFLE.md`, and in-code docstrings. Treat
-`REPOSITORY_MAP.md` as stale unless you re-verify it. Separate
+`docs/SCHAKE_SHUFFLE.md`, and in-code docstrings. Separate
 documented intent from assumptions inferred from the code.
 
 For subsystem file maps, equations, tests, and suggested validations,

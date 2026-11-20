@@ -72,13 +72,11 @@ Checked against the publisher record while this suite was written, unless the li
 
 `test_ssnowd.py` — the lognormal parameterised by `calc_lambda` and `calc_zeta` has mean mu; fSCA matches the scipy survival function; mean SWE matches a numerical integral of (x − dm) f(x); no melt leaves fSCA = 1 and mean = mu; fSCA(z) + fSCA(−z) = 1; CV = 0.001 behaves as a step at mu; Brent recovers a chosen melt depth. Figures: `ssnowd_depletion.png`, `ssnowd_step_and_inversion.png`.
 
-`test_snow5.py` — snow only when T < src; no melt at or below t_mlt; melt cannot exceed SWE; a cold day stores all snowfall (20 + 5 = 25); one step conserves SWE. One strict deviation: equal melt bounds.
+`test_snow5.py` — snow only when T < src; no melt at or below t_mlt; melt cannot exceed SWE; a cold day stores all snowfall (20 + 5 = 25); one step conserves SWE; equal melt bounds give a constant factor.
 
 ## Known deviations
 
-These were confirmed by running the code. Production code was left as it is.
-
-1. **Equal melt bounds produce no melt.** SNOW-17 uses Mf = (f_max + f_min) / 2 + (f_max − f_min) / 2 · sin(phase), which is the constant f when f_max = f_min, and which stays at or above f_min. `compute_melt_factor` in `src/snowda/core/snow5.py` multiplies those pieces (`mean * sin * diff`) and clips negatives to zero. With f_max = f_min = 2 the factor is 0 on every day, so the model cannot melt. This matches the legacy port in `legacy_code/snow_dist/snow_5_param_model.py`; it is not a transcription slip in the new module. A cold day (T below both the rain/snow threshold and the melt threshold) does not use the factor, and that case passes.
+None at present. The Snow5 melt factor was multiplicative (`mean * sin * diff`, as in the legacy port) and gave no melt for equal bounds; it now uses the additive SNOW-17 form and that test passes.
 
 ## Other opportunities
 

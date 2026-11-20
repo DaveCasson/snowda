@@ -20,10 +20,9 @@ from snowda.core.assimilation import (
 )
 from snowda.core.particle_filter import ParticleFilterCore
 from snowda.workflows.run_summa_da import _resample_member_states
-from snowda.core.swe_assimilation import lumped_swe_by_date, mapped_swe_by_date
+from snowda.core.swe_assimilation import mapped_swe_by_date
 from snowda.io.summa_ensemble import EnsembleFileWriter
 from snowda.io.swe_obs import (
-    read_lumped_member_swe,
     read_member_hru_swe,
     read_model_equivalent_swe,
     units_are_swe,
@@ -144,43 +143,6 @@ def test_restart_filename_uses_hour() -> None:
     assert restart_filename("016", when) == "016_restart_2014030100_2014_03_01.nc"
 
 
-def test_lumped_swe_assigns_nearest_and_averages() -> None:
-    times = pd.to_datetime(["2014-03-06", "2014-03-20"])
-    stations = ["A", "B"]
-    swe = np.array(
-        [
-            [4.0, 8.0],
-            [100.0, np.nan],
-        ]
-    )
-    flags = np.array([[0, 1], [0, 3]], dtype=np.int8)
-    dates = [datetime(2014, 3, 1), datetime(2014, 3, 10)]
-    lumped = lumped_swe_by_date(times, stations, swe, flags, dates, window_days=6)
-    # Mar 6 is 5 days from Mar 1 and 4 days from Mar 10.
-    assert datetime(2014, 3, 1) not in lumped
-    march_10 = lumped[datetime(2014, 3, 10)]
-    assert march_10.value == pytest.approx(6.0)
-    assert {sample.station_id for sample in march_10.samples} == {"A", "B"}
-    # Mar 20 is 10 days from Mar 10, outside a 6-day window. Flag 3 is ignored.
-    assert len(lumped) == 1
-
-
-def test_lumped_swe_includes_zero_flag_and_skips_missing() -> None:
-    times = pd.to_datetime(["2014-03-01"])
-    swe = np.array([[0.0, 5.0]])
-    flags = np.array([[1, 3]], dtype=np.int8)
-    lumped = lumped_swe_by_date(
-        times,
-        ["A", "B"],
-        swe,
-        flags,
-        [datetime(2014, 3, 1)],
-        window_days=0,
-    )
-    assert lumped[datetime(2014, 3, 1)].value == pytest.approx(0.0)
-    assert len(lumped[datetime(2014, 3, 1)].samples) == 1
-
-
 def test_mapped_swe_keeps_only_listed_stations_and_averages_per_hru() -> None:
     times = pd.to_datetime(["2014-03-01"])
     swe = np.array([[4.0, 8.0, 100.0]])
@@ -222,29 +184,6 @@ def test_millimeter_swe_matches_summa_magnitude() -> None:
     assert units_are_swe("mm")
     assert units_are_swe("kg m-2")
     assert not units_are_swe("cm")
-
-
-def test_read_lumped_member_swe_from_timestep_file(tmp_path: Path) -> None:
-    when = datetime(2014, 3, 1)
-    ds = xr.Dataset(
-        {
-            "scalarSWE": (("time", "hru"), np.array([[12.0]])),
-            "hruId": ("hru", [7]),
-        },
-        coords={"time": [when], "hru": [0]},
-    )
-    ds["scalarSWE"].attrs["units"] = "kg m-2"
-    ds.to_netcdf(tmp_path / "001_2014_03_01_timestep.nc")
-    hru_id, value, units = read_lumped_member_swe(
-        tmp_path,
-        "001",
-        variable="scalarSWE",
-        when=when,
-        file_suffix="timestep.nc",
-    )
-    assert hru_id == 7
-    assert value == pytest.approx(12.0)
-    assert units == "kg m-2"
 
 
 def test_read_member_hru_swe_selects_requested_ids(tmp_path: Path) -> None:
@@ -622,15 +561,32 @@ def test_historic_rejects_assimilation_mode_alone(tmp_path: Path) -> None:
         validate_historic_config(cfg)
 
 
-def test_historic_rejects_evaluation(tmp_path: Path) -> None:
+def test_historic_evaluation_requires_mizuroute(tmp_path: Path) -> None:
     _seed_historic_member(tmp_path)
     config_file = _build_config(
         tmp_path,
         extra=_historic_extra(tmp_path, evaluation={"obs_csv": "/abs/obs.csv"}),
     )
     cfg = load_pysummada_config(config_file)
-    with pytest.raises(ValueError, match="does not evaluate"):
+    with pytest.raises(ValueError, match="requires top-level `mizuroute`"):
         validate_historic_config(cfg)
+
+
+def test_historic_accepts_evaluation_with_mizuroute(tmp_path: Path) -> None:
+    _seed_historic_member(tmp_path)
+    config_file = _build_config(
+        tmp_path,
+        extra=_historic_extra(
+            tmp_path,
+            mizuroute=_mizu_block(tmp_path),
+            evaluation={"obs_csv": "/abs/obs.csv", "season_months": [4, 9]},
+        ),
+    )
+    cfg = load_pysummada_config(config_file)
+    validate_historic_config(cfg)
+    assert cfg.evaluation is not None
+    assert cfg.evaluation.season_months == (4, 9)
+    assert cfg.evaluation.water_year_start_month == 10
 
 
 def test_historic_da_rejects_esp(tmp_path: Path) -> None:

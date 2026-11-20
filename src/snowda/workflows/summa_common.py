@@ -15,7 +15,7 @@ from snowda.adapters.mizuroute import (
 )
 from snowda.adapters.pysumma import get_file_manager_value
 from snowda.config.pysummada import MizuRouteEspConfig, PysummadaConfig
-from snowda.config.run_dir import make_run_dir
+from snowda.config.run_dir import ensure_dir, make_run_dir, utc_timestamp
 from snowda.core.assimilation import DataAssimilationCore, restart_filename
 from snowda.io.summa_ensemble import (
     EnsembleFileWriter,
@@ -26,12 +26,6 @@ from snowda.io.summa_ensemble import (
 from snowda.utils.logging import configure_logging, get_logger
 
 log = get_logger(__name__)
-
-
-def ensure_dir(path: str | Path) -> Path:
-    p = Path(path)
-    p.mkdir(parents=True, exist_ok=True)
-    return p
 
 
 def copy_param_definition(cfg: PysummadaConfig, run_dir: Path) -> bool:
@@ -138,7 +132,7 @@ def setup_run_directory(
 
 def write_provenance(run_dir: Path, payload: dict[str, Any], log: logging.Logger) -> Path:
     prov = {
-        "timestamp_utc": datetime.utcnow().isoformat() + "Z",
+        "timestamp_utc": utc_timestamp(),
         **payload,
         "run_dir": str(run_dir),
     }
@@ -309,6 +303,60 @@ def _seed_mizuroute_initial_state(
     )
 
 
+def route_summa_output(
+    mizu_cfg: MizuRouteEspConfig,
+    *,
+    summa_output: Path,
+    output_dir: Path,
+    restart_dir: Path,
+    control_name: str,
+    sim_start: datetime,
+    sim_end: datetime,
+    state_in: str | None,
+    params_beside_input: bool = False,
+) -> None:
+    """Write a control file for one SUMMA output and run mizuRoute on it.
+
+    ``sim_end`` is the last routed step. ``state_in`` names a restart in
+    ``restart_dir``; ``None`` keeps the control file's own ``fname_state_in``.
+    ``param.nml.default`` and, when found, ``topology.nc`` are copied into
+    ``output_dir``. ``params_beside_input`` also copies the parameter file
+    next to the SUMMA output.
+    """
+    fallback_dirs = [mizu_cfg.ancil_dir, Path(mizu_cfg.control_file).parent]
+    param_dirs = [output_dir, summa_output.parent] if params_beside_input else [output_dir]
+    for folder in param_dirs:
+        copy_optional_resource(
+            mizu_cfg.param_nml,
+            fallback_dirs,
+            folder / "param.nml.default",
+            "mizuRoute param.nml.default",
+            required=True,
+        )
+    copy_optional_resource(
+        mizu_cfg.topology_nc,
+        fallback_dirs,
+        output_dir / "topology.nc",
+        "mizuRoute topology.nc",
+    )
+    control_settings = {
+        "fname_qsim": summa_output.name,
+        "case_name": mizu_cfg.case_name,
+        "sim_start": sim_start.strftime("%Y-%m-%d %H:%M:%S"),
+        "sim_end": sim_end.strftime("%Y-%m-%d %H:%M:%S"),
+        "ancil_dir": str(mizu_cfg.ancil_dir) + "/",
+        "input_dir": str(summa_output.parent) + "/",
+        "output_dir": str(output_dir) + "/",
+        "restart_dir": str(restart_dir) + "/",
+        "restart_write": mizu_cfg.restart_write,
+    }
+    if state_in:
+        control_settings["fname_state_in"] = state_in
+    control_file = output_dir / control_name
+    update_control_file(mizu_cfg.control_file, control_file, control_settings)
+    run_mizuroute(mizu_cfg.executable, control_file, log_stdout=mizu_cfg.log_output)
+
+
 def run_mizuroute_after_summa(
     cfg: PysummadaConfig,
     mizu_cfg: MizuRouteEspConfig,
@@ -326,45 +374,17 @@ def run_mizuroute_after_summa(
 
     mizu_output_dir, mizu_restart_dir = mizuroute_run_dirs(run_dir)
     state_in = _seed_mizuroute_initial_state(mizu_cfg, mizu_restart_dir, sim_start)
-    input_dir = summa_output.parent
-
-    control_parent = Path(mizu_cfg.control_file).parent
-    copy_optional_resource(
-        mizu_cfg.param_nml,
-        [mizu_cfg.ancil_dir, control_parent],
-        mizu_output_dir / "param.nml.default",
-        "mizuRoute param.nml.default",
-        required=True,
+    route_summa_output(
+        mizu_cfg,
+        summa_output=summa_output,
+        output_dir=mizu_output_dir,
+        restart_dir=mizu_restart_dir,
+        control_name="mizuroute_deterministic.control",
+        sim_start=sim_start,
+        sim_end=sim_end - timedelta(hours=1),
+        state_in=state_in,
+        params_beside_input=True,
     )
-    copy_optional_resource(
-        mizu_cfg.param_nml,
-        [mizu_cfg.ancil_dir, control_parent],
-        input_dir / "param.nml.default",
-        "mizuRoute param.nml.default",
-        required=True,
-    )
-    copy_optional_resource(
-        mizu_cfg.topology_nc,
-        [mizu_cfg.ancil_dir, control_parent],
-        mizu_output_dir / "topology.nc",
-        "mizuRoute topology.nc",
-    )
-
-    control_file = mizu_output_dir / "mizuroute_deterministic.control"
-    control_settings = {
-        "fname_qsim": summa_output.name,
-        "fname_state_in": state_in,
-        "case_name": mizu_cfg.case_name,
-        "sim_start": sim_start.strftime("%Y-%m-%d %H:%M:%S"),
-        "sim_end": (sim_end - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S"),
-        "ancil_dir": str(mizu_cfg.ancil_dir) + "/",
-        "input_dir": str(input_dir) + "/",
-        "output_dir": str(mizu_output_dir) + "/",
-        "restart_dir": str(mizu_restart_dir) + "/",
-        "restart_write": mizu_cfg.restart_write,
-    }
-    update_control_file(mizu_cfg.control_file, control_file, control_settings)
-    run_mizuroute(mizu_cfg.executable, control_file, log_stdout=mizu_cfg.log_output)
     routed_generated = find_mizuroute_output(mizu_output_dir, mizu_cfg.case_name, sim_start)
     mizuroute_output = mizu_output_dir / "mizuroute_deterministic.nc"
     routed_generated.rename(mizuroute_output)
@@ -461,39 +481,20 @@ def _route_summa_member(
     stamp = sim_end.strftime("%Y%m%d%H")
     output_dir = ensure_dir(run_dir / "mizuroute" / "segments" / member / stamp)
     restart_dir = ensure_dir(run_dir / "mizuroute" / "restart" / member)
-    control_parent = Path(mizu_cfg.control_file).parent
-    copy_optional_resource(
-        mizu_cfg.param_nml,
-        [mizu_cfg.ancil_dir, control_parent],
-        output_dir / "param.nml.default",
-        "mizuRoute param.nml.default",
-        required=True,
-    )
-    copy_optional_resource(
-        mizu_cfg.topology_nc,
-        [mizu_cfg.ancil_dir, control_parent],
-        output_dir / "topology.nc",
-        "mizuRoute topology.nc",
-    )
     if restart_in is None:
         state_in = _seed_mizuroute_initial_state(mizu_cfg, restart_dir, sim_start)
     else:
         state_in = restart_in.name
-    control_file = output_dir / "mizuroute_segment.control"
-    control_settings = {
-        "fname_qsim": summa_output.name,
-        "fname_state_in": state_in,
-        "case_name": mizu_cfg.case_name,
-        "sim_start": sim_start.strftime("%Y-%m-%d %H:%M:%S"),
-        "sim_end": (sim_end - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S"),
-        "ancil_dir": str(mizu_cfg.ancil_dir) + "/",
-        "input_dir": str(summa_output.parent) + "/",
-        "output_dir": str(output_dir) + "/",
-        "restart_dir": str(restart_dir) + "/",
-        "restart_write": mizu_cfg.restart_write,
-    }
-    update_control_file(mizu_cfg.control_file, control_file, control_settings)
-    run_mizuroute(mizu_cfg.executable, control_file, log_stdout=mizu_cfg.log_output)
+    route_summa_output(
+        mizu_cfg,
+        summa_output=summa_output,
+        output_dir=output_dir,
+        restart_dir=restart_dir,
+        control_name="mizuroute_segment.control",
+        sim_start=sim_start,
+        sim_end=sim_end - timedelta(hours=1),
+        state_in=state_in,
+    )
     routed_generated = find_mizuroute_output(output_dir, mizu_cfg.case_name, sim_start)
     flat_dir = ensure_dir(run_dir / "mizuroute")
     flat_output = flat_dir / mizuroute_member_output_name(member, sim_end)

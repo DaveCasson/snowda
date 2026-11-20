@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import json
 import logging
-import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -16,24 +15,16 @@ import xarray as xr
 from snowda.adapters.scores import compute_deterministic_metrics
 from snowda.config.loader import load_config
 from snowda.config.pysummada import StreamflowEvaluationConfig
-from snowda.config.run_dir import make_run_dir, run_name_from_config
+from snowda.config.run_dir import (
+    git_commit_hash,
+    make_run_dir,
+    run_name_from_config,
+    utc_timestamp,
+)
 from snowda.io.streamflow import DEFAULT_RESAMPLE, load_paired_streamflow
 from snowda.utils.logging import configure_logging, get_logger
 
 log = get_logger(__name__)
-
-
-def _git_commit_hash(repo_root: Path) -> Optional[str]:
-    try:
-        out = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"],
-            cwd=str(repo_root),
-            stderr=subprocess.DEVNULL,
-            text=True,
-        )
-        return out.strip()
-    except Exception:
-        return None
 
 
 def _require_absolute_input(raw: str | Path, field_name: str) -> Path:
@@ -248,8 +239,8 @@ def run_evaluation(
 
     repo_root = Path(__file__).resolve().parents[3]
     provenance = {
-        "timestamp_utc": datetime.utcnow().isoformat() + "Z",
-        "git_commit": _git_commit_hash(repo_root),
+        "timestamp_utc": utc_timestamp(),
+        "git_commit": git_commit_hash(repo_root),
         "config_path": str(Path(config_path).resolve()) if config_path else None,
         "run_dir": str(run_dir),
         "sim_nc": str(sim_nc),

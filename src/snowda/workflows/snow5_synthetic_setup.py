@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
@@ -24,6 +23,7 @@ import pandas as pd
 import xarray as xr
 
 from snowda.config.loader import load_config
+from snowda.config.run_dir import utc_timestamp
 from snowda.core.snow5 import Snow5Parameters, run_snow5_simulation
 from snowda.io.snow5 import convert_arrays_to_dataset, read_snow5_forcing, write_results
 from snowda.utils.logging import configure_logging, get_logger
@@ -157,7 +157,7 @@ def run_setup(config_path: str | Path) -> Path:
     write_mean_forcing(members, start, end_pad, out_dir / "mean_forcing_excl_truth.nc")
 
     prov = {
-        "timestamp_utc": datetime.utcnow().isoformat() + "Z",
+        "timestamp_utc": utc_timestamp(),
         "config_path": cfg["_meta"]["config_path"],
         "truth_forcing_file": str(truth_path),
         "ensemble_members": [str(p) for p in members],

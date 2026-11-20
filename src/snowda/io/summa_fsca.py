@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Sequence
 
 import numpy as np
 import xarray as xr
-import re
 
-from snowda.core.fsca_models import FscaState, compute_fsca_hru, initialize_output_arrays
+from snowda.core.fsca_models import (
+    FscaState,
+    compute_fsca_hru,
+    initialize_output_arrays,
+)
 from snowda.io.units import UnitsError, convert_vars, dequantify
 from snowda.utils.logging import get_logger
 

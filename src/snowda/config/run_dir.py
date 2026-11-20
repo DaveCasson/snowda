@@ -11,8 +11,9 @@ by the optional ``run_name`` config key:
 
 from __future__ import annotations
 
+import subprocess
 from collections.abc import Mapping
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -25,7 +26,32 @@ TIMESTAMP_RUN_NAME = "timestamp"
 
 
 def now_utc_tag() -> str:
-    return datetime.utcnow().strftime(TIMESTAMP_FORMAT)
+    return datetime.now(timezone.utc).strftime(TIMESTAMP_FORMAT)
+
+
+def utc_timestamp() -> str:
+    """Current UTC time for provenance records, such as ``2026-11-19T15:30:00.123456Z``."""
+    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z"
+
+
+def ensure_dir(path: str | Path) -> Path:
+    directory = Path(path)
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory
+
+
+def git_commit_hash(repo_root: Path) -> Optional[str]:
+    """Current git commit hash, or ``None`` outside a repository."""
+    try:
+        out = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(repo_root),
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        return out.strip()
+    except Exception:
+        return None
 
 
 def normalize_run_name(raw: Any) -> Optional[str]:

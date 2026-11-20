@@ -11,6 +11,7 @@ from snowda.core.fsca_models import FscaState, initialize_model_arrays
 from snowda.core.particle_filter import ParticleFilterCore
 from snowda.schaake_shuffle.core import (
     apply_permutation,
+    shuffle_source,
     compute_shuffle_permutation,
     schaake_shuffle,
 )
@@ -155,7 +156,9 @@ def test_integration_schaake_shuffle(tmp_path: Path):
     reference = captured.get("reference")
     assert reference is not None
     expected_swe, permutation = schaake_shuffle(pre_swe, reference)
-    expected_snow_depth = apply_permutation(pre_snow_depth, permutation)
+    expected_snow_depth = apply_permutation(
+        pre_snow_depth, shuffle_source(pre_swe, permutation)
+    )
 
     assert np.allclose(np.sort(post_swe, axis=0), np.sort(pre_swe, axis=0))
     assert np.allclose(post_swe, expected_swe)

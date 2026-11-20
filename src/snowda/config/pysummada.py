@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
 from snowda.config.loader import as_config_dict
 from snowda.config.run_dir import run_name_from_config
+from snowda.config.run_modes import parse_run_mode
 from snowda.core.particle_filter import DEFAULT_N_EFF_THRESHOLD
 from snowda.utils.logging import get_logger
 
@@ -53,6 +54,40 @@ class StreamflowEvaluationConfig:
     flow_col: Optional[str] = None
     start_time: Optional[str] = None
     end_time: Optional[str] = None
+    # Return-period peak thresholds for forecast event scores. Without a file,
+    # thresholds are empirical quantiles of the observed annual maxima.
+    thresholds_csv: Optional[Path] = None
+    # First month of the water year. A water year is named by the year it ends in.
+    water_year_start_month: int = 10
+    # First and last month (inclusive) of the melt-season scoring window.
+    season_months: tuple[int, int] = (4, 9)
+    # A water year or season is scored only when at least this fraction of
+    # its days has both a simulated and an observed value.
+    min_coverage: float = 0.9
+    figures: bool = True
+    # Add a SWE panel to water-year figures of assimilating runs. Reading
+    # member SWE from every SUMMA output file is the slow part of evaluation.
+    figures_swe: bool = True
+    # Keyword overrides for ``compute_esp_metrics`` (see FORECAST_EVALUATION_KEYS).
+    forecast: Mapping[str, Any] = field(default_factory=dict)
+
+
+FORECAST_EVALUATION_KEYS = frozenset(
+    {
+        "return_periods",
+        "event_probability_threshold",
+        "exclude_verification_year",
+        "crps_method",
+        "fair_brier",
+        "score_peak",
+        "score_volume",
+        "bootstrap_iterations",
+        "bootstrap_block_size",
+        "bootstrap_circular",
+        "bootstrap_ci_level",
+        "bootstrap_seed",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -127,6 +162,8 @@ class EspConfig:
     initialization: str = "incremental"
     n_members: Optional[int] = None
     seed: Optional[int] = None
+    # Leave the forecast issue year out of the ESP weather years.
+    exclude_issue_year: bool = True
 
 
 @dataclass(frozen=True)
@@ -175,6 +212,7 @@ class PysummadaConfig:
     tempering_target: Optional[float] = None
     season_start_month: Optional[int] = None
     run_name: Optional[str] = None
+    run_mode: Optional[str] = None
 
     @property
     def model_result_output_dir(self) -> Path:
@@ -353,6 +391,7 @@ def load_pysummada_config(
         tempering_target=tempering_target,
         season_start_month=season_start_month,
         run_name=run_name,
+        run_mode=parse_run_mode(cfg.get("run_mode")),
         helbig_settings=dict(helbig_settings) if helbig_settings else None,
         snow_depth_var=str(snow_depth_var) if snow_depth_var else None,
         assimilation_mode=str(assimilation_mode) if assimilation_mode else None,
@@ -453,10 +492,10 @@ def validate_historic_config(cfg: PysummadaConfig) -> None:
             "`assimilation_mode`, or use `snowda.workflows.run_summa_historic_da` "
             "or `snowda.workflows.run_summa_da`."
         )
-    if cfg.evaluation is not None:
+    if cfg.evaluation is not None and cfg.mizuroute is None:
         raise ValueError(
-            "Historic SUMMA does not evaluate a single routed series. "
-            "Use `snowda.workflows.run_summa`."
+            "`evaluation` requires top-level `mizuroute` so each member's "
+            "routed streamflow exists."
         )
 
 
@@ -469,6 +508,16 @@ def _validate_assimilation_config(cfg: PysummadaConfig) -> None:
         )
     if cfg.ensemble_forcing_mode == "historic":
         _validate_historic_members(cfg)
+    if (
+        cfg.pf_scheme == "sis"
+        and cfg.season_start_month is None
+        and cfg.end_time - cfg.start_time > timedelta(days=366)
+    ):
+        log.warning(
+            "pf_scheme 'sis' without `season_start_month`: weights are never "
+            "reset, so they carry across snow seasons for the whole run. "
+            "Set `season_start_month` (for example 10) to reset them each season."
+        )
     if assimilation_mode == "fsca_only":
         missing = [
             name
@@ -551,10 +600,6 @@ def _parse_pf_scheme(cfg: Dict[str, Any]) -> str:
 
 
 def _warn_ignored_legacy_keys(cfg: Dict[str, Any]) -> None:
-    if "run_mode" in cfg:
-        log.warning(
-            "`run_mode` is ignored; the workflow entrypoint selects the SUMMA variant."
-        )
     if "run_da" in cfg:
         log.warning(
             "`run_da` is ignored; use run_summa_historic for a historic ensemble "
@@ -903,6 +948,7 @@ def _load_esp_config(cfg: Dict[str, Any], base_dir: Path | None) -> Optional[Esp
         initialization=initialization,
         n_members=n_members,
         seed=seed,
+        exclude_issue_year=bool(esp_cfg_raw.get("exclude_issue_year", True)),
     )
 
 
@@ -934,7 +980,42 @@ def _load_evaluation_config(
     date_col = raw.get("date_col") or raw.get("obs_date_col")
     flow_col = raw.get("flow_col") or raw.get("obs_flow_col")
     reach_id = raw.get("reach_id")
+    thresholds_csv = raw.get("thresholds_csv")
+    water_year_start_month = int(raw.get("water_year_start_month", 10))
+    if not 1 <= water_year_start_month <= 12:
+        raise ValueError("`evaluation.water_year_start_month` must be 1 to 12.")
+    season_raw = raw.get("season_months", (4, 9))
+    if not isinstance(season_raw, (list, tuple)) or len(season_raw) != 2:
+        raise ValueError(
+            "`evaluation.season_months` must be [first_month, last_month]."
+        )
+    season_months = (int(season_raw[0]), int(season_raw[1]))
+    if not all(1 <= month <= 12 for month in season_months):
+        raise ValueError("`evaluation.season_months` entries must be 1 to 12.")
+    min_coverage = float(raw.get("min_coverage", 0.9))
+    if not 0.0 < min_coverage <= 1.0:
+        raise ValueError("`evaluation.min_coverage` must be in (0, 1].")
+    forecast = raw.get("forecast") or {}
+    if not isinstance(forecast, Mapping):
+        raise TypeError("`evaluation.forecast` must be a mapping.")
+    unknown = sorted(set(forecast) - FORECAST_EVALUATION_KEYS)
+    if unknown:
+        raise ValueError(
+            f"Unknown `evaluation.forecast` key(s): {', '.join(unknown)}. "
+            f"Allowed: {', '.join(sorted(FORECAST_EVALUATION_KEYS))}."
+        )
     return StreamflowEvaluationConfig(
+        thresholds_csv=(
+            _normalize_path(str(thresholds_csv), base_dir, allow_relative=False)
+            if thresholds_csv
+            else None
+        ),
+        water_year_start_month=water_year_start_month,
+        season_months=season_months,
+        min_coverage=min_coverage,
+        figures=bool(raw.get("figures", True)),
+        figures_swe=bool(raw.get("figures_swe", True)),
+        forecast=dict(forecast),
         obs_csv=Path(obs_csv),
         variable=str(raw.get("variable", "IRFroutedRunoff")),
         resample=None if resample is None else str(resample),

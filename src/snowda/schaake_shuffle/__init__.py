@@ -7,6 +7,7 @@ from .core import (
     apply_shuffle,
     compute_shuffle_permutation,
     schaake_shuffle,
+    shuffle_source,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "apply_shuffle",
     "apply_permutation",
     "schaake_shuffle",
+    "shuffle_source",
 ]

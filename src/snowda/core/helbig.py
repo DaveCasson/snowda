@@ -37,6 +37,7 @@ def snow_cover_fraction(
     i_abs_max = np.argmax(swe_buffer)
     i_abs_min = np.argmin(swe_buffer)
 
+    i = 1  # a two-step buffer has no earlier step to scan
     for i in range(1, history_update_length, 1):
         diff_swe_buffer[i] = swe_buffer[i + 1] - swe_buffer[i]
         if diff_swe_buffer[i] > 0.5:

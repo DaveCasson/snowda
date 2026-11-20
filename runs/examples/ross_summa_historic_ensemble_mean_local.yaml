@@ -23,8 +23,8 @@ summa_args:
   "-m": /Users/dcasson/GitHub/snowda/models/ross_lumped/SUMMA/fileManagerEnsMean.txt
   "-r": e
 
-file_manager_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
-file_list_dir: /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA
+file_manager_dir: /Users/dcasson/GitHub/snowda/models/ross_lumped/SUMMA/
+file_list_dir: /Users/dcasson/GitHub/snowda/models/ross_lumped/SUMMA/
 
 mizuroute:
   executable: /Users/dcasson/GitHub/mizuRoute/route/bin/route_runoff.exe

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, Sequence
 
 import pandas as pd
 
 from snowda.config.pysummada import PysummadaConfig
+from snowda.utils.dates import scheduled_dates
 from snowda.utils.logging import get_logger
 
 log = get_logger(__name__)
@@ -41,17 +42,9 @@ def resolve_assimilation_dates(
         raise ValueError(
             "Assimilation dates must be after start_time so a forecast segment precedes them."
         )
-    dates: set[datetime] = set(explicit_dates)
-    if frequency_days:
-        if frequency_days <= 0:
-            raise ValueError("`assimilation.frequency_days` must be > 0.")
-        current = start_time
-        while current <= end_time:
-            dates.add(current)
-            current += timedelta(days=frequency_days)
-    if months:
-        month_set = set(months)
-        dates = {date for date in dates if date.month in month_set}
+    if frequency_days and frequency_days <= 0:
+        raise ValueError("`assimilation.frequency_days` must be > 0.")
+    dates = scheduled_dates(start_time, end_time, explicit_dates, frequency_days, months)
     resolved = sorted(date for date in dates if start_time < date <= end_time)
     if not resolved:
         raise ValueError("No assimilation dates fall inside (start_time, end_time].")
@@ -109,39 +102,8 @@ class DataAssimilationCore:
             manager["simEndTime"] = end_time.strftime("%Y-%m-%d %H:%M")
         return self.ens_config
 
-    def update_warm_state(self, end_time: datetime) -> Dict[str, Dict[str, str]]:
-        warm_states = self.create_warm_state_list(end_time)
-        config_list = [
-            {ens: {"manager": {"initConditionFile": warm_state}}}
-            for ens, warm_state in zip(self.config.ens_label_array, warm_states)
-        ]
-        config_dict = self._merge_dicts(config_list)
-        self.ens_config = self.merge_dict(self.ens_config, config_dict)
-        return self.ens_config
-
-    @staticmethod
-    def merge_dict(a: Dict, b: Dict, path: list[str] | None = None) -> Dict:
-        if path is None:
-            path = []
-        for key in b:
-            if key in a:
-                if isinstance(a[key], dict) and isinstance(b[key], dict):
-                    DataAssimilationCore.merge_dict(a[key], b[key], path + [str(key)])
-                elif a[key] != b[key]:
-                    raise ValueError(f"Conflict at {'.'.join(path + [str(key)])}")
-            else:
-                a[key] = b[key]
-        return a
-
     def create_warm_state_list(self, end_time: datetime) -> list[str]:
         return [
             restart_filename(run_prefix, end_time)
             for run_prefix in self.config.ens_label_array
         ]
-
-    @staticmethod
-    def _merge_dicts(dicts: list[Dict]) -> Dict:
-        merged: Dict = {}
-        for item in dicts:
-            merged = DataAssimilationCore.merge_dict(merged, item)
-        return merged
