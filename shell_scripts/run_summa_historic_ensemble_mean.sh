@@ -23,7 +23,7 @@
 set -euo pipefail
 
 REPO=/home/x-dcasson/GitRepos/snowda
-CONFIG="${1:-$REPO/runs/examples/ross_summa_historic_ensemble_mean.yaml}"
+CONFIG="${1:-$REPO/runs/examples/ross_summa_historic_ensemble_mean_anvil.yaml}"
 if [[ ! -f "$CONFIG" ]]; then
   echo "Config not found: $CONFIG" >&2
   exit 1

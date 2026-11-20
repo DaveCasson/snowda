@@ -125,6 +125,35 @@ def test_forcing_override_is_what_pysumma_stages(tmp_path: Path) -> None:
         assert int(dataset["marker"].values[0]) == 2
 
 
+def test_staged_forcing_list_keeps_member_subdirectory(tmp_path: Path) -> None:
+    pytest.importorskip("pysumma")
+    import pysumma as ps
+
+    settings = _settings_tree(tmp_path)
+    (settings / "forcingFileList.txt").write_text(
+        "050/prod_complete_ensMember_050.nc\n",
+        encoding="utf-8",
+    )
+    file_manager = _file_manager(settings, tmp_path)
+    simulation = ps.Simulation("summa.exe", str(file_manager))
+    sim_config = {
+        "manager": {
+            "forcingPath": str(tmp_path / "historic_forcing") + "/",
+            "forcingListFile": "forcingFileList.txt",
+        }
+    }
+    simulation.apply_config(sim_config)
+    _refresh_staged_inputs(simulation, sim_config)
+    _retarget_staging_manager(simulation)
+    simulation._write_configuration(name="esp_case")
+
+    staged_list = (settings / ".pysumma" / "esp_case" / "forcingFileList.txt").read_text(
+        encoding="utf-8"
+    )
+    assert "050/prod_complete_ensMember_050.nc" in staged_list
+    assert "member_force.nc" not in staged_list
+
+
 def test_staging_outside_settings_stays_in_the_run_directory(tmp_path: Path) -> None:
     pytest.importorskip("pysumma")
     import pysumma as ps

@@ -331,6 +331,57 @@ def run_ensemble(
     return summary
 
 
+class _RelativeForcingOption:
+    """Stand-in whose text is the forcing path relative to ``forcingPath``."""
+
+    def __init__(self, name: str, text: str) -> None:
+        self.name = name
+        self.value = name
+        self._text = text
+
+    def __str__(self) -> str:
+        return self._text
+
+
+def _forcing_list_entry(option: Any, prefix: str) -> str:
+    """Return one forcing-list line, keeping a subdirectory under ``prefix``.
+
+    pysumma stores each entry as an absolute path and writes only the final
+    path component. ``050/member.nc`` would otherwise be staged as ``member.nc``.
+    """
+    raw = str(option.name).strip().strip("'\"").replace("\\", "/")
+    root = prefix.strip().strip("'\"").replace("\\", "/").rstrip("/")
+    if root and raw.startswith(root + "/"):
+        relative = raw[len(root) + 1 :]
+    else:
+        relative = raw.split("/")[-1]
+    if not relative:
+        relative = raw.split("/")[-1]
+    return f"'{relative}'"
+
+
+def _stage_forcing_names_relative_to_prefix(force_file_list: Any) -> None:
+    """Write forcing names relative to ``forcingPath``, including subdirectories."""
+    if getattr(force_file_list, "_snowda_relative_forcing_names", False):
+        return
+    original_write = force_file_list.write
+
+    def write(path: Any = None) -> None:
+        prefix = str(getattr(force_file_list, "prefix", "") or "")
+        saved = list(force_file_list.options)
+        force_file_list.options = [
+            _RelativeForcingOption(option.name, _forcing_list_entry(option, prefix))
+            for option in saved
+        ]
+        try:
+            original_write(path)
+        finally:
+            force_file_list.options = saved
+
+    force_file_list.write = write
+    force_file_list._snowda_relative_forcing_names = True
+
+
 def _refresh_staged_inputs(simulation: Any, sim_config: Dict[str, Any]) -> None:
     """Reload inputs pysumma snapshotted before ``apply_config``.
 
@@ -338,11 +389,13 @@ def _refresh_staged_inputs(simulation: Any, sim_config: Dict[str, Any]) -> None:
     ``_write_configuration`` later writes those objects into the staged
     settings directory. A file-manager override that only changes the
     path strings would otherwise stage the original member forcing list
-    under the new name.
+    under the new name. The reloaded list is written with paths relative
+    to ``forcingPath``, so a member subdirectory such as ``050/`` is kept.
     """
     manager_cfg = sim_config.get("manager") or {}
     if any(key in manager_cfg for key in ("forcingListFile", "forcingPath")):
         simulation.force_file_list = simulation.manager.force_file_list
+        _stage_forcing_names_relative_to_prefix(simulation.force_file_list)
     if any(key in manager_cfg for key in ("statePath", "initConditionFile")):
         simulation.initial_conditions = simulation.manager.initial_conditions
 

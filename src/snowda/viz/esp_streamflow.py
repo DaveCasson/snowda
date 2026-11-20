@@ -12,7 +12,8 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 
-from snowda.io.esp_streamflow import ENSEMBLE_DIM, EspPairedForecast
+from snowda.core.particle_filter import weighted_quantile_rows
+from snowda.io.esp_streamflow import ENSEMBLE_DIM, EspPairedForecast, member_weights
 
 QUANTILE_OUTER = (0.10, 0.90)
 QUANTILE_INNER = (0.25, 0.75)
@@ -488,17 +489,30 @@ def plot_rank_histogram(
 
 
 def _ensemble_quantiles(fcst: xr.DataArray) -> pd.DataFrame:
-    q = fcst.quantile(
-        [
-            QUANTILE_OUTER[0],
-            QUANTILE_INNER[0],
-            0.5,
-            QUANTILE_INNER[1],
-            QUANTILE_OUTER[1],
-        ],
-        dim=ENSEMBLE_DIM,
+    levels = (
+        QUANTILE_OUTER[0],
+        QUANTILE_INNER[0],
+        0.5,
+        QUANTILE_INNER[1],
+        QUANTILE_OUTER[1],
     )
     times = pd.DatetimeIndex(pd.to_datetime(fcst["valid_time"].values))
+    weights = member_weights(fcst)
+    if weights is not None:
+        other = [dim for dim in fcst.dims if dim != ENSEMBLE_DIM]
+        ordered = fcst.transpose(*other, ENSEMBLE_DIM)
+        rows = weighted_quantile_rows(np.asarray(ordered.values, dtype=float), weights, levels)
+        return pd.DataFrame(
+            {
+                "low": rows[:, 0],
+                "inner_low": rows[:, 1],
+                "median": rows[:, 2],
+                "inner_high": rows[:, 3],
+                "high": rows[:, 4],
+            },
+            index=times,
+        )
+    q = fcst.quantile(list(levels), dim=ENSEMBLE_DIM)
     return pd.DataFrame(
         {
             "low": q.sel(quantile=QUANTILE_OUTER[0]).values,

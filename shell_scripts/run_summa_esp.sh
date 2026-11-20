@@ -5,8 +5,8 @@
 #SBATCH -e /home/x-dcasson/GitRepos/snowda/shell_scripts/logs/%x-%j.err
 #SBATCH -N 1
 #SBATCH --cpus-per-task=50
-#SBATCH --time=1-00:00:00
-#SBATCH --mem=4G
+#SBATCH --time=0-08:00:00
+#SBATCH --mem=80G
 
 # Open-loop SUMMA ensemble, then ESP traces (notebooks/run_summa_esp.ipynb).
 # Anvil shared is the default partition: 4-day limit, MaxMemPerCPU=1896M.
@@ -23,7 +23,7 @@
 set -euo pipefail
 
 REPO=/home/x-dcasson/GitRepos/snowda
-CONFIG="${1:-$REPO/runs/examples/ross_summa_esp_no_da.yaml}"
+CONFIG="${1:-$REPO/runs/examples/ross_summa_esp_no_da_anvil.yaml}"
 if [[ ! -f "$CONFIG" ]]; then
   echo "Config not found: $CONFIG" >&2
   exit 1

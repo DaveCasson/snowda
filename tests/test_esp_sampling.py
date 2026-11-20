@@ -23,7 +23,7 @@ from snowda.core.esp_sampling import (
     write_post_da_catalog,
 )
 from snowda.core.particle_filter import ParticleFilterCore
-from snowda.workflows.esp import run_balanced_esp_traces
+from snowda.workflows.esp import run_balanced_esp_issue, run_balanced_esp_traces
 from snowda.workflows.run_summa_da import _resample_member_states
 from tests.test_pysummada_config import _build_config
 
@@ -145,6 +145,44 @@ def test_small_pool_is_sampled_without_replacement() -> None:
     assert len(years) == len(set(years)) == 3
 
 
+def test_likelihood_weighting_keeps_every_particle() -> None:
+    weights = {"a": 0.5, "b": 0.3, "c": 0.2}
+    particles = [
+        _particle(label, weight=weight, resampled=False) for label, weight in weights.items()
+    ]
+    assignments = sample_forecast_members(
+        particles,
+        [2000, 2001],
+        n_members=6,
+        seed=7,
+        issue_key="2014030100",
+    )
+    counts = Counter(item.particle.label for item in assignments)
+    assert counts == {"a": 2, "b": 2, "c": 2}
+    assert all(item.weighting == "likelihood" for item in assignments)
+    totals = Counter()
+    for item in assignments:
+        totals[item.particle.label] += item.weight
+    for label, weight in weights.items():
+        assert totals[label] == pytest.approx(weight)
+    assert sum(item.weight for item in assignments) == pytest.approx(1.0)
+
+
+def test_likelihood_weighting_rejects_a_partial_ensemble() -> None:
+    particles = [
+        _particle(label, weight=weight, resampled=False)
+        for label, weight in (("a", 0.5), ("b", 0.3), ("c", 0.2))
+    ]
+    with pytest.raises(ValueError, match="multiple"):
+        sample_forecast_members(
+            particles,
+            [2000, 2001],
+            n_members=4,
+            seed=1,
+            issue_key="2014030100",
+        )
+
+
 def test_systematic_resampling_respects_posterior_weights() -> None:
     weights = {"a": 0.5, "b": 0.3, "c": 0.2}
     particles = [
@@ -157,6 +195,7 @@ def test_systematic_resampling_respects_posterior_weights() -> None:
             n_members=100,
             seed=seed,
             issue_key="2014030100",
+            weighting="systematic",
         )
         counts = Counter(item.particle.label for item in assignments)
         for label, weight in weights.items():
@@ -283,6 +322,43 @@ def test_binding_rejects_disagreement_between_restart_dates(tmp_path: Path) -> N
     particle = _particle("001", summa=str(summa), route=str(route))
     with pytest.raises(ValueError, match="does not match|not the forecast issue"):
         validate_particle_binding(particle, when, require_routing=True)
+
+
+def test_balanced_esp_issue_skips_missing_catalog(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    when = datetime(2006, 4, 1)
+    run_dir = tmp_path / "run"
+    config_file = _build_config(
+        tmp_path,
+        extra={
+            "start_time": "2000-01-01 00:00",
+            "end_time": "2020-12-31 00:00",
+            "esp": {
+                "initialization": "balanced_independent",
+                "n_members": 4,
+                "seed": 7,
+                "start_year": 1985,
+                "end_year": 2024,
+                "forecast_end": "08-01",
+                "dates": ["2006-04-01 00:00"],
+            },
+        },
+    )
+
+    from snowda.config.pysummada import load_pysummada_config
+
+    cfg = load_pysummada_config(config_file)
+    assert cfg.esp is not None
+    with caplog.at_level("WARNING", logger="snowda.snowda.workflows.esp"):
+        records = run_balanced_esp_issue(cfg, cfg.esp, run_dir, when)
+
+    assert records == []
+    assert not (run_dir / "esp" / "member_map.json").exists()
+    assert any(
+        "Skipping ESP issue" in record.message and "post_da_2006040100.json" in record.message
+        for record in caplog.records
+    )
 
 
 def test_balanced_esp_smoke_copies_bound_restarts_without_mutating_sources(

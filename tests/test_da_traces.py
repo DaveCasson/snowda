@@ -302,3 +302,22 @@ def test_plot_da_traces_uses_requested_time_bounds():
 
     with pytest.raises(ValueError, match="after end"):
         plot_da_traces(traces, start="2014-03-03", end="2014-03-02")
+
+
+def test_forecast_quantiles_follow_likelihood_weights():
+    from snowda.viz.summa_da import _ensemble_quantiles
+
+    values = xr.DataArray(
+        [[10.0, 10.0], [80.0, 80.0]],
+        dims=(ENSEMBLE_DIM, "time"),
+        coords={
+            ENSEMBLE_DIM: ["m001_2000", "m002_2000"],
+            "time": pd.to_datetime(["2014-03-01", "2014-03-02"]),
+            "weight": (ENSEMBLE_DIM, [0.95, 0.05]),
+        },
+    )
+    quantiles = _ensemble_quantiles(values)
+    assert quantiles["median"].tolist() == [10.0, 10.0]
+    assert quantiles["high"].tolist() == [10.0, 10.0]
+    assert quantiles["min"].tolist() == [10.0, 10.0]
+    assert quantiles["max"].tolist() == [80.0, 80.0]

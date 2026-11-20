@@ -8,19 +8,19 @@ run_name: timestamp
 log_file: logs/ross_summa_deterministic.log
 
 model_run_id: ross_summa_deterministic
-base_file_manager: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManager.txt
-forcing_file_base: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/mean/ross
+base_file_manager: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManagerANVILEnsMean.txt
+forcing_file_base: /anvil/projects/x-ees240082/users/dcasson/gpep/yrb/prod_complete/prod_complete/ross_summa/
 num_ens: 1
 
 start_time: "1980-01-01 00:00"
-end_time: "1990-08-01 00:00"
+end_time: "2024-12-29 00:00"
 time_delta_days: 1
 
 summa_exe: /home/x-dcasson/GitRepos/summa/bin/summa_sundials.exe
 summa_log: false
 
 summa_args:
-  "-m": /Users/dcasson/Data/snowda/summa/ross_lumped/settings/SUMMA/fileManager.txt
+  "-m": /home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/fileManagerANVILEnsMean.txt
   "-r": e
   "-p": m
 
@@ -31,7 +31,7 @@ file_list_dir: //home/x-dcasson/GitRepos/snowda/models/ross_lumped/SUMMA/
 
 mizuroute:
   executable: /home/x-dcasson/GitRepos/mizuRoute/route/bin/route_runoff.exe
-  control_file: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/mizuroute.control
+  control_file: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/mizurouteANVIL.control
   ancil_dir: /home/x-dcasson/GitRepos/snowda/models/ross_lumped/mizuRoute/
   case_name: ross
   restart_write: never

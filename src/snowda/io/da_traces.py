@@ -13,6 +13,7 @@ import xarray as xr
 
 from snowda.io.esp_streamflow import (
     ENSEMBLE_DIM,
+    attach_likelihood_weights,
     group_esp_trace_files,
     init_month_key,
     parse_state_date_key,
@@ -177,7 +178,7 @@ def _load_da_traces(
     observations = dated_observations if include_swe_observation else {}
     times = _assimilation_times(run_dir, dated_observations)
     states = _states_at_times(raw_by_member, times, observations)
-    forecasts = _read_forecasts(forecast_paths, forecast_variable, transform)
+    forecasts = _read_forecasts(run_dir, forecast_paths, forecast_variable, transform)
     if not historic and not forecasts:
         raise FileNotFoundError(f"No historic traces or ESP forecasts found in {run_dir}.")
     log.info(
@@ -315,6 +316,7 @@ def _value_at(
 
 
 def _read_forecasts(
+    run_dir: Path,
     paths: list[Path],
     variable: str,
     transform,
@@ -331,11 +333,14 @@ def _read_forecasts(
             members.append(series.expand_dims({ENSEMBLE_DIM: [_trace_member_id(path)]}))
         if not members:
             continue
+        values = attach_likelihood_weights(
+            _concat_members(members), run_dir, state_date_key
+        )
         forecasts.append(
             DaForecast(
                 init_time=init_time,
                 init_month=init_month_key(init_time),
-                values=_concat_members(members),
+                values=values,
             )
         )
     forecasts.sort(key=lambda item: item.init_time)

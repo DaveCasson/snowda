@@ -10,9 +10,11 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 
+from snowda.core.particle_filter import weighted_quantile_rows
 from snowda.io.da_traces import DaForecast, DaTraceSet
-from snowda.io.esp_streamflow import ENSEMBLE_DIM
+from snowda.io.esp_streamflow import ENSEMBLE_DIM, member_weights
 
+QUANTILE_FULL = (0.0, 1.0)
 QUANTILE_OUTER = (0.10, 0.90)
 QUANTILE_INNER = (0.25, 0.75)
 _HISTORIC_COLOR = "0.35"
@@ -64,24 +66,41 @@ def _data_bounds(traces: DaTraceSet) -> tuple[pd.Timestamp, pd.Timestamp]:
 
 
 def _ensemble_quantiles(values: xr.DataArray) -> pd.DataFrame:
-    quantiles = values.quantile(
-        [
-            QUANTILE_OUTER[0],
-            QUANTILE_INNER[0],
-            0.5,
-            QUANTILE_INNER[1],
-            QUANTILE_OUTER[1],
-        ],
-        dim=ENSEMBLE_DIM,
-        skipna=True,
+    levels = (
+        QUANTILE_FULL[0],
+        QUANTILE_OUTER[0],
+        QUANTILE_INNER[0],
+        0.5,
+        QUANTILE_INNER[1],
+        QUANTILE_OUTER[1],
+        QUANTILE_FULL[1],
     )
+    weights = member_weights(values)
+    if weights is not None:
+        ordered = values.transpose("time", ENSEMBLE_DIM)
+        rows = weighted_quantile_rows(np.asarray(ordered.values, dtype=float), weights, levels)
+        return pd.DataFrame(
+            {
+                "min": rows[:, 0],
+                "low": rows[:, 1],
+                "inner_low": rows[:, 2],
+                "median": rows[:, 3],
+                "inner_high": rows[:, 4],
+                "high": rows[:, 5],
+                "max": rows[:, 6],
+            },
+            index=_time_index(ordered),
+        )
+    quantiles = values.quantile(list(levels), dim=ENSEMBLE_DIM, skipna=True)
     return pd.DataFrame(
         {
+            "min": quantiles.sel(quantile=QUANTILE_FULL[0]).values,
             "low": quantiles.sel(quantile=QUANTILE_OUTER[0]).values,
             "inner_low": quantiles.sel(quantile=QUANTILE_INNER[0]).values,
             "median": quantiles.sel(quantile=0.5).values,
             "inner_high": quantiles.sel(quantile=QUANTILE_INNER[1]).values,
             "high": quantiles.sel(quantile=QUANTILE_OUTER[1]).values,
+            "max": quantiles.sel(quantile=QUANTILE_FULL[1]).values,
         },
         index=_time_index(values),
     )
@@ -116,6 +135,14 @@ def _draw_forecasts(
         quantiles = quantiles.loc[_in_window(pd.DatetimeIndex(quantiles.index), start, end)]
         if quantiles.empty:
             continue
+        ax.fill_between(
+            quantiles.index,
+            quantiles["min"],
+            quantiles["max"],
+            color=color,
+            alpha=0.12,
+            zorder=3,
+        )
         ax.fill_between(
             quantiles.index,
             quantiles["low"],
@@ -277,8 +304,9 @@ def plot_da_traces(
 ) -> tuple[Figure, Axes]:
     """Historic ensemble lines, assimilation states, and ESP quantile envelopes.
 
-    Forecasts that share an initialization month-day use one color, matching
-    the ESP streamflow envelopes (p10–p90, p25–p75, and median). ``obs`` is a
+    Forecasts that share an initialization month-day use one color. Each
+    forecast is drawn as the full ensemble range (p0–p100), then p10–p90,
+    p25–p75, and the median. ``obs`` is a
     continuous verification series drawn over the historic and forecast window.
     ``start`` and ``end`` set the time axis. Omitted bounds use the first and
     last time in the traces. Both bounds are inclusive.

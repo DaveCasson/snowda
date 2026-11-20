@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
+import operator
 import subprocess
 from datetime import datetime
+from numbers import Number
 from pathlib import Path
 from typing import Any, Optional
 
@@ -68,9 +70,63 @@ def _json_safe(value: Any) -> Any:
     return value
 
 
+_COMPARISON_LABELS = {
+    operator.ge: ">=",
+    operator.gt: ">",
+    operator.le: "<=",
+    operator.lt: "<",
+    operator.eq: "==",
+    operator.ne: "!=",
+    np.greater_equal: ">=",
+    np.greater: ">",
+    np.less_equal: "<=",
+    np.less: "<",
+    np.equal: "==",
+    np.not_equal: "!=",
+}
+
+
+def _netcdf_attr(value: Any) -> Any:
+    """Return an attribute value that netCDF can store.
+
+    ``scores`` keeps the event comparison on the Brier score as ``operator.ge``
+    and the other comparison callables. Those become ``>=``, ``>``, and so on.
+    """
+    if isinstance(value, np.ndarray):
+        return value
+    if isinstance(value, (list, tuple)):
+        return type(value)(_netcdf_attr(item) for item in value)
+    if isinstance(value, np.bool_):
+        return bool(value)
+    if isinstance(value, (str, bytes, Number, np.number)):
+        return value
+    try:
+        label = _COMPARISON_LABELS.get(value)
+    except TypeError:
+        label = None
+    if label is not None:
+        return label
+    if callable(value):
+        name = getattr(value, "__name__", None)
+        return name if isinstance(name, str) else str(value)
+    return str(value)
+
+
+def _with_netcdf_attrs(ds: xr.Dataset) -> xr.Dataset:
+    """Copy ``ds`` with attributes coerced for netCDF serialization."""
+    cleaned = ds.copy(deep=False)
+    cleaned.attrs = {str(key): _netcdf_attr(val) for key, val in cleaned.attrs.items()}
+    for name in cleaned.variables:
+        variable = cleaned[name]
+        variable.attrs = {
+            str(key): _netcdf_attr(val) for key, val in variable.attrs.items()
+        }
+    return cleaned
+
+
 def _write_eval_netcdf(ds: xr.Dataset, path: Path) -> None:
     """Write a small evaluation dataset without probing a missing HDF5 path."""
-    ds.to_netcdf(path, engine="scipy")
+    _with_netcdf_attrs(ds).to_netcdf(path, engine="scipy")
 
 
 def metrics_to_dict(metrics: xr.Dataset) -> dict[str, Any]:
